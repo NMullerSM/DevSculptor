@@ -2,961 +2,708 @@
 <html class="dark" lang="es">
 <head>
   <meta charset="utf-8"/>
-  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-  <title>DevSculptor — Gobernanza Pre-Código & Compilación Documental</title>
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DevSculptor — Apple visionOS Governance Studio</title>
+  
+  <!-- Tipografía & Iconografía Vectorial -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+  
+  <!-- Sistema de Estilos Apple visionOS Glassmorphic -->
   <link rel="stylesheet" href="shared/styles.css"/>
-  <script id="tailwind-config">
-    tailwind.config = {
-      darkMode: "class",
-      theme: {
-        extend: {
-          colors: {
-            "primary": "var(--accent-indigo)",
-            "secondary": "var(--accent-cyan)",
-            "tertiary": "var(--accent-amber)",
-            "emerald": "var(--accent-emerald)"
-          }
-        }
-      }
-    };
-  </script>
+  
+  <!-- Tailwind Utilities vía CDN para layout grid/flex rápido -->
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="h-screen flex flex-col p-2 gap-2 select-none">
+<body class="h-screen w-screen flex flex-col p-3 gap-3">
 
-  <!-- 1. Barra Superior Integrada Estilo macOS (Docked, Sin solapamiento, Esquinas mínimas 8px) -->
-  <header class="h-10 w-full shrink-0 glass-window !rounded-[8px] px-3 flex items-center justify-between z-20">
-    <!-- Izquierda: Marca y Contexto de Proyecto (Alineado a la izquierda, no centrado) -->
-    <div class="flex items-center gap-2.5">
-      <span class="w-2 h-2 rounded-[3px] bg-indigo-500 shadow-[0_0_6px_rgba(99,102,241,0.8)]"></span>
-      <span class="font-semibold text-xs tracking-tight text-primary-color">DevSculptor</span>
-      <span class="text-slate-400 dark:text-slate-600 text-xs">/</span>
-      <div class="flex items-center gap-1.5 text-xs text-secondary-color font-mono">
-        <span class="font-medium text-indigo-600 dark:text-indigo-400">Core MVP</span>
-        <span class="pill-tag pill-indigo text-[8.5px]">FASE PRE-CÓDIGO</span>
+  <!-- Capa de Fondo visionOS: Naturaleza Apple & Patrón de Ondas Orgánicas -->
+  <div class="wallpaper-canvas">
+    <div id="wallpaper-bg" class="wallpaper-img"></div>
+    <div class="wallpaper-wave-overlay"></div>
+    <div class="wallpaper-topo-pattern"></div>
+    <div class="ambient-orb orb-indigo"></div>
+    <div class="ambient-orb orb-cyan"></div>
+    <div class="ambient-orb orb-purple"></div>
+  </div>
+
+  <!-- ========================================================================
+       1. Barra Superior Flotante (visionOS Crystal TopBar)
+       ======================================================================== -->
+  <header class="vision-window h-11 w-full shrink-0 px-4 flex items-center justify-between z-30">
+    
+    <!-- Izquierda: Identidad Minimalista & Conmutador de Pantallas -->
+    <div class="flex items-center gap-3">
+      <!-- Isotipo Minimalista -->
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)]"></span>
+        <span class="font-semibold text-xs tracking-tight text-primary">DevSculptor</span>
+      </div>
+
+      <div class="h-3 w-px bg-white/10 mx-0.5"></div>
+
+      <!-- Conmutador de Pantallas: Estudio vs. Hub de Proyectos -->
+      <div class="flex items-center gap-1 bg-white/[0.04] p-0.5 rounded-[7px] border border-white/[0.08]">
+        <button id="nav-btn-studio" onclick="switchScreen('studio')" class="vision-btn vision-btn-primary !py-1 !px-3 text-[11px]">
+          <span class="material-symbols-outlined text-[13px]">grid_view</span> Estudio
+        </button>
+        <button id="nav-btn-hub" onclick="switchScreen('hub')" class="vision-btn !py-1 !px-3 text-[11px]">
+          <span class="material-symbols-outlined text-[13px]">folder_open</span> Proyectos
+        </button>
       </div>
     </div>
 
-    <!-- Derecha: Estado, Selector Tema Luna/Sol y Perfil -->
-    <div class="flex items-center gap-2.5 text-xs font-mono">
-      <div class="flex items-center gap-1.5 text-secondary-color text-[11px]">
-        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-        <span class="text-emerald-600 dark:text-emerald-400 font-medium text-[10.5px]">Supabase RLS</span>
+    <!-- Centro: Contexto del Proyecto Activo -->
+    <div class="hidden md:flex items-center gap-2">
+      <span class="text-[11px] text-muted font-mono">Proyecto:</span>
+      <span class="active-proj-name font-semibold text-xs text-primary">DevSculptor Core MVP</span>
+      <span class="vision-pill pill-indigo text-[8.5px]">Fase Pre-Código</span>
+    </div>
+
+    <!-- Derecha: Estado de Seguridad, Fondo, Tema y Perfil -->
+    <div class="flex items-center gap-2.5 font-mono text-xs">
+      <!-- Badge de Persistencia Cloud -->
+      <div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-[5px] bg-emerald-500/10 border border-emerald-500/20 text-[10.5px]">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+        <span class="text-emerald-400 font-medium">Supabase RLS</span>
       </div>
 
-      <div class="h-3 w-px bg-slate-300 dark:bg-white/10"></div>
+      <div class="h-3 w-px bg-white/10 mx-0.5"></div>
 
-      <!-- Botón Luna / Sol (Theme Toggle) con esquina mínima -->
-      <button id="theme-toggle" class="apple-btn !p-1.5 !rounded-[6px]" title="Alternar Modo Claro (Sol) / Oscuro (Luna)">
-        <span id="theme-icon" class="material-symbols-outlined text-[15px] text-amber-500 dark:text-amber-400">dark_mode</span>
+      <!-- Selector de Fondo (Naturaleza / Ondas) -->
+      <button id="wallpaper-toggle" class="vision-btn vision-btn-icon" title="Cambiar Fondo: Montañas / Olas / Bosque / Aurora">
+        <span class="material-symbols-outlined text-sm text-cyan-400">wallpaper</span>
       </button>
 
-      <!-- Avatar minimalista -->
-      <div class="w-5 h-5 rounded-[5px] bg-gradient-to-tr from-indigo-500 to-cyan-500 flex items-center justify-center text-white font-semibold text-[9.5px] shadow-sm">
+      <!-- Selector Sol / Luna (Theme Toggle) -->
+      <button id="theme-toggle" class="vision-btn vision-btn-icon" title="Alternar Modo Oscuro (Luna) / Modo Claro (Sol)">
+        <span id="theme-icon" class="material-symbols-outlined text-sm text-amber-400">dark_mode</span>
+      </button>
+
+      <!-- Avatar Apple Minimalista -->
+      <div class="w-6 h-6 rounded-full bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center text-white font-semibold text-[10px] shadow-sm cursor-pointer" title="Nathaniel Muller (Arquitecto)">
         NM
       </div>
     </div>
   </header>
 
-  <!-- 2. Espacio de Trabajo Principal (3 Paneles NotebookLM) -->
-  <div class="flex-1 min-h-0 flex gap-2 w-full">
+  <!-- ========================================================================
+       2. PANTALLA A: ESTUDIO DE GOBERNANZA TRIPARTITO (#screen-studio)
+       ======================================================================== -->
+  <div id="screen-studio" class="flex-1 min-h-0 flex gap-3 w-full z-10">
 
-    <!-- PANEL IZQUIERDO: Flujo Guiado por Apartados Separados (Compacto & Minimalista) -->
-    <aside class="glass-window w-[240px] shrink-0 flex flex-col p-2.5 gap-2">
+    <!-- PANEL IZQUIERDO: Flujo Guiado en 5 Pasos (Navigation Pipeline - 250px) -->
+    <aside class="vision-window w-[250px] shrink-0 flex flex-col p-3 gap-3">
       
-      <div class="flex items-center justify-between px-1 pb-1 border-b border-slate-200 dark:border-white/5">
-        <span class="font-semibold text-[10px] text-muted-color uppercase tracking-wider font-mono">Flujo de Trabajo</span>
-        <span class="pill-tag pill-indigo text-[8px]">5 PASOS</span>
+      <div class="flex items-center justify-between pb-1.5 border-b border-white/[0.06]">
+        <span class="text-[10px] font-mono uppercase tracking-wider text-muted font-semibold">Flujo de Trabajo</span>
+        <span class="vision-pill pill-indigo text-[8.5px]">5 PASOS</span>
       </div>
 
-      <!-- Lista de Apartados por Separado -->
-      <div class="flex-1 overflow-y-auto space-y-1.5 pr-0.5 text-xs">
+      <!-- Lista de Pasos del Pipeline -->
+      <div class="flex-1 overflow-y-auto space-y-2 text-xs pr-0.5">
+        
+        <!-- Paso 1: Conversación -->
+        <button class="nav-step-btn selected w-full vision-card p-2.5 text-left flex items-center gap-2.5 transition-all" data-target="view-chat">
+          <span class="material-symbols-outlined text-[17px] text-indigo-400">chat_bubble</span>
+          <div class="min-w-0 flex-1">
+            <div class="font-semibold text-primary truncate">1. Conversación</div>
+            <div class="text-[10px] text-secondary truncate">Entrevista & Alcance</div>
+          </div>
+        </button>
 
-        <!-- Apartado 1: Inicio (Conversación) -->
-        <div>
-          <div class="text-[9px] font-mono text-muted-color uppercase tracking-wider px-1 mb-0.5">1. Inicio</div>
-          <button class="nav-step w-full glass-card active flex items-center gap-2 py-1.5 px-2.5 text-left transition-all" data-target="view-chat">
-            <span class="material-symbols-outlined text-[15px] text-indigo-500 dark:text-indigo-400">chat_bubble</span>
-            <div class="min-w-0 flex-1">
-              <div class="font-medium text-[11.5px] truncate text-primary-color">Conversación</div>
-              <div class="text-[9.5px] text-secondary-color truncate">Captura de idea y alcance</div>
-            </div>
-          </button>
-        </div>
+        <!-- Paso 2: Requisitos RF/RNF -->
+        <button class="nav-step-btn w-full vision-card p-2.5 text-left flex items-center gap-2.5 transition-all" data-target="view-reqs">
+          <span class="material-symbols-outlined text-[17px] text-amber-400">checklist</span>
+          <div class="min-w-0 flex-1">
+            <div class="font-semibold text-primary truncate">2. Requisitos</div>
+            <div class="text-[10px] text-secondary truncate">Matriz RF y RNF</div>
+          </div>
+          <span id="badge-reqs-count" class="vision-pill pill-amber text-[9px]">5</span>
+        </button>
 
-        <!-- Apartado 2: Requisitos Recopilados -->
-        <div>
-          <div class="text-[9px] font-mono text-muted-color uppercase tracking-wider px-1 mb-0.5">2. Requisitos</div>
-          <button class="nav-step w-full glass-card flex items-center gap-2 py-1.5 px-2.5 text-left transition-all" data-target="view-reqs">
-            <span class="material-symbols-outlined text-[15px] text-amber-500 dark:text-amber-400">checklist</span>
-            <div class="min-w-0 flex-1">
-              <div class="font-medium text-[11.5px] truncate text-primary-color">Requisitos RF/RNF</div>
-              <div class="text-[9.5px] text-secondary-color truncate">5 requisitos extraídos</div>
-            </div>
-            <span class="pill-tag pill-amber text-[8.5px]">5</span>
-          </button>
-        </div>
+        <!-- Paso 3: Documentación & ADRs -->
+        <button class="nav-step-btn w-full vision-card p-2.5 text-left flex items-center gap-2.5 transition-all" data-target="view-docs">
+          <span class="material-symbols-outlined text-[17px] text-cyan-400">description</span>
+          <div class="min-w-0 flex-1">
+            <div class="font-semibold text-primary truncate">3. Documentos</div>
+            <div class="text-[10px] text-secondary truncate">Actas ADRs & Specs</div>
+          </div>
+          <span id="badge-adrs-count" class="vision-pill pill-cyan text-[9px]">4</span>
+        </button>
 
-        <!-- Apartado 3: Documentación Creada -->
-        <div>
-          <div class="text-[9px] font-mono text-muted-color uppercase tracking-wider px-1 mb-0.5">3. Documentación</div>
-          <button class="nav-step w-full glass-card flex items-center gap-2 py-1.5 px-2.5 text-left transition-all" data-target="view-docs">
-            <span class="material-symbols-outlined text-[15px] text-cyan-500 dark:text-cyan-400">description</span>
-            <div class="min-w-0 flex-1">
-              <div class="font-medium text-[11.5px] truncate text-primary-color">Documentos & ADRs</div>
-              <div class="text-[9.5px] text-secondary-color truncate">Actas y especificaciones</div>
-            </div>
-            <span class="pill-tag pill-cyan text-[8.5px]">4</span>
-          </button>
-        </div>
-
-        <!-- Apartado 4: Modelador & Código -->
-        <div>
-          <div class="text-[9px] font-mono text-muted-color uppercase tracking-wider px-1 mb-0.5">4. Modelador & Código</div>
-          <button class="nav-step w-full glass-card flex items-center gap-2 py-1.5 px-2.5 text-left transition-all" data-target="view-canvas">
-            <span class="material-symbols-outlined text-[15px] text-emerald-500 dark:text-emerald-400">schema</span>
-            <div class="min-w-0 flex-1">
-              <div class="font-medium text-[11.5px] truncate text-primary-color">Canvas & Scripts</div>
-              <div class="text-[9.5px] text-secondary-color truncate">SQL, TS, JSON, Python</div>
-            </div>
-          </button>
-        </div>
+        <!-- Paso 4: Modelador & Scripts -->
+        <button class="nav-step-btn w-full vision-card p-2.5 text-left flex items-center gap-2.5 transition-all" data-target="view-canvas">
+          <span class="material-symbols-outlined text-[17px] text-emerald-400">schema</span>
+          <div class="min-w-0 flex-1">
+            <div class="font-semibold text-primary truncate">4. Modelador & Código</div>
+            <div class="text-[10px] text-secondary truncate">ERD, DDL, TS, Py</div>
+          </div>
+        </button>
 
       </div>
 
-      <!-- Apartado 5: Botón Final de Compilación & Exportación -->
-      <div class="pt-1.5 border-t border-slate-200 dark:border-white/5">
-        <button id="btn-export-modal" class="w-full py-1.5 px-2.5 rounded-[6px] bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all">
-          <span class="material-symbols-outlined text-[15px]">folder_zip</span>
-          Compilar & Exportar
+      <!-- Paso 5: Botón Inferior Anclado de Exportación OKF -->
+      <div class="pt-2 border-t border-white/[0.06]">
+        <button id="btn-open-export" class="vision-btn vision-btn-primary w-full !py-2 justify-center shadow-lg">
+          <span class="material-symbols-outlined text-[16px]">folder_zip</span>
+          Compilar & Exportar OKF
         </button>
       </div>
 
     </aside>
 
-    <!-- PANEL CENTRAL: Workspace / Studio según la sección activa -->
-    <main class="glass-window flex-1 flex flex-col min-w-0 relative overflow-hidden">
+    <!-- PANEL CENTRAL: Workspace / Studio de 4 Vistas Activas (Flex-1) -->
+    <main class="vision-window flex-1 flex flex-col min-w-0 relative overflow-hidden">
 
-      <!-- VISTA 1: INICIO / CONVERSACIÓN (Solo Conversación, limpio y directo) -->
-      <div id="view-chat" class="step-view flex-1 flex flex-col h-full overflow-hidden p-4 gap-2.5">
-        <!-- Encabezado minimalista -->
-        <div class="flex items-center justify-between pb-1.5 border-b border-slate-200 dark:border-white/5 shrink-0">
+      <!-- ==================================================================
+           VISTA 1: CONVERSACIÓN INICIAL (view-chat)
+           ================================================================== -->
+      <div id="view-chat" class="step-view-container flex-1 flex flex-col h-full p-4 gap-3">
+        <!-- Encabezado de la Vista -->
+        <div class="flex items-center justify-between pb-2 border-b border-white/[0.06] shrink-0">
           <div>
-            <h2 class="text-xs font-semibold text-primary-color">Conversación Inicial</h2>
-            <p class="text-[10px] text-secondary-color font-mono">Entrevista de arquitectura para estructurar alcance y entidades.</p>
+            <h2 class="text-xs font-semibold text-primary">Conversación con el Arquitecto de Software</h2>
+            <p class="text-[10.5px] text-secondary font-mono">Extracción guiada de requerimientos, modelo de datos y decisiones técnicas.</p>
           </div>
-          <span class="pill-tag pill-indigo text-[8.5px]">EN CURSO</span>
+          <span class="vision-pill pill-indigo">CONSULTOR ACTIVO</span>
         </div>
 
-        <!-- Historial de Conversación -->
-        <div id="conversation-stream" class="flex-1 overflow-y-auto space-y-2.5 pr-1.5">
-          <!-- Mensaje IA -->
-          <div class="chat-bubble-assistant max-w-xl">
-            <strong>Arquitecto:</strong> Hola. Cuéntame qué software deseas diseñar. Extraeré los Requisitos Funcionales, el Modelo Relacional y las Decisiones Técnicas (ADRs).
+        <!-- Stream de Mensajes -->
+        <div id="chat-stream" class="flex-1 overflow-y-auto space-y-3 pr-1 flex flex-col">
+          <!-- Mensaje Asistente -->
+          <div class="vision-card p-3.5 mr-12 text-xs text-primary/95 border-white/10">
+            <strong class="text-indigo-400 font-mono">Arquitecto DevSculptor:</strong>
+            <p class="mt-1 leading-relaxed">
+              Bienvenido a la sesión de gobernanza técnica. Cuéntame qué componentes o reglas de negocio deseas modelar. 
+              A partir de nuestra conversación sintetizaré los Requisitos IEEE-830, el esquema relacional normalizado y las actas de decisión (ADRs).
+            </p>
           </div>
 
           <!-- Mensaje Usuario -->
-          <div class="chat-bubble-user">
-            Quiero una plataforma donde los desarrolladores definan sus modelos relacionales y requisitos antes de programar con IA.
+          <div class="vision-card p-3 self-end ml-12 bg-indigo-600/20 border-indigo-500/30 text-xs text-primary">
+            Necesitamos que los proyectos de los usuarios tengan aislamiento estricto y que las tablas registren cambios automáticamente en un log de auditoría.
           </div>
 
-          <!-- Mensaje IA -->
-          <div class="chat-bubble-assistant max-w-xl">
-            <strong>Arquitecto:</strong> Entendido. He extraído 2 requisitos y 1 decisión:
-            <ul class="list-disc list-inside mt-1 space-y-0.5 text-[11px] text-secondary-color">
-              <li><span class="font-mono text-indigo-600 dark:text-indigo-400 font-medium">RF-01:</span> Aislamiento de proyectos y autenticación de usuarios.</li>
-              <li><span class="font-mono text-indigo-600 dark:text-indigo-400 font-medium">RF-02:</span> Canvas de modelado visual para PostgreSQL.</li>
-              <li><span class="font-mono text-cyan-600 dark:text-cyan-400 font-medium">ADR-01:</span> Arquitectura en Monolito Modular Layered MVC.</li>
-            </ul>
-            <div class="text-[9.5px] text-muted-color mt-1.5 font-mono">Actualizado en Requisitos, Documentos y Canvas.</div>
+          <!-- Mensaje Asistente -->
+          <div class="vision-card p-3.5 mr-12 text-xs text-primary/95 border-white/10">
+            <strong class="text-indigo-400 font-mono">Arquitecto DevSculptor:</strong>
+            <p class="mt-1 leading-relaxed">
+              Comprendido. He parametrizado formalmente dos especificaciones de ingeniería:
+            </p>
+            <div class="mt-2 space-y-1.5 font-mono text-[11px]">
+              <div class="flex items-center gap-2 text-indigo-400">
+                <span>[RF-02]</span>
+                <span class="text-primary font-sans font-medium">Aislamiento Horizontal por user_id (Respuesta 404 en consultas ajenas).</span>
+              </div>
+              <div class="flex items-center gap-2 text-cyan-400">
+                <span>[RF-03]</span>
+                <span class="text-primary font-sans font-medium">Trigger fn_audit_canvas_entities hacia tabla audit_logs.</span>
+              </div>
+            </div>
+            <p class="mt-2 text-[10px] text-muted font-mono">Artefactos sincronizados en Requisitos, ADRs y Canvas ERD.</p>
           </div>
         </div>
 
-        <!-- Chips de sugerencia rápida (esquinas de 5px) -->
-        <div class="flex items-center gap-1.5 overflow-x-auto py-0.5 shrink-0">
-          <button class="chat-quick-prompt text-[10px] py-1 px-2 rounded-[5px] bg-slate-200/60 dark:bg-white/5 hover:bg-slate-300/80 dark:hover:bg-white/10 text-secondary-color transition-colors" data-msg="Añadir tabla de audit_logs para registrar cambios de requisitos">
-            + Tabla audit_logs
-          </button>
-          <button class="chat-quick-prompt text-[10px] py-1 px-2 rounded-[5px] bg-slate-200/60 dark:bg-white/5 hover:bg-slate-300/80 dark:hover:bg-white/10 text-secondary-color transition-colors" data-msg="Definir requisito no funcional de latencia menor a 500ms">
-            + RNF Latencia &lt; 500ms
-          </button>
-          <button class="chat-quick-prompt text-[10px] py-1 px-2 rounded-[5px] bg-slate-200/60 dark:bg-white/5 hover:bg-slate-300/80 dark:hover:bg-white/10 text-secondary-color transition-colors" data-msg="¿Cumple el modelo actual con normalización 3FN?">
+        <!-- Chips Flotantes de Sugerencia Rápida -->
+        <div class="flex items-center gap-2 overflow-x-auto py-1 shrink-0">
+          <button class="chat-quick-chip vision-btn text-[10.5px] !py-1" data-query="Validar integridad 3FN de las tablas del proyecto">
             🔍 Validar 3FN
           </button>
-        </div>
-
-        <!-- Entrada de Chat Minimalista (Esquinas de 6px) -->
-        <div class="shrink-0 pt-0.5">
-          <form id="chat-input-form" class="relative flex items-center">
-            <input id="chat-user-msg" class="apple-input pr-9 text-xs" placeholder="Escribe detalles del proyecto o nuevas reglas..." type="text"/>
-            <button type="submit" class="absolute right-1 w-6 h-6 rounded-[5px] bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center transition-colors">
-              <span class="material-symbols-outlined text-[14px]">arrow_upward</span>
-            </button>
-          </form>
-        </div>
-      </div>
-
-      <!-- VISTA 2: REQUISITOS RECOPILADOS (Matriz Minimalista) -->
-      <div id="view-reqs" class="step-view hidden flex-1 flex flex-col h-full overflow-hidden p-4 gap-2.5">
-        <div class="flex items-center justify-between pb-1.5 border-b border-slate-200 dark:border-white/5 shrink-0">
-          <div>
-            <h2 class="text-xs font-semibold text-primary-color">Requisitos Recopilados</h2>
-            <p class="text-[10px] text-secondary-color font-mono">Extraídos automáticamente de la conversación.</p>
-          </div>
-          <button class="apple-btn text-xs">
-            <span class="material-symbols-outlined text-[13px]">add</span> Nuevo RF
+          <button class="chat-quick-chip vision-btn text-[10.5px] !py-1" data-query="Añadir regla no funcional de latencia menor a 500ms">
+            ⚡ RNF Latencia &lt; 500ms
+          </button>
+          <button class="chat-quick-chip vision-btn text-[10.5px] !py-1" data-query="Verificar trigger de auditoría y parámetro search_path">
+            🛡️ Auditar Triggers
           </button>
         </div>
 
-        <div class="flex-1 overflow-y-auto space-y-1.5 pr-1.5">
-          <div class="glass-card p-2.5 flex items-center justify-between">
-            <div>
-              <div class="flex items-center gap-1.5 mb-0.5">
-                <span class="font-mono text-xs text-indigo-600 dark:text-indigo-400 font-bold">RF-01</span>
-                <span class="pill-tag pill-emerald text-[8px]">ACTIVO</span>
-                <span class="pill-tag pill-amber text-[8px]">ALTA</span>
-              </div>
-              <div class="text-xs font-medium text-primary-color">Autenticación Segura y Sesión JWT</div>
-            </div>
-            <span class="text-[10px] font-mono text-muted-color">users</span>
-          </div>
-
-          <div class="glass-card p-2.5 flex items-center justify-between">
-            <div>
-              <div class="flex items-center gap-1.5 mb-0.5">
-                <span class="font-mono text-xs text-indigo-600 dark:text-indigo-400 font-bold">RF-02</span>
-                <span class="pill-tag pill-emerald text-[8px]">ACTIVO</span>
-                <span class="pill-tag pill-amber text-[8px]">ALTA</span>
-              </div>
-              <div class="text-xs font-medium text-primary-color">Aislamiento Horizontal de Proyectos</div>
-            </div>
-            <span class="text-[10px] font-mono text-muted-color">projects</span>
-          </div>
-
-          <div class="glass-card p-2.5 flex items-center justify-between">
-            <div>
-              <div class="flex items-center gap-1.5 mb-0.5">
-                <span class="font-mono text-xs text-indigo-600 dark:text-indigo-400 font-bold">RF-03</span>
-                <span class="pill-tag pill-emerald text-[8px]">ACTIVO</span>
-                <span class="pill-tag pill-amber text-[8px]">MEDIA</span>
-              </div>
-              <div class="text-xs font-medium text-primary-color">Validación Zod SSOT en Capa de Negocio</div>
-            </div>
-            <span class="text-[10px] font-mono text-muted-color">schemas</span>
-          </div>
-
-          <div class="glass-card p-2.5 flex items-center justify-between">
-            <div>
-              <div class="flex items-center gap-1.5 mb-0.5">
-                <span class="font-mono text-xs text-cyan-600 dark:text-cyan-400 font-bold">RNF-01</span>
-                <span class="pill-tag pill-cyan text-[8px]">VERIFICADO</span>
-                <span class="pill-tag pill-amber text-[8px]">MEDIA</span>
-              </div>
-              <div class="text-xs font-medium text-primary-color">Latencia de Respuesta API &lt; 500ms</div>
-            </div>
-            <span class="text-[10px] font-mono text-muted-color">pg.Pool</span>
-          </div>
-
-          <div class="glass-card p-2.5 flex items-center justify-between">
-            <div>
-              <div class="flex items-center gap-1.5 mb-0.5">
-                <span class="font-mono text-xs text-cyan-600 dark:text-cyan-400 font-bold">RNF-02</span>
-                <span class="pill-tag pill-cyan text-[8px]">HARDENED</span>
-                <span class="pill-tag pill-amber text-[8px]">CRÍTICA</span>
-              </div>
-              <div class="text-xs font-medium text-primary-color">Blindaje RLS y Consultas Parametrizadas</div>
-            </div>
-            <span class="text-[10px] font-mono text-muted-color">Supabase RLS</span>
-          </div>
-        </div>
+        <!-- Entrada de Texto de Chat Minimalista -->
+        <form id="chat-form" class="relative flex items-center shrink-0 pt-1">
+          <input id="chat-input" class="vision-input pr-10 text-xs" placeholder="Describe un nuevo módulo, tabla relacional o regla de negocio..." type="text"/>
+          <button type="submit" class="absolute right-1.5 w-7 h-7 rounded-[6px] bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center transition-transform active:scale-95">
+            <span class="material-symbols-outlined text-[15px]">arrow_upward</span>
+          </button>
+        </form>
       </div>
 
-      <!-- VISTA 3: DOCUMENTACIÓN CREADA EN LA APP -->
-      <div id="view-docs" class="step-view hidden flex-1 flex flex-col h-full overflow-hidden p-4 gap-2.5">
-        <div class="flex items-center justify-between pb-1.5 border-b border-slate-200 dark:border-white/5 shrink-0">
+      <!-- ==================================================================
+           VISTA 2: MATRIZ DE REQUISITOS (view-reqs)
+           ================================================================== -->
+      <div id="view-reqs" class="step-view-container hidden flex-1 flex flex-col h-full p-4 gap-3">
+        <!-- Barra Superior de Requisitos -->
+        <div class="flex items-center justify-between pb-2 border-b border-white/[0.06] shrink-0">
           <div>
-            <h2 class="text-xs font-semibold text-primary-color">Documentos Generados</h2>
-            <p class="text-[10px] text-secondary-color font-mono">Actas de decisiones de arquitectura (ADRs) y contratos de API.</p>
+            <h2 class="text-xs font-semibold text-primary">Matriz de Requisitos Funcionales y No Funcionales</h2>
+            <p class="text-[10.5px] text-secondary font-mono">Parametrizados bajo formato IEEE-830 y validados con Zod.</p>
           </div>
-          <button class="apple-btn text-xs">
-            <span class="material-symbols-outlined text-[13px]">add</span> Nueva Acta
+          <button id="btn-open-new-req" class="vision-btn vision-btn-primary text-xs">
+            <span class="material-symbols-outlined text-xs">add</span> Nuevo Requisito
           </button>
         </div>
 
-        <div class="flex-1 overflow-y-auto space-y-1.5 pr-1.5">
-          <div class="glass-card p-2.5 doc-card" data-title="ADR-01: Monolito Modular vs Microservicios" data-content="Se consolida un Monolito Modular Layered MVC para el MVP. Evita sobrecarga de red y fallos distribuidos manteniendo separación estricta de dominios.">
-            <div class="flex items-center justify-between mb-1">
-              <span class="font-mono text-xs text-cyan-600 dark:text-cyan-400 font-bold">ADR-01</span>
-              <span class="pill-tag pill-emerald text-[8px]">APROBADA</span>
-            </div>
-            <div class="text-xs font-semibold text-primary-color mb-0.5">Monolito Modular vs Microservicios</div>
-            <p class="text-[10.5px] text-secondary-color truncate">Consolidación en módulos desacoplados con arquitectura MVC.</p>
-          </div>
+        <!-- Filtros Rápidos -->
+        <div class="flex items-center gap-2 shrink-0">
+          <input id="search-req-input" class="vision-input !py-1 text-xs max-w-xs" placeholder="Buscar por código, título o descripción..."/>
+          <select id="filter-req-type" class="vision-btn text-xs !py-1 bg-black/20">
+            <option value="ALL">Todos los tipos</option>
+            <option value="RF">Solo RF (Funcionales)</option>
+            <option value="RNF">Solo RNF (No Funcionales)</option>
+          </select>
+        </div>
 
-          <div class="glass-card p-2.5 doc-card" data-title="ADR-02: Acceso Nativo pg.Pool vs ORMs" data-content="Uso de pg nativo con connection pool centralizado. Facilita ejecución de triggers nativos, funciones PL/pgSQL y observabilidad directa sin capas intermedias.">
-            <div class="flex items-center justify-between mb-1">
-              <span class="font-mono text-xs text-cyan-600 dark:text-cyan-400 font-bold">ADR-02</span>
-              <span class="pill-tag pill-emerald text-[8px]">APROBADA</span>
-            </div>
-            <div class="text-xs font-semibold text-primary-color mb-0.5">Acceso Nativo pg.Pool vs ORMs</div>
-            <p class="text-[10.5px] text-secondary-color truncate">Driver oficial pg con pool singleton para máximo control de SQL.</p>
-          </div>
-
-          <div class="glass-card p-2.5 doc-card" data-title="ADR-04: Zod como Fuente Única de Verdad (SSOT)" data-content="Definición de tipos y validación de esquemas mediante Zod. Garantiza consistencia total entre peticiones HTTP y modelos de dominio.">
-            <div class="flex items-center justify-between mb-1">
-              <span class="font-mono text-xs text-cyan-600 dark:text-cyan-400 font-bold">ADR-04</span>
-              <span class="pill-tag pill-emerald text-[8px]">APROBADA</span>
-            </div>
-            <div class="text-xs font-semibold text-primary-color mb-0.5">Zod como Fuente Única de Verdad</div>
-            <p class="text-[10.5px] text-secondary-color truncate">Validación en tiempo de ejecución y tipos inferidos para el backend.</p>
-          </div>
-
-          <div class="glass-card p-2.5 doc-card" data-title="SPEC-01: Especificación OpenAPI 3.1" data-content="Contrato formal de endpoints REST para Auth, Projects y Requirements con respuesta unificada ApiResponse.">
-            <div class="flex items-center justify-between mb-1">
-              <span class="font-mono text-xs text-indigo-600 dark:text-indigo-400 font-bold">SPEC-01</span>
-              <span class="pill-tag pill-cyan text-[8px]">GENERADA</span>
-            </div>
-            <div class="text-xs font-semibold text-primary-color mb-0.5">Contrato API REST OpenAPI 3.1</div>
-            <p class="text-[10.5px] text-secondary-color truncate">Definición de rutas, schemas JSON y códigos HTTP estándar.</p>
-          </div>
+        <!-- Lista Contenedor de Requisitos -->
+        <div id="reqs-list-container" class="flex-1 overflow-y-auto space-y-2 pr-1">
+          <!-- Renderizado dinámico desde app.js -->
         </div>
       </div>
 
-      <!-- VISTA 4: CANVAS ERD & SALIDAS DE SCRIPTS -->
-      <div id="view-canvas" class="step-view hidden flex-1 flex flex-col h-full overflow-hidden relative">
+      <!-- ==================================================================
+           VISTA 3: DOCUMENTACIÓN & ADRS (view-docs)
+           ================================================================== -->
+      <div id="view-docs" class="step-view-container hidden flex-1 flex flex-col h-full p-4 gap-3">
+        <div class="flex items-center justify-between pb-2 border-b border-white/[0.06] shrink-0">
+          <div>
+            <h2 class="text-xs font-semibold text-primary">Registro de Decisiones de Arquitectura (ADRs)</h2>
+            <p class="text-[10.5px] text-secondary font-mono">Trazabilidad técnica inmutable con máquina de estados finitos.</p>
+          </div>
+          <span class="vision-pill pill-cyan">GOBERNANZA FORMAL</span>
+        </div>
+
+        <!-- Lista de ADRs -->
+        <div id="adrs-list-container" class="flex-1 overflow-y-auto space-y-2.5 pr-1">
+          <!-- Renderizado dinámico desde app.js -->
+        </div>
+      </div>
+
+      <!-- ==================================================================
+           VISTA 4: CANVAS ERD & SALIDAS DE SCRIPTS (view-canvas)
+           ================================================================== -->
+      <div id="view-canvas" class="step-view-container hidden flex-1 flex flex-col h-full relative overflow-hidden">
         
-        <!-- Pestañas de Formato de Salida (Código / Gráfico) -->
-        <div class="h-9 px-2.5 border-b border-slate-200 dark:border-white/5 flex items-center justify-between bg-slate-100/60 dark:bg-black/20 shrink-0 z-20">
+        <!-- Pestañas de Formato de Salida -->
+        <div class="h-10 px-3 border-b border-white/[0.06] flex items-center justify-between bg-black/20 shrink-0 z-20">
           <div class="flex items-center gap-1">
-            <button id="subtab-erd" class="canvas-subtab apple-btn !py-0.5 !px-2 active bg-indigo-600 !text-white text-[10.5px]">
-              <span class="material-symbols-outlined text-[12px]">schema</span> Lienzo Gráfico
+            <button class="canvas-subtab vision-btn vision-btn-primary !py-1 !px-2.5 text-[11px]" data-tab="erd">
+              <span class="material-symbols-outlined text-[13px]">schema</span> Lienzo ERD
             </button>
-            <button id="subtab-sql" class="canvas-subtab apple-btn !py-0.5 !px-2 text-[10.5px]">
-              <span class="material-symbols-outlined text-[12px]">database</span> PostgreSQL DDL
+            <button class="canvas-subtab vision-btn !py-1 !px-2.5 text-[11px]" data-tab="sql">
+              <span class="material-symbols-outlined text-[13px]">database</span> PostgreSQL DDL
             </button>
-            <button id="subtab-ts" class="canvas-subtab apple-btn !py-0.5 !px-2 text-[10.5px]">
-              <span class="material-symbols-outlined text-[12px]">code</span> TypeScript DTOs
+            <button class="canvas-subtab vision-btn !py-1 !px-2.5 text-[11px]" data-tab="ts">
+              <span class="material-symbols-outlined text-[13px]">code</span> TypeScript DTOs
             </button>
-            <button id="subtab-json" class="canvas-subtab apple-btn !py-0.5 !px-2 text-[10.5px]">
-              <span class="material-symbols-outlined text-[12px]">data_object</span> JSON Schema
+            <button class="canvas-subtab vision-btn !py-1 !px-2.5 text-[11px]" data-tab="json">
+              <span class="material-symbols-outlined text-[13px]">data_object</span> JSON Schema
             </button>
-            <button id="subtab-py" class="canvas-subtab apple-btn !py-0.5 !px-2 text-[10.5px]">
-              <span class="material-symbols-outlined text-[12px]">terminal</span> Python Pydantic
+            <button class="canvas-subtab vision-btn !py-1 !px-2.5 text-[11px]" data-tab="py">
+              <span class="material-symbols-outlined text-[13px]">terminal</span> Python Pydantic
+            </button>
+            <button class="canvas-subtab vision-btn !py-1 !px-2.5 text-[11px]" data-tab="audit">
+              <span class="material-symbols-outlined text-[13px]">history</span> Auditoría Triggers
             </button>
           </div>
 
-          <!-- Acción rápida copiar código -->
-          <button id="btn-copy-script" class="apple-btn !py-0.5 !px-2 text-[10.5px] font-mono">
-            <span class="material-symbols-outlined text-[12px]">content_copy</span> Copiar
+          <button id="btn-copy-code" class="vision-btn !py-1 !px-2.5 text-[11px] font-mono">
+            <span class="material-symbols-outlined text-[13px]">content_copy</span> Copiar Código
           </button>
         </div>
 
-        <!-- Modo Gráfico: Canvas ERD con Tablas Arrastrables -->
-        <div id="canvas-visual-area" class="flex-1 canvas-dot-grid relative overflow-hidden cursor-grab active:cursor-grabbing">
-          <!-- Conectores Bezier SVG -->
-          <svg id="svg-connectors" class="absolute inset-0 w-full h-full pointer-events-none z-0">
-            <path id="conn-users-projects" class="bezier-connector" d="M 260 130 C 340 130, 350 150, 430 150"></path>
-          </svg>
+        <!-- Área 1: Lienzo Gráfico ERD -->
+        <div id="canvas-visual-area" class="flex-1 canvas-grid-bg relative overflow-hidden select-none">
+          <!-- Conectores Bezier SVG Dinámicos -->
+          <svg id="svg-connectors" class="absolute inset-0 w-full h-full pointer-events-none z-0"></svg>
 
-          <!-- Nodos de Tablas Arrastrables (esquinas 7px) -->
-          <div id="canvas-content" class="absolute inset-0 w-full h-full origin-top-left">
-            <!-- Tabla: users -->
-            <div id="node-users" class="erd-node" style="left: 30px; top: 50px;">
-              <div class="erd-node-header">
-                <span class="font-mono text-xs font-bold text-primary-color">users</span>
-                <span class="pill-tag pill-emerald text-[7.5px]">RLS</span>
-              </div>
-              <div class="erd-node-body">
-                <div class="erd-row text-amber-500 dark:text-amber-400">
-                  <span>🔑 id</span>
-                  <span class="opacity-60">UUID PK</span>
-                </div>
-                <div class="erd-row text-secondary-color">
-                  <span>email</span>
-                  <span class="opacity-50">VARCHAR</span>
-                </div>
-                <div class="erd-row text-secondary-color">
-                  <span>password_hash</span>
-                  <span class="opacity-50">VARCHAR</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Tabla: projects -->
-            <div id="node-projects" class="erd-node selected" style="left: 430px; top: 70px;">
-              <div class="erd-node-header">
-                <span class="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400">projects</span>
-                <span class="pill-tag pill-indigo text-[7.5px]">FK</span>
-              </div>
-              <div class="erd-node-body">
-                <div class="erd-row text-amber-500 dark:text-amber-400">
-                  <span>🔑 id</span>
-                  <span class="opacity-60">UUID PK</span>
-                </div>
-                <div class="erd-row text-cyan-600 dark:text-cyan-400">
-                  <span>🔗 user_id</span>
-                  <span class="opacity-80">FK → users</span>
-                </div>
-                <div class="erd-row text-secondary-color">
-                  <span>name</span>
-                  <span class="opacity-50">VARCHAR</span>
-                </div>
-              </div>
-            </div>
+          <!-- Nodos de Tablas Arrastrables -->
+          <div id="canvas-content-area" class="absolute inset-0 w-full h-full origin-top-left">
+            <!-- Nodos renderizados por app.js -->
           </div>
 
-          <!-- Dock de Zoom Flotante (Esquinas 6px) -->
-          <div class="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-20">
-            <div class="glass-window !flex-row !rounded-[6px] !py-0.5 !px-2 items-center gap-1 shadow-sm">
-              <button id="btn-zoom-out" class="apple-btn !p-0.5 !rounded-[4px] text-[12px]" title="Alejar">
-                <span class="material-symbols-outlined text-[12px]">remove</span>
+          <!-- Dock de Zoom Flotante visionOS -->
+          <div class="absolute bottom-3 left-1/2 -translate-x-1/2 z-20">
+            <div class="vision-dock">
+              <button id="btn-zoom-out" class="vision-btn vision-btn-icon text-xs" title="Alejar">
+                <span class="material-symbols-outlined text-xs">remove</span>
               </button>
-              <span id="zoom-indicator" class="font-mono text-[10px] text-secondary-color px-1">100%</span>
-              <button id="btn-zoom-in" class="apple-btn !p-0.5 !rounded-[4px] text-[12px]" title="Acercar">
-                <span class="material-symbols-outlined text-[12px]">add</span>
+              <span id="zoom-val" class="font-mono text-[10.5px] text-secondary px-1">100%</span>
+              <button id="btn-zoom-in" class="vision-btn vision-btn-icon text-xs" title="Acercar">
+                <span class="material-symbols-outlined text-xs">add</span>
               </button>
             </div>
           </div>
         </div>
 
-        <!-- Modo Código: Área de Salidas de Scripts Formateadas -->
-        <div id="canvas-code-area" class="hidden flex-1 overflow-auto p-3 bg-slate-50 dark:bg-[#070a10] font-mono text-xs text-slate-800 dark:text-slate-200 leading-relaxed border-t border-slate-200 dark:border-white/5">
-          <pre id="code-output" class="whitespace-pre select-text">-- Cargando salida de script...</pre>
+        <!-- Área 2: Salida de Scripts Formateada -->
+        <div id="canvas-code-area" class="hidden flex-1 overflow-auto p-4 font-mono text-xs text-primary leading-relaxed bg-[#0b0f19]">
+          <pre id="code-output-text" class="whitespace-pre select-text"></pre>
+        </div>
+
+        <!-- Área 3: Visor de Historial de Auditoría -->
+        <div id="canvas-audit-area" class="hidden flex-1 overflow-auto p-4 bg-black/30">
+          <div class="vision-card overflow-hidden">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="border-b border-white/[0.08] text-muted font-mono text-[10px]">
+                  <th class="p-2">HORA</th>
+                  <th class="p-2">ACCIÓN</th>
+                  <th class="p-2">TABLA</th>
+                  <th class="p-2">USUARIO SESIÓN</th>
+                  <th class="p-2">PAYLOAD (TRIGGER)</th>
+                </tr>
+              </thead>
+              <tbody id="audit-table-body">
+                <!-- Filas de auditoría -->
+              </tbody>
+            </table>
+          </div>
         </div>
 
       </div>
 
     </main>
 
-    <!-- PANEL DERECHO: Copiloto IA (NotebookLM Metodológico, Compacto) -->
-    <aside class="glass-window w-[250px] shrink-0 flex flex-col p-2.5 gap-2">
-      <div class="flex items-center justify-between pb-1 border-b border-slate-200 dark:border-white/5">
-        <div class="flex items-center gap-1.5">
-          <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(56,189,248,0.8)]"></span>
-          <span class="font-semibold text-xs text-primary-color">Copiloto</span>
+    <!-- PANEL DERECHO: Copiloto & Inspector de Contexto (260px) -->
+    <aside class="vision-window w-[260px] shrink-0 flex flex-col p-3 gap-3">
+      
+      <div class="flex items-center justify-between pb-1 border-b border-white/[0.06]">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(56,189,248,0.8)]"></span>
+          <span class="font-semibold text-xs text-primary">Copiloto</span>
         </div>
-        <span class="pill-tag pill-cyan text-[8px]">ACTIVO</span>
+        <span class="vision-pill pill-cyan text-[8.5px]">ACTIVO</span>
       </div>
 
-      <!-- Métricas del Motor -->
-      <div class="grid grid-cols-2 gap-1.5 text-center font-mono">
-        <div class="glass-card p-1.5">
-          <div class="text-[8px] text-muted-color">NORMALIZACIÓN</div>
-          <div class="text-xs font-bold text-emerald-600 dark:text-emerald-400">100%</div>
-          <div class="text-[7.5px] text-muted-color">3FN Estricta</div>
+      <!-- Tarjeta de Maturity Index (Cálculo equivalente al Stored Procedure) -->
+      <div class="vision-card p-3 space-y-2 text-center">
+        <div class="text-[9px] font-mono text-muted uppercase tracking-wider">Índice de Madurez (SP)</div>
+        <div id="maturity-gauge-value" class="text-2xl font-bold font-mono text-indigo-400">100%</div>
+        <div class="w-full h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+          <div id="maturity-progress-bar" class="h-full bg-gradient-to-r from-indigo-500 to-cyan-400 transition-all duration-300" style="width: 100%;"></div>
         </div>
-        <div class="glass-card p-1.5">
-          <div class="text-[8px] text-muted-color">SEGURIDAD</div>
-          <div class="text-xs font-bold text-cyan-600 dark:text-cyan-400">6/6</div>
-          <div class="text-[7.5px] text-muted-color">Políticas RLS</div>
+        <div class="text-[9px] text-muted font-mono flex items-center justify-between">
+          <span>0% Caos</span>
+          <span>100% Blindado</span>
         </div>
       </div>
 
-      <!-- Sugerencias Contextuales -->
-      <div class="flex-1 overflow-y-auto space-y-1 text-xs">
-        <div class="text-[9px] font-mono text-muted-color uppercase px-1">Consultas Rápidas</div>
+      <!-- Métricas Clave de Persistencia -->
+      <div class="grid grid-cols-2 gap-2 text-center font-mono text-xs">
+        <div class="vision-card p-2">
+          <div class="text-[8px] text-muted">NORMALIZACIÓN</div>
+          <div class="text-sm font-bold text-emerald-400">3FN</div>
+          <div class="text-[7.5px] text-muted">Sin duplicación</div>
+        </div>
+        <div class="vision-card p-2">
+          <div class="text-[8px] text-muted">POLÍTICAS RLS</div>
+          <div class="text-sm font-bold text-cyan-400">6 / 6</div>
+          <div class="text-[7.5px] text-muted">Cloud Seguro</div>
+        </div>
+      </div>
+
+      <!-- Acciones de Inspección Rápida -->
+      <div class="flex-1 overflow-y-auto space-y-1.5 text-xs pr-0.5">
+        <div class="text-[9.5px] font-mono text-muted uppercase px-1">Acciones de Calidad</div>
         
-        <button class="copilot-chip w-full text-left p-1.5 glass-card rounded-[6px] text-[10.5px] hover:border-indigo-400 transition-all" data-q="¿Hay inconsistencias entre RF-01 y la tabla users?">
-          🔍 Validar RF-01 con DDL
+        <button class="vision-card p-2 w-full text-left text-[10.5px] text-primary hover:border-indigo-400/50 flex items-center gap-2 transition-all">
+          <span class="material-symbols-outlined text-sm text-cyan-400">verified</span> Validar RF con Esquema DDL
         </button>
 
-        <button class="copilot-chip w-full text-left p-1.5 glass-card rounded-[6px] text-[10.5px] hover:border-indigo-400 transition-all" data-q="Verificar estado de los triggers de auditoría en Supabase">
-          🛡️ Auditar triggers RLS
+        <button class="vision-card p-2 w-full text-left text-[10.5px] text-primary hover:border-indigo-400/50 flex items-center gap-2 transition-all">
+          <span class="material-symbols-outlined text-sm text-emerald-400">lock</span> Inspeccionar Políticas RLS
         </button>
 
-        <button class="copilot-chip w-full text-left p-1.5 glass-card rounded-[6px] text-[10.5px] hover:border-indigo-400 transition-all" data-q="Compilar Prompt Bundle en formato OKF">
-          📦 Preparar paquete LLM
+        <button class="vision-card p-2 w-full text-left text-[10.5px] text-primary hover:border-indigo-400/50 flex items-center gap-2 transition-all">
+          <span class="material-symbols-outlined text-sm text-amber-400">insights</span> Métricas de Cobertura
         </button>
       </div>
 
       <!-- Estado Metodológico -->
-      <div class="p-2 glass-card text-[10.5px] space-y-0.5">
-        <div class="font-semibold text-indigo-600 dark:text-indigo-400 flex items-center gap-1 text-[10.5px]">
-          <span class="material-symbols-outlined text-[12px]">verified</span> Pre-Código OK
+      <div class="p-2.5 vision-card text-[11px] space-y-1 border-emerald-500/20 bg-emerald-500/[0.02]">
+        <div class="font-semibold text-emerald-400 flex items-center gap-1 text-[11px]">
+          <span class="material-symbols-outlined text-[13px]">task_alt</span> Pre-Código Verificado
         </div>
-        <p class="text-secondary-color leading-tight text-[10px]">
-          Arquitectura normalizada. Lista para exportación a Claude o Cursor.
+        <p class="text-secondary leading-tight text-[10px]">
+          Diseño listo para ser inyectado como Prompt Bundle en Cursor o Claude.
         </p>
       </div>
+
     </aside>
 
   </div>
 
-  <!-- 3. Modal de Compilación & Exportación OKF (Esquinas mínimas 8px) -->
-  <div id="export-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="glass-window max-w-md w-full p-4 gap-3 shadow-2xl !rounded-[8px]">
-      <div class="flex items-center justify-between pb-1.5 border-b border-slate-200 dark:border-white/10">
-        <div class="flex items-center gap-1.5">
-          <span class="material-symbols-outlined text-indigo-500 text-[18px]">folder_zip</span>
-          <h3 class="font-semibold text-xs text-primary-color">Compilar y Exportar Proyecto</h3>
+  <!-- ========================================================================
+       3. PANTALLA B: HUB DE PROYECTOS (#screen-hub)
+       ======================================================================== -->
+  <div id="screen-hub" class="hidden flex-1 min-h-0 flex flex-col gap-4 max-w-6xl mx-auto w-full p-2 z-10 fade-in">
+    
+    <!-- Encabezado del Hub -->
+    <div class="vision-window p-5 flex items-center justify-between">
+      <div>
+        <h1 class="text-lg font-bold text-primary">Portafolio de Arquitectura de Software</h1>
+        <p class="text-xs text-secondary mt-0.5">Espacio de gobernanza y trazabilidad técnica multi-inquilino.</p>
+      </div>
+      <button id="btn-open-new-project" class="vision-btn vision-btn-primary">
+        <span class="material-symbols-outlined text-xs">add</span> Nuevo Proyecto
+      </button>
+    </div>
+
+    <!-- Grid de Proyectos -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      
+      <!-- Proyecto 1: DevSculptor Core MVP -->
+      <div class="vision-window p-4 flex flex-col justify-between hover:border-indigo-500/40 transition-all cursor-pointer" onclick="switchScreen('studio')">
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="vision-pill pill-indigo">ACTIVO</span>
+            <span class="text-[10px] font-mono text-muted">v1.0.0-rc</span>
+          </div>
+          <h3 class="font-bold text-sm text-primary">DevSculptor Core MVP</h3>
+          <p class="text-xs text-secondary leading-relaxed line-clamp-2">
+            Plataforma de gobernanza técnica pre-coding, diagramado relacional y compilación documental OKF.
+          </p>
         </div>
-        <button id="btn-close-modal" class="apple-btn !p-1 !rounded-[4px]">
-          <span class="material-symbols-outlined text-[14px]">close</span>
+
+        <div class="pt-4 mt-4 border-t border-white/[0.06] space-y-2">
+          <div class="flex items-center justify-between text-[11px] font-mono">
+            <span class="text-muted">Madurez Técnica:</span>
+            <span id="hub-maturity-score" class="font-bold text-indigo-400">100%</span>
+          </div>
+          <div class="flex items-center justify-between text-[10px] text-secondary font-mono">
+            <span>5 Requisitos</span>
+            <span>4 Tablas</span>
+            <span>4 ADRs</span>
+          </div>
+          <button class="vision-btn w-full !py-1.5 justify-center mt-1">
+            Abrir Workspace
+          </button>
+        </div>
+      </div>
+
+      <!-- Proyecto 2: Fintech Core Gateway -->
+      <div class="vision-window p-4 flex flex-col justify-between hover:border-indigo-500/40 transition-all opacity-80">
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="vision-pill pill-cyan">DISEÑO</span>
+            <span class="text-[10px] font-mono text-muted">v0.4.0</span>
+          </div>
+          <h3 class="font-bold text-sm text-primary">Fintech Transaction Gateway</h3>
+          <p class="text-xs text-secondary leading-relaxed line-clamp-2">
+            API REST con PostgreSQL para procesamiento de micropagos y balances con auditoría de ledger.
+          </p>
+        </div>
+
+        <div class="pt-4 mt-4 border-t border-white/[0.06] space-y-2">
+          <div class="flex items-center justify-between text-[11px] font-mono">
+            <span class="text-muted">Madurez Técnica:</span>
+            <span class="font-bold text-amber-400">65%</span>
+          </div>
+          <div class="flex items-center justify-between text-[10px] text-secondary font-mono">
+            <span>8 Requisitos</span>
+            <span>6 Tablas</span>
+            <span>1 ADR</span>
+          </div>
+          <button class="vision-btn w-full !py-1.5 justify-center mt-1">
+            Abrir Workspace
+          </button>
+        </div>
+      </div>
+
+      <!-- Proyecto 3: Logistics IoT Stream -->
+      <div class="vision-window p-4 flex flex-col justify-between hover:border-indigo-500/40 transition-all opacity-70">
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="vision-pill pill-amber">INICIAL</span>
+            <span class="text-[10px] font-mono text-muted">v0.1.0</span>
+          </div>
+          <h3 class="font-bold text-sm text-primary">Logistics Telemetry Fleet</h3>
+          <p class="text-xs text-secondary leading-relaxed line-clamp-2">
+            Captura de eventos GPS y telemetría de transporte con series de tiempo.
+          </p>
+        </div>
+
+        <div class="pt-4 mt-4 border-t border-white/[0.06] space-y-2">
+          <div class="flex items-center justify-between text-[11px] font-mono">
+            <span class="text-muted">Madurez Técnica:</span>
+            <span class="font-bold text-rose-400">25%</span>
+          </div>
+          <div class="flex items-center justify-between text-[10px] text-secondary font-mono">
+            <span>2 Requisitos</span>
+            <span>2 Tablas</span>
+            <span>0 ADRs</span>
+          </div>
+          <button class="vision-btn w-full !py-1.5 justify-center mt-1">
+            Abrir Workspace
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ========================================================================
+       4. MODALES VISIONOS
+       ======================================================================== -->
+
+  <!-- Modal 1: Compilar & Exportar OKF Bundle -->
+  <div id="export-modal" class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="vision-window max-w-md w-full p-5 flex flex-col gap-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-2 border-b border-white/[0.08]">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-indigo-400 text-lg">folder_zip</span>
+          <h3 class="font-semibold text-xs text-primary">Compilar y Exportar Paquete OKF</h3>
+        </div>
+        <button id="btn-close-export" class="vision-btn vision-btn-icon">
+          <span class="material-symbols-outlined text-xs">close</span>
         </button>
       </div>
 
-      <p class="text-xs text-secondary-color">Selecciona las carpetas a compilar en el paquete de contexto OKF (ZIP):</p>
+      <p class="text-xs text-secondary">
+        Selecciona los artefactos técnicos que conformarán el **Prompt Bundle** para alimentar agentes externos sin alucinaciones:
+      </p>
 
-      <!-- Opciones de Carpetas Seleccionables -->
-      <div class="space-y-1.5 text-xs font-mono">
-        <label class="flex items-center gap-2.5 p-2 rounded-[6px] glass-card cursor-pointer hover:bg-slate-200/50 dark:hover:bg-white/5">
-          <input id="chk-skills" type="checkbox" checked class="rounded-[3px] border-slate-300 dark:border-white/20 text-indigo-600 focus:ring-0 w-3.5 h-3.5"/>
-          <div class="min-w-0 flex-1">
-            <div class="font-semibold text-primary-color text-[11px]">/skills/</div>
-            <div class="text-[9.5px] text-secondary-color truncate">Manual devsculptor-architect y reglas de conducta</div>
+      <div class="space-y-2 text-xs font-mono">
+        <label class="vision-card p-3 flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" checked class="rounded accent-indigo-500"/>
+          <div>
+            <div class="font-semibold text-primary">/documentation/</div>
+            <div class="text-[10px] text-muted">Requisitos IEEE-830, Actas ADRs y especificación OpenAPI</div>
           </div>
         </label>
 
-        <label class="flex items-center gap-2.5 p-2 rounded-[6px] glass-card cursor-pointer hover:bg-slate-200/50 dark:hover:bg-white/5">
-          <input id="chk-database" type="checkbox" checked class="rounded-[3px] border-slate-300 dark:border-white/20 text-indigo-600 focus:ring-0 w-3.5 h-3.5"/>
-          <div class="min-w-0 flex-1">
-            <div class="font-semibold text-primary-color text-[11px]">/database/</div>
-            <div class="text-[9.5px] text-secondary-color truncate">Esquemas PostgreSQL DDL, SPs y políticas RLS</div>
+        <label class="vision-card p-3 flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" checked class="rounded accent-indigo-500"/>
+          <div>
+            <div class="font-semibold text-primary">/database/</div>
+            <div class="text-[10px] text-muted">PostgreSQL DDL, Triggers, SPs y políticas RLS</div>
           </div>
         </label>
 
-        <label class="flex items-center gap-2.5 p-2 rounded-[6px] glass-card cursor-pointer hover:bg-slate-200/50 dark:hover:bg-white/5">
-          <input id="chk-docs" type="checkbox" checked class="rounded-[3px] border-slate-300 dark:border-white/20 text-indigo-600 focus:ring-0 w-3.5 h-3.5"/>
-          <div class="min-w-0 flex-1">
-            <div class="font-semibold text-primary-color text-[11px]">/documentation/</div>
-            <div class="text-[9.5px] text-secondary-color truncate">Requisitos RF/RNF, actas ADRs y contratos OpenAPI</div>
+        <label class="vision-card p-3 flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" checked class="rounded accent-indigo-500"/>
+          <div>
+            <div class="font-semibold text-primary">/skills/</div>
+            <div class="text-[10px] text-muted">Manual metodológico devsculptor-architect</div>
           </div>
         </label>
       </div>
 
-      <!-- Barra de Estado de Compilación -->
-      <div id="export-status-bar" class="hidden text-[10px] font-mono p-1.5 rounded-[5px] bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
-        <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-ping"></span>
-        <span id="export-status-text">Empaquetando artefactos...</span>
+      <div id="export-progress-container" class="hidden space-y-1">
+        <div class="text-[10px] font-mono text-indigo-400 flex items-center justify-between">
+          <span>Generando estructura determinista...</span>
+          <span>100%</span>
+        </div>
+        <div class="w-full h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+          <div id="export-progress-bar" class="h-full bg-indigo-500 transition-all duration-300" style="width: 0%;"></div>
+        </div>
       </div>
 
-      <!-- Botones de Acción -->
-      <div class="pt-1.5 flex justify-end gap-1.5">
-        <button id="btn-cancel-modal" class="apple-btn text-xs !rounded-[5px]">Cancelar</button>
-        <button id="btn-confirm-export" class="apple-btn apple-btn-primary text-xs !rounded-[5px]">
-          <span class="material-symbols-outlined text-[13px]">download</span> Compilar & Descargar OKF
+      <div class="flex justify-end gap-2 pt-2">
+        <button id="btn-cancel-export" class="vision-btn text-xs">Cancelar</button>
+        <button id="btn-confirm-export" class="vision-btn vision-btn-primary text-xs">
+          <span class="material-symbols-outlined text-xs">download</span> Descargar Bundle
         </button>
       </div>
     </div>
   </div>
 
-  <!-- JavaScript Interactivo -->
-  <script>
-    // --- 1. Alternancia de Tema: Claro (Sol) / Oscuro (Luna) ---
-    const themeBtn = document.getElementById('theme-toggle');
-    const themeIcon = document.getElementById('theme-icon');
-    const htmlEl = document.documentElement;
-    const bodyEl = document.body;
+  <!-- Modal 2: Nuevo Requisito -->
+  <div id="new-req-modal" class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="vision-window max-w-md w-full p-5 flex flex-col gap-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-2 border-b border-white/[0.08]">
+        <h3 class="font-semibold text-xs text-primary">Registrar Nuevo Requisito</h3>
+        <button id="btn-close-new-req" class="vision-btn vision-btn-icon">
+          <span class="material-symbols-outlined text-xs">close</span>
+        </button>
+      </div>
 
-    function applyTheme(isLight) {
-      if (isLight) {
-        htmlEl.classList.remove('dark');
-        htmlEl.classList.add('light');
-        bodyEl.classList.remove('dark');
-        bodyEl.classList.add('light');
-        themeIcon.textContent = 'light_mode';
-        themeIcon.classList.remove('text-amber-400');
-        themeIcon.classList.add('text-amber-500');
-        themeBtn.title = 'Modo Claro activo (Sol) — Clic para cambiar a Modo Oscuro';
-      } else {
-        htmlEl.classList.remove('light');
-        htmlEl.classList.add('dark');
-        bodyEl.classList.remove('light');
-        bodyEl.classList.add('dark');
-        themeIcon.textContent = 'dark_mode';
-        themeIcon.classList.remove('text-amber-500');
-        themeIcon.classList.add('text-amber-400');
-        themeBtn.title = 'Modo Oscuro activo (Luna) — Clic para cambiar a Modo Claro';
-      }
-      localStorage.setItem('ds_theme', isLight ? 'light' : 'dark');
-      if (typeof recalculateConnectors === 'function') {
-        setTimeout(recalculateConnectors, 50);
-      }
-    }
+      <form id="form-new-req" class="space-y-3 text-xs">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-mono text-muted mb-1">CÓDIGO (RF-01 / RNF-01)</label>
+            <input id="input-req-code" required class="vision-input font-mono" placeholder="RF-04"/>
+          </div>
+          <div>
+            <label class="block text-[10px] font-mono text-muted mb-1">TIPO</label>
+            <select id="select-req-type" class="vision-input">
+              <option value="RF">Funcional (RF)</option>
+              <option value="RNF">No Funcional (RNF)</option>
+            </select>
+          </div>
+        </div>
 
-    const savedTheme = localStorage.getItem('ds_theme');
-    if (savedTheme === 'light') {
-      applyTheme(true);
-    } else {
-      applyTheme(false);
-    }
+        <div>
+          <label class="block text-[10px] font-mono text-muted mb-1">TÍTULO</label>
+          <input id="input-req-title" required class="vision-input" placeholder="Ej. Control de Sesión de Auditoría"/>
+        </div>
 
-    themeBtn.addEventListener('click', () => {
-      const isCurrentlyLight = htmlEl.classList.contains('light');
-      applyTheme(!isCurrentlyLight);
-    });
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-mono text-muted mb-1">PRIORIDAD</label>
+            <select id="select-req-priority" class="vision-input">
+              <option value="HIGH">ALTA</option>
+              <option value="MEDIUM">MEDIA</option>
+              <option value="LOW">BAJA</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] font-mono text-muted mb-1">TABLA VINCULADA</label>
+            <input id="input-req-table" class="vision-input font-mono" placeholder="audit_logs"/>
+          </div>
+        </div>
 
-    // --- 2. Navegación por Apartados Separados del Flujo ---
-    const navSteps = document.querySelectorAll('.nav-step');
-    const stepViews = document.querySelectorAll('.step-view');
+        <div>
+          <label class="block text-[10px] font-mono text-muted mb-1">DESCRIPCIÓN DE INGENIERÍA</label>
+          <textarea id="input-req-desc" rows="3" class="vision-input text-xs" placeholder="Detalla el alcance y la regla técnica..."></textarea>
+        </div>
 
-    navSteps.forEach(btn => {
-      btn.addEventListener('click', () => {
-        navSteps.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="submit" class="vision-btn vision-btn-primary w-full !py-2 justify-center">
+            Guardar Requisito
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 
-        const targetId = btn.getAttribute('data-target');
-        stepViews.forEach(v => {
-          if (v.id === targetId) {
-            v.classList.remove('hidden');
-          } else {
-            v.classList.add('hidden');
-          }
-        });
+  <!-- Modal 3: Nuevo Proyecto -->
+  <div id="new-project-modal" class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="vision-window max-w-sm w-full p-5 flex flex-col gap-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-2 border-b border-white/[0.08]">
+        <h3 class="font-semibold text-xs text-primary">Inicializar Proyecto</h3>
+        <button id="btn-close-new-project" class="vision-btn vision-btn-icon">
+          <span class="material-symbols-outlined text-xs">close</span>
+        </button>
+      </div>
 
-        if (targetId === 'view-canvas') {
-          setTimeout(recalculateConnectors, 60);
-        }
-      });
-    });
+      <form id="form-new-project" class="space-y-3 text-xs">
+        <div>
+          <label class="block text-[10px] font-mono text-muted mb-1">NOMBRE DEL PROYECTO</label>
+          <input id="input-proj-name" required class="vision-input" placeholder="Ej. E-Commerce Microservices"/>
+        </div>
 
-    // --- 3. Subpestañas del Canvas & Salidas de Scripts Multi-formato ---
-    const subtabs = {
-      erd: document.getElementById('subtab-erd'),
-      sql: document.getElementById('subtab-sql'),
-      ts: document.getElementById('subtab-ts'),
-      json: document.getElementById('subtab-json'),
-      py: document.getElementById('subtab-py')
-    };
-    const canvasVisual = document.getElementById('canvas-visual-area');
-    const canvasCode = document.getElementById('canvas-code-area');
-    const codeOutput = document.getElementById('code-output');
+        <div>
+          <label class="block text-[10px] font-mono text-muted mb-1">ESTILO DE ARQUITECTURA</label>
+          <select id="select-proj-style" class="vision-input">
+            <option value="Monolito Modular Layered MVC">Monolito Modular Layered MVC</option>
+            <option value="Microservicios Desacoplados">Microservicios Desacoplados</option>
+            <option value="Event-Driven Architecture">Event-Driven Architecture</option>
+            <option value="Clean Architecture / Hexagonal">Clean Architecture / Hexagonal</option>
+          </select>
+        </div>
 
-    const scriptFormats = {
-      sql: `-- ==========================================================
--- DevSculptor Core — PostgreSQL 15 DDL Schema & RLS Policies
--- ==========================================================
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="submit" class="vision-btn vision-btn-primary w-full !py-2 justify-center">
+            Crear y Abrir Workspace
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-
-CREATE TABLE IF NOT EXISTS users (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  email VARCHAR(255) UNIQUE NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS projects (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  name VARCHAR(100) NOT NULL,
-  description TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- Row Level Security (RLS)
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can only read and manage their own profile"
-  ON users FOR ALL
-  USING (id = auth.uid());
-
-CREATE POLICY "Projects accessible only by project owner"
-  ON projects FOR ALL
-  USING (user_id = auth.uid());`,
-
-      ts: `// ==========================================================
-// DevSculptor Core — TypeScript DTOs & Domain Schemas
-// ==========================================================
-
-import { z } from "zod";
-
-export const UserSchema = z.object({
-  id: z.string().uuid(),
-  email: z.string().email(),
-  password_hash: z.string().min(8),
-  created_at: z.string().datetime(),
-  updated_at: z.string().datetime()
-});
-
-export type User = z.infer<typeof UserSchema>;
-
-export const ProjectSchema = z.object({
-  id: z.string().uuid(),
-  user_id: z.string().uuid(),
-  name: z.string().min(3).max(100),
-  description: z.string().optional(),
-  created_at: z.string().datetime(),
-  updated_at: z.string().datetime()
-});
-
-export type Project = z.infer<typeof ProjectSchema>;`,
-
-      json: `{
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "DevSculptorCoreDataModel",
-  "type": "object",
-  "required": ["users", "projects"],
-  "properties": {
-    "users": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["id", "email"],
-        "properties": {
-          "id": { "type": "string", "format": "uuid" },
-          "email": { "type": "string", "format": "email" },
-          "created_at": { "type": "string", "format": "date-time" }
-        }
-      }
-    },
-    "projects": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["id", "user_id", "name"],
-        "properties": {
-          "id": { "type": "string", "format": "uuid" },
-          "user_id": { "type": "string", "format": "uuid" },
-          "name": { "type": "string", "maxLength": 100 }
-        }
-      }
-    }
-  }
-}`,
-
-      py: `# ==========================================================
-# DevSculptor Core — Python Pydantic Models (v2)
-# ==========================================================
-
-from datetime import datetime
-from uuid import UUID
-from typing import Optional
-from pydantic import BaseModel, EmailStr, Field
-
-class UserModel(BaseModel):
-    id: UUID
-    email: EmailStr
-    password_hash: str = Field(..., exclude=True)
-    created_at: datetime
-    updated_at: datetime
-
-class ProjectModel(BaseModel):
-    id: UUID
-    user_id: UUID
-    name: str = Field(..., min_length=3, max_length=100)
-    description: Optional[str] = None
-    created_at: datetime
-    updated_at: datetime`
-    };
-
-    let currentFormat = 'erd';
-
-    function setScriptFormat(type) {
-      currentFormat = type;
-      Object.values(subtabs).forEach(b => {
-        b.classList.remove('bg-indigo-600', '!text-white');
-      });
-      subtabs[type].classList.add('bg-indigo-600', '!text-white');
-
-      if (type === 'erd') {
-        canvasVisual.classList.remove('hidden');
-        canvasCode.classList.add('hidden');
-        recalculateConnectors();
-      } else {
-        canvasVisual.classList.add('hidden');
-        canvasCode.classList.remove('hidden');
-        codeOutput.textContent = scriptFormats[type] || '';
-      }
-    }
-
-    subtabs.erd.addEventListener('click', () => setScriptFormat('erd'));
-    subtabs.sql.addEventListener('click', () => setScriptFormat('sql'));
-    subtabs.ts.addEventListener('click', () => setScriptFormat('ts'));
-    subtabs.json.addEventListener('click', () => setScriptFormat('json'));
-    subtabs.py.addEventListener('click', () => setScriptFormat('py'));
-
-    // Botón Copiar Script
-    const copyBtn = document.getElementById('btn-copy-script');
-    copyBtn.addEventListener('click', () => {
-      const textToCopy = currentFormat === 'erd' ? scriptFormats.sql : scriptFormats[currentFormat];
-      navigator.clipboard.writeText(textToCopy).then(() => {
-        const origHTML = copyBtn.innerHTML;
-        copyBtn.innerHTML = '<span class="material-symbols-outlined text-[12px] text-emerald-400">check</span> ¡Copiado!';
-        setTimeout(() => { copyBtn.innerHTML = origHTML; }, 1800);
-      });
-    });
-
-    // --- 4. Modal de Compilación & Exportación ---
-    const modal = document.getElementById('export-modal');
-    const btnOpenModal = document.getElementById('btn-export-modal');
-    const btnCloseModal = document.getElementById('btn-close-modal');
-    const btnCancelModal = document.getElementById('btn-cancel-modal');
-    const btnConfirmExport = document.getElementById('btn-confirm-export');
-    const statusBar = document.getElementById('export-status-bar');
-    const statusText = document.getElementById('export-status-text');
-
-    btnOpenModal.addEventListener('click', () => {
-      statusBar.classList.add('hidden');
-      modal.classList.remove('hidden');
-    });
-
-    [btnCloseModal, btnCancelModal].forEach(b => {
-      b.addEventListener('click', () => modal.classList.add('hidden'));
-    });
-
-    btnConfirmExport.addEventListener('click', () => {
-      const selSkills = document.getElementById('chk-skills').checked;
-      const selDb = document.getElementById('chk-database').checked;
-      const selDocs = document.getElementById('chk-docs').checked;
-
-      const selectedFolders = [];
-      if (selSkills) selectedFolders.push('/skills/');
-      if (selDb) selectedFolders.push('/database/');
-      if (selDocs) selectedFolders.push('/documentation/');
-
-      if (selectedFolders.length === 0) {
-        alert('Por favor selecciona al menos una carpeta para exportar.');
-        return;
-      }
-
-      statusBar.classList.remove('hidden');
-      statusText.textContent = `Compilando paquete OKF (${selectedFolders.join(', ')})...`;
-      btnConfirmExport.disabled = true;
-
-      setTimeout(() => {
-        statusText.textContent = '¡Compilación exitosa! Descargando DevSculptor_PromptBundle.zip';
-        setTimeout(() => {
-          modal.classList.add('hidden');
-          btnConfirmExport.disabled = false;
-          statusBar.classList.add('hidden');
-        }, 1200);
-      }, 1000);
-    });
-
-    // --- 5. Interacción con Documentos (Preview rápido) ---
-    document.querySelectorAll('.doc-card').forEach(card => {
-      card.addEventListener('click', () => {
-        const title = card.getAttribute('data-title');
-        const content = card.getAttribute('data-content');
-        alert(`${title}\n\n${content}`);
-      });
-    });
-
-    // --- 6. Lienzo Gráfico ERD: Nodos Arrastrables & Conector Bezier ---
-    let zoom = 1.0;
-    const canvasContent = document.getElementById('canvas-content');
-    const zoomIndicator = document.getElementById('zoom-indicator');
-
-    document.getElementById('btn-zoom-in')?.addEventListener('click', () => {
-      if (zoom < 1.6) {
-        zoom = Math.round((zoom + 0.15) * 100) / 100;
-        zoomIndicator.textContent = `${Math.round(zoom * 100)}%`;
-        canvasContent.style.transform = `scale(${zoom})`;
-        recalculateConnectors();
-      }
-    });
-
-    document.getElementById('btn-zoom-out')?.addEventListener('click', () => {
-      if (zoom > 0.6) {
-        zoom = Math.round((zoom - 0.15) * 100) / 100;
-        zoomIndicator.textContent = `${Math.round(zoom * 100)}%`;
-        canvasContent.style.transform = `scale(${zoom})`;
-        recalculateConnectors();
-      }
-    });
-
-    [document.getElementById('node-users'), document.getElementById('node-projects')].forEach(node => {
-      if (!node) return;
-      let isDragging = false;
-      let startX, startY, origLeft, origTop;
-
-      node.addEventListener('mousedown', (e) => {
-        isDragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
-        origLeft = parseInt(node.style.left || window.getComputedStyle(node).left, 10);
-        origTop = parseInt(node.style.top || window.getComputedStyle(node).top, 10);
-        node.style.zIndex = '30';
-      });
-
-      window.addEventListener('mousemove', (e) => {
-        if (!isDragging) return;
-        const dx = (e.clientX - startX) / zoom;
-        const dy = (e.clientY - startY) / zoom;
-        node.style.left = `${origLeft + dx}px`;
-        node.style.top = `${origTop + dy}px`;
-        recalculateConnectors();
-      });
-
-      window.addEventListener('mouseup', () => {
-        if (isDragging) {
-          isDragging = false;
-          node.style.zIndex = '10';
-        }
-      });
-    });
-
-    function recalculateConnectors() {
-      const u = document.getElementById('node-users');
-      const p = document.getElementById('node-projects');
-      const c = document.getElementById('canvas-visual-area');
-      const line = document.getElementById('conn-users-projects');
-      if (!u || !p || !c || !line) return;
-
-      const uRect = u.getBoundingClientRect();
-      const pRect = p.getBoundingClientRect();
-      const cRect = c.getBoundingClientRect();
-
-      const uX = uRect.right - cRect.left;
-      const uY = uRect.top + 40 - cRect.top;
-      const pX = pRect.left - cRect.left;
-      const pY = pRect.top + 40 - cRect.top;
-
-      line.setAttribute('d', `M ${uX} ${uY} C ${(uX + pX)/2} ${uY}, ${(uX + pX)/2} ${pY}, ${pX} ${pY}`);
-    }
-
-    // --- 7. Chat de Conversación Inicial ---
-    const chatForm = document.getElementById('chat-input-form');
-    const chatInput = document.getElementById('chat-user-msg');
-    const chatStream = document.getElementById('conversation-stream');
-
-    function sendChatMessage(text) {
-      if (!text) return;
-      const userBubble = document.createElement('div');
-      userBubble.className = 'chat-bubble-user';
-      userBubble.textContent = text;
-      chatStream.appendChild(userBubble);
-      chatStream.scrollTop = chatStream.scrollHeight;
-
-      setTimeout(() => {
-        const aiBubble = document.createElement('div');
-        aiBubble.className = 'chat-bubble-assistant max-w-xl';
-        aiBubble.innerHTML = `<strong>Arquitecto:</strong> Procesé: "<em>${text}</em>". He actualizado el estado del modelo y verificado la consistencia relacional.`;
-        chatStream.appendChild(aiBubble);
-        chatStream.scrollTop = chatStream.scrollHeight;
-      }, 400);
-    }
-
-    chatForm?.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const text = chatInput.value.trim();
-      if (!text) return;
-      sendChatMessage(text);
-      chatInput.value = '';
-    });
-
-    document.querySelectorAll('.chat-quick-prompt').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const msg = btn.getAttribute('data-msg');
-        sendChatMessage(msg);
-      });
-    });
-
-    // Chips del copiloto
-    document.querySelectorAll('.copilot-chip').forEach(chip => {
-      chip.addEventListener('click', () => {
-        const q = chip.getAttribute('data-q');
-        alert(`Copiloto IA: ${q}`);
-      });
-    });
-
-    window.addEventListener('resize', recalculateConnectors);
-  </script>
+  <!-- Motor de Lógica JS -->
+  <script src="shared/app.js"></script>
 </body>
 </html>
