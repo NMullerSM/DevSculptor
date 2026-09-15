@@ -10,12 +10,15 @@ Sintetiza la visión de producto (gobernanza técnica pre-código y mitigación 
 
 1. [Estrategia Metodológica: El Prototipado como Gate de Validación](#1-estrategia-metodológica-el-prototipado-como-gate-de-validación)
 2. [Stack Tecnológico Canónico del Frontend Real](#2-stack-tecnológico-canónico-del-frontend-real)
-3. [Sistema de Diseño (Design System): Apple Glassmorphism & NotebookLM Studio](#3-sistema-de-diseño-design-system-apple-glassmorphism--notebooklm-studio)
-   - 3.1. [Filosofía Visual y Lenguaje de Diseño](#31-filosofía-visual-y-lenguaje-de-diseño)
-   - 3.2. [Paleta Dual de Tokens: Obsidian Depth & Apple macOS Snow](#32-paleta-dual-de-tokens-obsidian-depth--apple-macos-snow)
-   - 3.3. [Capas Glassmórficas, Elevación y Desenfoque](#33-capas-glassmórficas-elevación-y-desenfoque)
-   - 3.4. [Tipografía Canónica y Jerarquías](#34-tipografía-canónica-y-jerarquías)
-   - 3.5. [Componentes Visuales de Firma (Pills, Apple Buttons, Badges)](#35-componentes-visuales-de-firma-pills-apple-buttons-badges)
+3. [Sistema de Diseño (Design System): Apple visionOS Liquid Glassmorphism (v2) & NotebookLM Studio](#3-sistema-de-diseño-design-system-apple-visionos-liquid-glassmorphism-v2--notebooklm-studio)
+   - 3.1. [Filosofía Visual, Geometría Arquitectónica y Física del Cristal](#31-filosofía-visual-geometría-arquitectónica-y-física-del-cristal)
+   - 3.2. [Arquitectura de Fondo Multicapa: Wallpaper Canvas, Ondas y Orbes](#32-arquitectura-de-fondo-multicapa-wallpaper-canvas-ondas-y-orbes)
+   - 3.3. [Paleta Dual Canónica de Tokens: visionOS Crystal Obsidian vs. Snow Spatial Glass](#33-paleta-dual-canónica-de-tokens-visionos-crystal-obsidian-vs-snow-spatial-glass)
+   - 3.4. [Sistema de Elevación, Desenfoque Óptico Saturado y Reflejos Especulares Biselados](#34-sistema-de-elevación-desenfoque-óptico-saturado-y-reflejos-especulares-biselados)
+   - 3.5. [Tipografía Canónica y Jerarquías de Contraste](#35-tipografía-canónica-y-jerarquías-de-contraste)
+   - 3.6. [Catálogo Canónico de Primitivas y Componentes Glassmórficos](#36-catálogo-canónico-de-primitivas-y-componentes-glassmórficos)
+   - 3.7. [Ergonomía Visual de Nodos ERD y Conectores Bezier SVG Neón](#37-ergonomía-visual-de-nodos-erd-y-conectores-bezier-svg-neón)
+   - 3.8. [Reglas de Implementación en Producción (React 18, Tailwind y GPU)](#38-reglas-de-implementación-en-producción-react-18-tailwind-y-gpu)
 4. [Estructura Canónica de Pantallas y Flujos de Navegación](#4-estructura-canónica-de-pantallas-y-flujos-de-navegación)
    - 4.1. [Mapa General de Navegación y Flujo del Usuario](#41-mapa-general-de-navegación-y-flujo-del-usuario)
    - 4.2. [Pantalla 0: Portal de Acceso y Autenticación (`/auth`)](#42-pantalla-0-portal-de-acceso-y-autenticación-auth)
@@ -79,116 +82,645 @@ Al culminar la validación en el prototipo, la aplicación de producción se imp
 
 ---
 
-## 3. Sistema de Diseño (Design System): Apple Glassmorphism & NotebookLM Studio
+## 3. Sistema de Diseño (Design System): Apple visionOS Liquid Glassmorphism (v2) & NotebookLM Studio
 
-### 3.1. Filosofía Visual y Lenguaje de Diseño
-DevSculptor adopta una identidad visual **"Apple Glassmorphic & NotebookLM Studio"**:
-- **Inspiración Apple macOS Snow & Glass:** Superficies translúcidas con desenfoque gaussiano profundo (`backdrop-filter: blur(30px)`), bordes sutiles con gradiente de luz (`1px solid rgba(255, 255, 255, 0.08)`), esquinas suavemente redondeadas (`border-radius: 14px` a `20px`), sombras de ventana flotante y botones táctiles.
-- **Inspiración Google NotebookLM Studio:** Organización del espacio de trabajo en **3 paneles articulados** (Navegación de flujo a la izquierda, Workspace interactivo al centro e Inspector/Copiloto de fuentes a la derecha). Brinda una sensación de "estudio de arquitectura" donde el usuario nunca pierde el contexto de su proyecto.
+### 3.1. Filosofía Visual, Geometría Arquitectónica y Física del Cristal
 
-### 3.2. Paleta Dual de Tokens: Obsidian Depth & Apple macOS Snow
+DevSculptor abandona el "glassmorphism genérico de cartón translúcido" (fondos planos semiopacos que lavan el contraste) y evoluciona hacia una implementación de grado de ingeniería: **Apple visionOS Liquid Glassmorphism (v2)** articulada con el **Workspace Tripartito de Google NotebookLM Studio**.
 
-El sistema cuenta con soporte de **Dual Theme nativo** conmutado mediante el atributo `.dark` o `.light` en `<html>` / `<body>`:
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                        ANATOMÍA ÓPTICA DE UNA SUPERFICIE DE VIDRIO                      │
+│                                                                                        │
+│  Luz Cenital                                                                           │
+│      │                                                                                 │
+│      ▼   ┌──────────────────────────────────────────────────────────────────────────┐  │
+│  [ SHEEN ]   Bisel Superior Especular: inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.48) │  │
+│          ├──────────────────────────────────────────────────────────────────────────┤  │
+│          │ Gradiente Angular 135°: Refracción de luz (12% -> 2% -> 4%)              │  │
+│  [ CUERPO│ Transparencia Neta: 20% a 35% (var(--glass-window) / var(--glass-card))   │  │
+│   VIDRIO]│ Desenfoque Gaussiano Óptico Saturado: blur(18px) + saturate(190%)        │  │
+│          ├──────────────────────────────────────────────────────────────────────────┤  │
+│  [ OCULTA]   Sombra de Oclusión Inferior: inset 0 -1px 1px 0 rgba(255, 255, 255, 0.08)│  │
+│          └──────────────────────────────────────────────────────────────────────────┘  │
+│                  Sombra Profunda Proyectada: 0 16px 40px -8px rgba(0, 0, 0, 0.5)      │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 1. Principios de Física Óptica del Cristal
+* **Reflejo Especular Superior (*Specular Sheen*):** Toda ventana y tarjeta de cristal posee un fino resplandor blanco puro en su arista superior (`inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.48)` en Dark Mode; `0.98` en Light Mode). Esto emula la luz cenital rebotando en el bisel pulido del vidrio.
+* **Gradiente de Refracción Angular:** La superficie no es un color plano, sino un gradiente a 135 grados (`linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.02) 40%, rgba(255, 255, 255, 0.04) 100%)`) superpuesto al color translúcido base.
+* **Saturación Cromática Obligatoria (`saturate`):** Un desenfoque común (`blur(...)`) deslava los colores de fondo, tornándolos lechosos o grisáceos. En DevSculptor, todo `backdrop-filter` acompaña el blur con saturación potenciada (`saturate(170% a 210%)`), manteniendo la vitalidad de las formas que transitan por detrás.
+* **Translucidez Dinámica Alta:** Los fondos de cristal mantienen una opacidad real entre el **20% y 35%**. Esto permite que el wallpaper y los orbes de luz ambiental respiren y se filtren sutilmente a través de la UI sin comprometer la legibilidad de los textos.
+
+#### 2. Geometría Refinada y Radios Arquitectónicos (Menor Border-Radius)
+A diferencia de los estilos de consumo masivo con bordes exageradamente redondos (20px - 28px) que desperdician espacio y transmiten informalidad ("look de juguete"), DevSculptor adopta una **geometría arquitectónica de precisión**:
+* **`--radius-window: 10px`**: Marcos perimetrales de ventanas y paneles estructurales (TopBar, Nav, Workspace, Copiloto).
+* **`--radius-card: 7px`**: Tarjetas de contenido técnico (ítems de requisitos, actas ADRs, métricas del copiloto).
+* **`--radius-node: 8px`**: Nodos de entidad y tablas de base de datos en el lienzo ERD.
+* **`--radius-btn: 6px`**: Botones táctiles, inputs y selectores.
+* **`--radius-pill: 9999px`**: Exclusivo para píldoras conmutadoras (Sol/Luna, telemetría de estado) y badges de clasificación.
+
+---
+
+### 3.2. Arquitectura de Fondo Multicapa: Wallpaper Canvas, Ondas y Orbes
+
+Para que el efecto de refracción del cristal cobre vida, la interfaz descansa sobre un canvas de fondo compuesto por **4 capas orquestadas** bajo el contenedor `.wallpaper-canvas`:
+
+```html
+<!-- Arquitectura Canónica del Fondo de Vidrio (Wallpaper Canvas) -->
+<div class="wallpaper-canvas">
+  <!-- Capa 1: Fotografía de Paisaje Apple Retina HD -->
+  <div id="wallpaper-bg" class="wallpaper-img"></div>
+  
+  <!-- Capa 2: Malla Gradiente de Ondas Dinámicas -->
+  <div class="wallpaper-wave-overlay"></div>
+  
+  <!-- Capa 3: Micro-Retícula Topográfica de Precisión -->
+  <div class="wallpaper-topo-pattern"></div>
+  
+  <!-- Capa 4: Orbes de Luz Ambiental con Deriva Cinemática GPU -->
+  <div class="ambient-orb orb-indigo"></div>
+  <div class="ambient-orb orb-cyan"></div>
+  <div class="ambient-orb orb-purple"></div>
+</div>
+```
 
 ```css
 /* ==========================================================================
-   Design Tokens: Obsidian Depth (Dark) vs. Apple macOS Snow (Light)
+   Capas de Fondo: Naturaleza Apple & Patrón de Ondas Orgánicas
    ========================================================================== */
-
-:root {
-  /* --- MODO OSCURO (Obsidian Depth — Por Defecto) --- */
-  --bg-desktop: #07090e;                        /* Fondo base de pantalla */
-  --bg-glass-base: rgba(13, 18, 30, 0.72);      /* Ventana principal */
-  --bg-glass-card: rgba(22, 30, 49, 0.55);      /* Tarjetas internas */
-  --bg-glass-elevated: rgba(30, 41, 67, 0.85);  /* Modales y flotantes */
-  --bg-glass-hover: rgba(255, 255, 255, 0.06);
-  --bg-glass-active: rgba(99, 102, 241, 0.18);
-  --bg-code: #0b0f19;                           /* Bloques de código/terminal */
-
-  --glass-blur-sm: blur(16px);
-  --glass-blur-md: blur(30px) saturate(180%);
-  --glass-blur-lg: blur(40px) saturate(200%);
-
-  --border-glass: 1px solid rgba(255, 255, 255, 0.08);
-  --border-glass-light: 1px solid rgba(255, 255, 255, 0.15);
-  --border-glass-subtle: 1px solid rgba(255, 255, 255, 0.05);
-  --border-glass-focus: 1px solid rgba(99, 102, 241, 0.55);
-
-  --text-primary: #f8fafc;                      /* Títulos y datos críticos */
-  --text-secondary: #94a3b8;                    /* Descripciones y subtítulos */
-  --text-muted: #64748b;                        /* Metadatos y placeholders */
-  --canvas-grid: rgba(255, 255, 255, 0.06);     /* Grilla de puntos del lienzo */
-
-  --accent-indigo: #6366f1;                     /* Acción primaria, Focus */
-  --accent-indigo-glow: rgba(99, 102, 241, 0.3);
-  --accent-cyan: #38bdf8;                       /* Relaciones DDL, Documentos */
-  --accent-emerald: #34d399;                    /* Éxito, RLS, Estado Activo */
-  --accent-amber: #fbbf24;                      /* Advertencias, PKs, Requisitos */
-  --accent-danger: #f87171;                     /* Destructivo, Rechazos */
-
-  --shadow-window: 0 20px 48px -12px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.08);
-  --shadow-card: 0 8px 24px -6px rgba(0, 0, 0, 0.45);
-  --shadow-dock: 0 10px 30px -5px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1);
-
-  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-
-  --radius-window: 20px;
-  --radius-card: 14px;
-  --radius-pill: 9999px;
+.wallpaper-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
 }
 
-/* --- MODO CLARO (Apple macOS Snow Style) --- */
-html.light, body.light {
-  --bg-desktop: #f2f2f6;
-  --bg-glass-base: rgba(255, 255, 255, 0.82);
-  --bg-glass-card: rgba(255, 255, 255, 0.65);
-  --bg-glass-elevated: rgba(255, 255, 255, 0.95);
-  --bg-glass-hover: rgba(0, 0, 0, 0.04);
-  --bg-glass-active: rgba(79, 70, 229, 0.10);
-  --bg-code: #f8fafc;
+/* Capa 1: Fotografía de Paisaje Natural con Contraste y Calibración Óptica */
+.wallpaper-img {
+  position: absolute;
+  inset: -20px;
+  background-image: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2560&auto=format&fit=crop');
+  background-size: cover;
+  background-position: center 35%;
+  background-repeat: no-repeat;
+  filter: brightness(0.84) contrast(1.18) saturate(1.3);
+  transition: opacity 0.6s ease, filter 0.6s ease, background-image 0.6s ease;
+}
 
-  --border-glass: 1px solid rgba(0, 0, 0, 0.08);
-  --border-glass-light: 1px solid rgba(0, 0, 0, 0.14);
-  --border-glass-subtle: 1px solid rgba(0, 0, 0, 0.05);
-  --border-glass-focus: 1px solid rgba(79, 70, 229, 0.6);
+html.light .wallpaper-img {
+  filter: brightness(0.98) contrast(1.08) saturate(1.15);
+}
 
-  --text-primary: #1d1d1f;
-  --text-secondary: #515154;
-  --text-muted: #86868b;
-  --canvas-grid: rgba(0, 0, 0, 0.06);
+/* Capa 2: Malla de Ondas Gradiente Dinámica (Modo Fusión) */
+.wallpaper-wave-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 18% 22%, rgba(99, 102, 241, 0.32) 0%, transparent 45%),
+              radial-gradient(circle at 82% 78%, rgba(56, 189, 248, 0.28) 0%, transparent 50%),
+              radial-gradient(circle at 50% 105%, rgba(168, 85, 247, 0.22) 0%, transparent 55%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
 
-  --accent-indigo: #4f46e5;
-  --accent-indigo-glow: rgba(79, 70, 229, 0.2);
-  --accent-cyan: #0284c7;
-  --accent-emerald: #059669;
-  --accent-amber: #d97706;
-  --accent-danger: #dc2626;
+html.light .wallpaper-wave-overlay {
+  mix-blend-mode: multiply;
+  opacity: 0.55;
+}
 
-  --shadow-window: 0 16px 36px -8px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.06);
-  --shadow-card: 0 6px 16px -3px rgba(0, 0, 0, 0.06);
-  --shadow-dock: 0 8px 24px -4px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.06);
+/* Capa 3: Patrón de Puntos / Retícula Topográfica de Arquitecto */
+.wallpaper-topo-pattern {
+  position: absolute;
+  inset: 0;
+  opacity: 0.15;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.8) 1.2px, transparent 1.2px);
+  background-size: 28px 28px;
+  pointer-events: none;
+}
+
+/* Capa 4: Orbes Ambientales con Animación Acelerada por GPU */
+.ambient-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.50;
+  animation: orbFloat 24s ease-in-out infinite alternate;
+}
+
+.orb-indigo {
+  top: -5%;
+  left: 25%;
+  width: 650px;
+  height: 650px;
+  background: rgba(99, 102, 241, 0.38);
+}
+
+.orb-cyan {
+  bottom: -5%;
+  right: 15%;
+  width: 600px;
+  height: 600px;
+  background: rgba(56, 189, 248, 0.32);
+  animation-delay: -9s;
+}
+
+.orb-purple {
+  top: 45%;
+  left: -8%;
+  width: 500px;
+  height: 500px;
+  background: rgba(168, 85, 247, 0.26);
+  animation-delay: -16s;
+}
+
+@keyframes orbFloat {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(45px, 35px, 0) scale(1.08); }
+  100% { transform: translate3d(-35px, -25px, 0) scale(0.94); }
 }
 ```
 
-### 3.3. Capas Glassmórficas, Elevación y Desenfoque
-1. **`glass-window`**: Superficie de panel principal (Nav lateral, Workspace, Copiloto). `background: var(--bg-glass-base); backdrop-filter: var(--glass-blur-md); border: var(--border-glass); border-radius: var(--radius-window); box-shadow: var(--shadow-window);`.
-2. **`glass-card`**: Bloque interactivo de contenido (requisito, ADR, nodo ERD). `background: var(--bg-glass-card); backdrop-filter: var(--glass-blur-sm); border: var(--border-glass-subtle); border-radius: var(--radius-card); transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);`.
-3. **`glass-elevated`**: Modales, menús contextuales y docks flotantes de zoom.
+---
 
-### 3.4. Tipografía Canónica y Jerarquías
-- **Fuente de Interfaz (`--font-ui`)**: `Inter`, con soporte de pesos 300, 400, 500, 600, 700.
-- **Fuente Monoespaciada (`--font-mono`)**: `JetBrains Mono`, con soporte de ligaduras para identificadores de código, tipos SQL, códigos `RF-01`, `RNF-01`, `ADR-01` y salidas de compilación.
+### 3.3. Paleta Dual Canónica de Tokens: visionOS Crystal Obsidian vs. Snow Spatial Glass
 
-### 3.5. Componentes Visuales de Firma
-- **Apple Buttons (`.apple-btn`)**: Botones con esquinas `10px` a `pill`, elevación sutil, `:active` con `transform: scale(0.98)` y versión primaria índigo (`.apple-btn-primary`).
-- **Pills de Estado (`.pill-tag`)**: Indicadores compactos tipo badge redondeado (`font-size: 8.5px` a `10px`, `font-family: var(--font-mono)`, `font-weight: 600`):
-  - `.pill-indigo`: Contexto general y fases (`Gobernanza Pre-Código`).
-  - `.pill-cyan`: Documentos, contratos y RNF (`VERIFICADO`).
-  - `.pill-emerald`: Éxito, persistencia cloud (`Supabase RLS`, `APROBADA`).
-  - `.pill-amber`: Requisitos funcionales y prioridades (`RF-01`, `ALTA`).
-  - `.pill-danger`: Decisiones rechazadas o alertas destructivas.
-- **Theme Toggle (Luna/Sol)**: Botón circular con icono Material Symbols `dark_mode` / `light_mode` que conmuta instantáneamente las variables CSS sin recargar.
+El sistema implementa alternancia instantánea mediante clases `.dark` o `.light` aplicadas a la raíz `<html>` o al `<body>`:
+
+```css
+/* ==========================================================================
+   Design Tokens Canónicos: visionOS Crystal Obsidian vs. Snow Spatial Glass
+   ========================================================================== */
+
+:root {
+  /* --- MODO OSCURO (visionOS Crystal Obsidian — Por Defecto) --- */
+  --bg-space: #06080d;
+  
+  /* Superficies de Cristal Ultra-Translúcidas (Transparencia: 20% - 35%) */
+  --glass-nav: rgba(10, 14, 25, 0.35);
+  --glass-window: rgba(8, 12, 22, 0.26);
+  --glass-card: rgba(255, 255, 255, 0.04);
+  --glass-card-hover: rgba(255, 255, 255, 0.08);
+  --glass-card-selected: rgba(99, 102, 241, 0.20);
+  --glass-elevated: rgba(12, 16, 28, 0.65);
+  --glass-input: rgba(255, 255, 255, 0.05);
+  --glass-code: rgba(6, 9, 16, 0.72);
+
+  /* Desenfoque Óptico con Saturación de Color */
+  --blur-window: blur(18px) saturate(190%);
+  --blur-card: blur(14px) saturate(170%);
+  --blur-modal: blur(35px) saturate(210%);
+
+  /* Reflejos Especulares Biselados (Bordes de Vidrio de Alta Nitidez) */
+  --border-glass: 1px solid rgba(255, 255, 255, 0.24);
+  --border-glass-subtle: 1px solid rgba(255, 255, 255, 0.14);
+  --border-glass-light: 1px solid rgba(255, 255, 255, 0.38);
+  --border-focus: 1px solid rgba(129, 140, 248, 0.85);
+
+  /* Sombras Multinivel con Inset Sheen Blanco Puro */
+  --shadow-window: 0 16px 40px -8px rgba(0, 0, 0, 0.5), 
+                   inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.48), 
+                   inset 0 -1px 1px 0 rgba(255, 255, 255, 0.08),
+                   inset 0 0 20px 0 rgba(255, 255, 255, 0.02);
+                   
+  --shadow-card: 0 4px 16px -2px rgba(0, 0, 0, 0.25), 
+                 inset 0 1px 0 0 rgba(255, 255, 255, 0.28);
+                 
+  --shadow-dock: 0 12px 30px -4px rgba(0, 0, 0, 0.65), 
+                 inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.55);
+                 
+  --shadow-node: 0 12px 28px -4px rgba(0, 0, 0, 0.45), 
+                 inset 0 1px 1px 0 rgba(255, 255, 255, 0.4),
+                 0 0 0 1px rgba(255, 255, 255, 0.18);
+
+  /* Tipografía de Alto Contraste */
+  --text-primary: #ffffff;
+  --text-secondary: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+
+  /* Acentos de Cristal Luminoso */
+  --accent-indigo: #818cf8;
+  --accent-indigo-glow: rgba(99, 102, 241, 0.5);
+  --accent-cyan: #38bdf8;
+  --accent-cyan-glow: rgba(56, 189, 248, 0.4);
+  --accent-emerald: #34d399;
+  --accent-amber: #fbbf24;
+  --accent-rose: #f87171;
+
+  --canvas-grid-dot: rgba(255, 255, 255, 0.18);
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Geometría Arquitectónica Refinada */
+  --radius-pill: 9999px;
+  --radius-window: 10px;
+  --radius-card: 7px;
+  --radius-node: 8px;
+  --radius-btn: 6px;
+}
+
+/* --- MODO CLARO (visionOS Snow Spatial Glass) --- */
+html.light, body.light {
+  --bg-space: #dbe3ed;
+
+  --glass-nav: rgba(255, 255, 255, 0.55);
+  --glass-window: rgba(255, 255, 255, 0.42);
+  --glass-card: rgba(255, 255, 255, 0.40);
+  --glass-card-hover: rgba(255, 255, 255, 0.65);
+  --glass-card-selected: rgba(99, 102, 241, 0.16);
+  --glass-elevated: rgba(255, 255, 255, 0.82);
+  --glass-input: rgba(255, 255, 255, 0.55);
+  --glass-code: rgba(248, 250, 252, 0.80);
+
+  --border-glass: 1px solid rgba(255, 255, 255, 0.85);
+  --border-glass-subtle: 1px solid rgba(255, 255, 255, 0.55);
+  --border-glass-light: 1px solid rgba(255, 255, 255, 0.95);
+  --border-focus: 1px solid rgba(79, 70, 229, 0.7);
+
+  --shadow-window: 0 16px 40px -8px rgba(15, 23, 42, 0.15), 
+                   inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.98);
+                   
+  --shadow-card: 0 4px 14px -2px rgba(15, 23, 42, 0.08), 
+                 inset 0 1px 0 0 rgba(255, 255, 255, 0.9);
+                 
+  --shadow-dock: 0 10px 24px -4px rgba(15, 23, 42, 0.16), 
+                 inset 0 1.5px 1px 0 rgba(255, 255, 255, 1);
+                 
+  --shadow-node: 0 8px 20px -3px rgba(15, 23, 42, 0.12), 
+                 inset 0 1px 1px 0 rgba(255, 255, 255, 0.95), 
+                 0 0 0 1px rgba(255, 255, 255, 0.85);
+
+  --text-primary: #0f172a;
+  --text-secondary: #243046;
+  --text-muted: #53647a;
+  --text-dim: #7f90a5;
+
+  --accent-indigo: #4f46e5;
+  --accent-indigo-glow: rgba(79, 70, 229, 0.3);
+  --accent-cyan: #0284c7;
+  --accent-emerald: #059669;
+  --accent-amber: #d97706;
+  --accent-rose: #dc2626;
+
+  --canvas-grid-dot: rgba(15, 23, 42, 0.15);
+}
+```
+
+---
+
+### 3.4. Sistema de Elevación, Desenfoque Óptico Saturado y Reflejos Especulares Biselados
+
+La jerarquía de elevación en DevSculptor no se define únicamente por el eje Z de desplazamiento (`box-shadow`), sino por la **densidad óptica del cristal**:
+
+| Nivel de Capa | Clase Primitiva | Translucidez Base | Desenfoque + Saturación | Reflejo Especular Inset | Propósito en el Estudio |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **N0 — Base** | `.wallpaper-canvas` | 100% visible | Sin desenfoque | N/A | Fondo escénico con ondas y orbes cinéticos. |
+| **N1 — Ventana** | `.vision-window` | 26% a 42% | `blur(18px) saturate(190%)` | `inset 0 1.5px 1px rgba(255,255,255,0.48)` | Paneles estructurales (TopBar, Nav, Studio, Copiloto). |
+| **N2 — Tarjeta** | `.vision-card` | 4% a 8% | `blur(14px) saturate(170%)` | `inset 0 1px 0 rgba(255,255,255,0.28)` | Ítems de Requisitos, Actas ADRs, Contenedores internos. |
+| **N2.5 — Nodo ERD** | `.erd-node` | 65% a 82% | `blur(18px) saturate(190%)` | `inset 0 1px 1px rgba(255,255,255,0.4)` + Perímetro 1px | Tablas arrastrables en el lienzo interactivo de modelado. |
+| **N3 — Flotante** | `.vision-dock` | 65% a 82% | `blur(18px) saturate(190%)` | `inset 0 1.5px 1px rgba(255,255,255,0.55)` | Dock de controles de zoom del canvas e indicadores. |
+| **N4 — Modal** | `#export-modal`, etc. | 65% a 85% | `blur(35px) saturate(210%)` | `backdrop-blur-md` + Sombra profunda 24px | Ventanas modales de compilación OKF, creación y confirmación. |
+
+---
+
+### 3.5. Tipografía Canónica y Jerarquías de Contraste
+
+La legibilidad bajo fondos translúcidos requiere tipografías con alta altura de la "x" (x-height) y renderizado sub-pixel nítido:
+* **Tipografía de Interfaz (`--font-sans`):** **`Inter`** (pesos `300`, `400`, `500`, `600`, `700`). Se acompaña de `-webkit-font-smoothing: antialiased` en `<body>`.
+* **Tipografía de Código y Fórmulas (`--font-mono`):** **`JetBrains Mono`** (pesos `400`, `500`, `600`). Empleada obligatoriamente para:
+  - Identificadores de requisitos (`RF-01`, `RNF-02`).
+  - Actas de arquitectura (`ADR-01`, `ADR-02`).
+  - Tipos y nombres de columna en el canvas (`UUID PK`, `VARCHAR UNIQUE`).
+  - Salidas DDL, DTOs TypeScript, JSON Schema y modelos Pydantic.
+  - Indicadores numéricos de telemetría y puntuaciones de madurez (`100%`).
+
+---
+
+### 3.6. Catálogo Canónico de Primitivas y Componentes Glassmórficos
+
+Las siguientes clases CSS son los bloques fundamentales de construcción visual en toda la aplicación:
+
+#### 1. Ventana Estructural (`.vision-window`)
+```css
+.vision-window {
+  /* Gradiente angular que simula la refracción de luz sobre vidrio pulido */
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.02) 40%, rgba(255, 255, 255, 0.04) 100%), var(--glass-window);
+  backdrop-filter: var(--blur-window);
+  -webkit-backdrop-filter: var(--blur-window);
+  border: var(--border-glass);
+  box-shadow: var(--shadow-window);
+  border-radius: var(--radius-window);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+```
+
+#### 2. Tarjeta Interactiva (`.vision-card`)
+```css
+.vision-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.015) 100%), var(--glass-card);
+  backdrop-filter: var(--blur-card);
+  -webkit-backdrop-filter: var(--blur-card);
+  border: var(--border-glass-subtle);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.vision-card:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.03) 100%), var(--glass-card-hover);
+  border-color: var(--border-glass-light);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px -2px rgba(0, 0, 0, 0.35), inset 0 1px 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.vision-card.selected {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.22) 0%, rgba(99, 102, 241, 0.08) 100%), var(--glass-card-selected);
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px var(--accent-indigo-glow), var(--shadow-card);
+}
+```
+
+#### 3. Botones Táctiles Hápticos (`.vision-btn`)
+```css
+.vision-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: var(--border-glass-subtle);
+  border-radius: var(--radius-btn);
+  cursor: pointer;
+  outline: none;
+  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.2), 0 2px 5px rgba(0, 0, 0, 0.2);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.vision-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: var(--border-glass-light);
+  transform: translateY(-0.5px);
+  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.35), 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+
+.vision-btn:active {
+  transform: scale(0.97);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.vision-btn-primary {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.95), rgba(79, 70, 229, 0.95));
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 14px var(--accent-indigo-glow), inset 0 1px 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.vision-btn-primary:hover {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  box-shadow: 0 6px 20px var(--accent-indigo-glow), inset 0 1px 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.vision-btn-pill {
+  border-radius: var(--radius-pill);
+  padding: 4px 12px;
+}
+
+.vision-btn-icon {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: var(--radius-btn);
+}
+```
+
+#### 4. Campos de Entrada de Cristal (`.vision-input`)
+```css
+.vision-input {
+  width: 100%;
+  padding: 7.5px 12px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--text-primary);
+  background: var(--glass-input);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: var(--border-glass);
+  border-radius: var(--radius-btn);
+  box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.vision-input:focus {
+  border-color: var(--border-focus);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 0 2.5px var(--accent-indigo-glow), inset 0 1px 1px 0 rgba(255, 255, 255, 0.25);
+}
+```
+
+#### 5. Pills de Estado y Badges Semánticos (`.vision-pill`)
+```css
+.vision-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  border-radius: 5px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.pill-indigo {
+  background: rgba(99, 102, 241, 0.25);
+  color: #c7d2fe;
+  border: 1px solid rgba(99, 102, 241, 0.5);
+}
+
+.pill-cyan {
+  background: rgba(56, 189, 248, 0.25);
+  color: #bae6fd;
+  border: 1px solid rgba(56, 189, 248, 0.5);
+}
+
+.pill-emerald {
+  background: rgba(52, 211, 153, 0.25);
+  color: #a7f3d0;
+  border: 1px solid rgba(52, 211, 153, 0.5);
+}
+
+.pill-amber {
+  background: rgba(251, 191, 36, 0.25);
+  color: #fef08a;
+  border: 1px solid rgba(251, 191, 36, 0.5);
+}
+
+.pill-rose {
+  background: rgba(248, 113, 113, 0.25);
+  color: #fecaca;
+  border: 1px solid rgba(248, 113, 113, 0.5);
+}
+```
+
+#### 6. Dock Flotante de Controles (`.vision-dock`)
+```css
+.vision-dock {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.03) 100%), var(--glass-elevated);
+  backdrop-filter: var(--blur-window);
+  -webkit-backdrop-filter: var(--blur-window);
+  border: var(--border-glass-light);
+  border-radius: var(--radius-btn);
+  box-shadow: var(--shadow-dock);
+  padding: 4px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+```
+
+#### 7. Bloques de Terminal y Código de Cristal (`.code-block`)
+```css
+.code-block {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.6;
+  background: var(--glass-code);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: var(--radius-card);
+  padding: 14px;
+  overflow: auto;
+  border: var(--border-glass-subtle);
+  box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.35);
+}
+```
+
+#### 8. Barra de Desplazamiento Translúcida (Minimalist Scrollbar)
+```css
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+html.light ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.22);
+}
+```
+
+---
+
+### 3.7. Ergonomía Visual de Nodos ERD y Conectores Bezier SVG Neón
+
+El lienzo interactivo de modelado de base de datos se rige por las siguientes especificaciones visuales de cristal y conectividad:
+
+```css
+/* Grilla Infinita de Puntos Radiales */
+.canvas-grid-bg {
+  background-color: transparent;
+  background-image: radial-gradient(var(--canvas-grid-dot) 1.2px, transparent 1.2px);
+  background-size: 20px 20px;
+}
+
+/* Nodo de Entidad Relacional (Tabla ERD) */
+.erd-node {
+  position: absolute;
+  width: 220px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.02) 100%), var(--glass-elevated);
+  backdrop-filter: var(--blur-window);
+  -webkit-backdrop-filter: var(--blur-window);
+  border: var(--border-glass-light);
+  border-radius: var(--radius-node);
+  box-shadow: var(--shadow-node);
+  cursor: grab;
+  z-index: 10;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.erd-node:active {
+  cursor: grabbing;
+}
+
+.erd-node.is-selected {
+  border-color: var(--accent-indigo);
+  box-shadow: 0 0 0 2.5px var(--accent-indigo-glow), var(--shadow-node);
+  z-index: 20;
+}
+
+.erd-node-header {
+  padding: 7px 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: var(--border-glass-subtle);
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-node) var(--radius-node) 0 0;
+}
+
+.erd-node-body {
+  padding: 3px 0;
+}
+
+.erd-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 11px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  position: relative;
+}
+
+.erd-row:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Conectores SVG Bezier Neón (Relaciones Relacionales) */
+.bezier-connector {
+  fill: none;
+  stroke: #38bdf8;
+  stroke-width: 2px;
+  stroke-dasharray: 5 3;
+  opacity: 0.95;
+  filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.7));
+}
+```
+
+---
+
+### 3.8. Reglas de Implementación en Producción (React 18, Tailwind y GPU)
+
+Para trasladar este sistema desde el sandbox de prototipado hacia `devsculptor-frontend`:
+1. **SSOT de Estilos:** Crear `src/styles/tokens.css` y `src/styles/glassmorphism.css` conteniendo exactamente estas reglas nativas.
+2. **Compatibilidad con Tailwind CSS:** No intentar recrear las sombras compuestas multinivel y gradientes de refracción mediante clases ad-hoc (`shadow-[...]`). En su lugar, registrar las clases semánticas `.vision-window`, `.vision-card`, `.vision-btn` y sus variantes en el plugin de componentes de Tailwind o consumirlas directamente vía `@apply` o imports globales.
+3. **Aceleración por Hardware (GPU):**
+   - El arrastre de nodos y el zoom en React Flow deben ejecutarse usando transformaciones GPU (`transform: translate3d(x, y, 0) scale(z)`).
+   - Aplicar `will-change: transform` durante interacciones dinámicas y retirarlo al entrar en reposo para evitar fugas de memoria gráfica.
+4. **Respeto a Preferencias del Sistema:** Consultar `window.matchMedia('(prefers-color-scheme: light)')` en la inicialización si no existe clave previa en `localStorage`.
 
 ---
 
@@ -553,11 +1085,13 @@ devsculptor-frontend/
 
 | Área | Lo que un Ingeniero Frontend HACE (Do) | Lo que un Ingeniero Frontend NUNCA hace (Don't) |
 | :--- | :--- | :--- |
-| **Estilos & Colores** | Usa variables CSS semánticas (`var(--bg-glass-card)`). | Jamás escribe colores hexadecimales fijos dispersos en el código (`#1e293b`). |
+| **Glassmorphism & Física Óptica** | Aplica la fórmula completa: refracción angular 135°, `backdrop-filter: blur(...) saturate(...)` y reflejo especular blanco en bisel (`inset 0 1.5px 1px 0 rgba(255,255,255,0.48)`). | Jamás usa fondos translúcidos planos (`background: rgba(0,0,0,0.5)`) sin desenfoque ni bisel (lucen como plástico sucio y destruyen el contraste). |
+| **Geometría Arquitectónica** | Emplea radios compactos de ingeniería (`10px` ventanas, `7px` tarjetas, `8px` nodos, `6px` botones) reservando píldora (`9999px`) solo a badges. | Prohibido usar border-radius gigantes "burbuja" (`20px - 30px`) en tarjetas y nodos técnicos que devoran el espacio útil y restan rigor visual. |
+| **Rendimiento de GPU** | Delega el arrastre de tablas ERD y zoom a transformaciones GPU (`translate3d(x,y,0)` y `requestAnimationFrame`). | Jamás manipula propiedades de reflujo (`top`, `left`, `margin`) de forma síncrona en eventos `mousemove` del canvas. |
+| **Estilos & Tokens** | Usa variables CSS semánticas de cristal (`var(--glass-window)`, `var(--glass-card)`, `var(--border-glass)`). | Jamás escribe colores hexadecimales fijos dispersos en el código (`#1e293b`). |
 | **Dual Theme** | Implementa transiciones suaves y contraste verificado tanto en Sol como en Luna. | No hardcodea modo oscuro permanente rompiendo la experiencia en modo claro. |
 | **Tipado TypeScript** | Tipa todas las props, estados y respuestas HTTP con interfaces explícitas. | Prohibido el uso de `any` para salir del paso. |
 | **Manejo de Respuestas** | Desempaqueta `response.data` respetando el envelope `{ success: true, data: T }`. | Nunca asume que el backend devuelve arrays planos sin validar `success: true`. |
-| **Canvas & Eventos** | Aplica `requestAnimationFrame` y transformaciones GPU (`translate3d`). | Jamás manipula `top` y `left` de forma síncrona en eventos `mousemove` (provoca lag). |
 | **Máquina de Estados ADRs** | Bloquea la mutación de estado una vez que un ADR pasa a `ACCEPTED` o `REJECTED`. | Nunca permite revertir una decisión aprobada sin levantar una nueva acta. |
 | **Feedback al Usuario** | Muestra Skeletons, Toasts y badges de autoguardado para confirmar operaciones. | Nunca deja la pantalla congelada sin indicador visual de progreso. |
 | **Formularios & Validación** | Valida campos en tiempo real antes de enviar, replicando los schemas Zod del backend. | No envía payloads vacíos esperando que el backend descubra los errores. |
