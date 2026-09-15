@@ -1,305 +1,1017 @@
-# DevSculptor Frontend — Convenciones de Arquitectura, UX/UI y Directrices de Prototipado
+# DevSculptor Frontend — Convenciones de Arquitectura, UX/UI, Sistema de Diseño y Estructura de Pantallas
 
-Este documento constituye el estándar formal de arquitectura frontend, diseño visual y experiencia de usuario (UX/UI) para **DevSculptor**. Define el marco metodológico para la fase de prototipado rápido en tecnologías nativas (HTML/CSS/JS) y establece los lineamientos técnicos inmutables que regirán la construcción de la aplicación web en producción (**React + Vite + TypeScript**), garantizando una integración fluida con la API REST y la persistencia relacional construidas en el **Sprint 1 (Backend Core)**.
+Este documento constituye el **estándar formal y definitivo** de arquitectura frontend, diseño visual, experiencia de usuario (UX/UI) y estructura canónica de pantallas para **DevSculptor**. 
+
+Sintetiza la visión de producto (gobernanza técnica pre-código y mitigación del *"vibe coding"*), consolida la estética **Apple Glassmorphic & NotebookLM Studio System** validada empíricamente en el sandbox de prototipado, y establece los contratos que regirán la construcción de la aplicación web en producción (**React 18+ con Vite y TypeScript**), consumiendo la API REST construida y blindada en el **Sprint 1 (Backend Core)**.
+
+---
+
+## 📑 Tabla de Contenidos
+
+1. [Estrategia Metodológica: El Prototipado como Gate de Validación](#1-estrategia-metodológica-el-prototipado-como-gate-de-validación)
+2. [Stack Tecnológico Canónico del Frontend Real](#2-stack-tecnológico-canónico-del-frontend-real)
+3. [Sistema de Diseño (Design System): Apple visionOS Liquid Glassmorphism (v2) & NotebookLM Studio](#3-sistema-de-diseño-design-system-apple-visionos-liquid-glassmorphism-v2--notebooklm-studio)
+   - 3.1. [Filosofía Visual, Geometría Arquitectónica y Física del Cristal](#31-filosofía-visual-geometría-arquitectónica-y-física-del-cristal)
+   - 3.2. [Arquitectura de Fondo Multicapa: Wallpaper Canvas, Ondas y Orbes](#32-arquitectura-de-fondo-multicapa-wallpaper-canvas-ondas-y-orbes)
+   - 3.3. [Paleta Dual Canónica de Tokens: visionOS Crystal Obsidian vs. Snow Spatial Glass](#33-paleta-dual-canónica-de-tokens-visionos-crystal-obsidian-vs-snow-spatial-glass)
+   - 3.4. [Sistema de Elevación, Desenfoque Óptico Saturado y Reflejos Especulares Biselados](#34-sistema-de-elevación-desenfoque-óptico-saturado-y-reflejos-especulares-biselados)
+   - 3.5. [Tipografía Canónica y Jerarquías de Contraste](#35-tipografía-canónica-y-jerarquías-de-contraste)
+   - 3.6. [Catálogo Canónico de Primitivas y Componentes Glassmórficos](#36-catálogo-canónico-de-primitivas-y-componentes-glassmórficos)
+   - 3.7. [Ergonomía Visual de Nodos ERD y Conectores Bezier SVG Neón](#37-ergonomía-visual-de-nodos-erd-y-conectores-bezier-svg-neón)
+   - 3.8. [Reglas de Implementación en Producción (React 18, Tailwind y GPU)](#38-reglas-de-implementación-en-producción-react-18-tailwind-y-gpu)
+4. [Estructura Canónica de Pantallas y Flujos de Navegación](#4-estructura-canónica-de-pantallas-y-flujos-de-navegación)
+   - 4.1. [Mapa General de Navegación y Flujo del Usuario](#41-mapa-general-de-navegación-y-flujo-del-usuario)
+   - 4.2. [Pantalla 0: Portal de Acceso y Autenticación (`/auth`)](#42-pantalla-0-portal-de-acceso-y-autenticación-auth)
+   - 4.3. [Pantalla 1: Hub de Proyectos & Portafolio (`/projects`)](#43-pantalla-1-hub-de-proyectos--portafolio-projects)
+   - 4.4. [Pantalla 2: Estudio de Gobernanza Tripartito NotebookLM (`/projects/:projectId`)](#44-pantalla-2-estudio-de-gobernanza-tripartito-notebooklm-projectsprojectid)
+     - 4.4.1. [Barra Superior Integrada (Apple Glass TopBar)](#441-barra-superior-integrada-apple-glass-topbar)
+     - 4.4.2. [Panel Izquierdo: Flujo Guiado en 5 Pasos (Navigation Pipeline)](#442-panel-izquierdo-flujo-guiado-en-5-pasos-navigation-pipeline)
+     - 4.4.3. [Panel Central: Workspace / Studio de 4 Vistas Activas](#443-panel-central-workspace--studio-de-4-vistas-activas)
+       - *Vista 1: Conversación Inicial & Entrevista de Alcance (`view-chat`)*
+       - *Vista 2: Matriz de Requisitos RF y RNF (`view-reqs`)*
+       - *Vista 3: Catálogo de Documentación & ADRs (`view-docs`)*
+       - *Vista 4: Canvas ERD & Salidas de Scripts Multi-Lenguaje (`view-canvas`)*
+     - 4.4.4. [Panel Derecho: Copiloto & Inspector de Contexto (Metrics & Sources)](#444-panel-derecho-copiloto--inspector-de-contexto-metrics--sources)
+     - 4.4.5. [Modal de Compilación & Exportación OKF (`export-modal`)](#445-modal-de-compilación--exportación-okf-export-modal)
+5. [Ergonomía y Arquitectura del Canvas Interactivo (ERD) & Salidas Multi-Lenguaje](#5-ergonomía-y-arquitectura-del-canvas-interactivo-erd--salidas-multi-lenguaje)
+6. [Principios de UX/UI y Experiencia de Usuario](#6-principios-de-uxui-y-experiencia-de-usuario)
+7. [Integración con el Backend Core (Sprint 1) & Mapeo Pantalla-API](#7-integración-con-el-backend-core-sprint-1--mapeo-pantalla-api)
+8. [Estructura Canónica de Directorios del Frontend Real](#8-estructura-canónica-de-directorios-del-frontend-real)
+9. [Matriz de Buenas Prácticas Frontend (Do's & Don'ts)](#9-matriz-de-buenas-prácticas-frontend-dos--donts)
 
 ---
 
 ## 1. Estrategia Metodológica: El Prototipado como Gate de Validación
 
-Para proyectos de alta complejidad visual e interactiva como DevSculptor —que combina gestión documental jerárquica con un **Canvas Interactivo para modelado relacional y generación DDL**— saltar directamente a la codificación de componentes React introduce un alto riesgo de sobreingeniería y refactorización continua del estado.
+Para proyectos de alta densidad técnica e interactiva como DevSculptor —que combina captura guiada de lenguaje natural, matrices jerárquicas de requerimientos, máquinas de estado para ADRs y un **Canvas Interactivo con generación automática de scripts DDL, TypeScript, JSON Schema y Python**— codificar componentes en React sin validación previa introduce riesgos críticos de acoplamiento y sobreingeniería de estado.
 
-Por ello, se establece un flujo de dos etapas desacopladas:
+Por ello, el ciclo de vida del frontend se gobierna bajo un flujo estricto de dos fases en la rama `feat/frontend`:
 
 ```
-[ 1. Sandbox de Prototipado ] ────► [ 2. Gate de Validación ] ────► [ 3. Construcción Real ]
-  HTML5 Semántico                     Revisión de ergonomía           React 18+ con Vite
-  Vanilla CSS (Design Tokens)         Validación UX/UI en vivo        TypeScript Estricto
-  JavaScript Nativo (ES6+)            Aprobación funcional            Consumo API REST Backend
-  (Carpeta: /Prototype)               (Checklist de Criterios)        (devsculptor-frontend)
+┌────────────────────────────────┐       ┌────────────────────────────────┐       ┌────────────────────────────────┐
+│   1. SANDBOX DE PROTOTIPADO    │       │     2. GATE DE VALIDACIÓN      │       │     3. CONSTRUCCIÓN REAL       │
+│  - HTML5 Semántico             │ ────► │  - Ergonomía y fluidez 60 FPS  │ ────► │  - React 18+ con Vite          │
+│  - Vanilla CSS3 (Glass Tokens) │       │  - Contraste WCAG 2.1 AA       │       │  - TypeScript Estricto         │
+│  - ES6 Modules nativos         │       │  - Validación de 5 estados UI  │       │  - Zustand + React Flow        │
+│  - Carpeta /Prototype          │       │  - Aprobación de Arquitectura  │       │  - devsculptor-frontend        │
+└────────────────────────────────┘       └────────────────────────────────┘       └────────────────────────────────┘
 ```
 
-### Reglas de la Carpeta `/Prototype`
-1. **Tecnologías Exclusivas**: Únicamente archivos `.html`, `.css` y `.js` (ES6 modules nativos).
-2. **Cero Dependencias y Cero Bundlers**: Prohibido el uso de `npm`, Webpack, Vite o Node.js dentro de `/Prototype`.
-3. **Ejecución Inmediata**: Debe poder abrirse directamente en cualquier navegador o mediante una extensión ligera como *Live Server* sin requerir ningún paso de compilación previa.
-4. **Propósito**: Probar layout, distribución espacial del canvas, jerarquía tipográfica, micro-interacciones, manipulación del DOM, cálculo trigonométrico/geométrico de conectores de tablas y ergonomía de paneles antes de abstraerlos en componentes React.
-
-### Criterios del Gate de Validación (Checklist para transicionar a React)
-Antes de trasladar una pantalla o componente a `devsculptor-frontend`:
-- [ ] La ergonomía de interacción es intuitiva (el drag-and-drop no colisiona con el scroll ni genera lag visual).
-- [ ] La jerarquía visual distingue sin ambigüedad elementos primarios, secundarios y terciarios.
-- [ ] Los estados de interfaz (`Loading`, `Active`, `Empty State`, `Error State`) están conceptualizados.
-- [ ] Los tokens de color y espaciado cumplen el estándar de contraste WCAG 2.1 AA (mínimo 4.5:1).
-- [ ] Los flujos de modales y formularios contemplan validaciones de entrada correspondientes a los esquemas Zod del backend.
+### Reglas Inmutables de la Carpeta `/Prototype`
+1. **Tecnologías Exclusivas**: Únicamente `.html`, `.css` y `.js` nativo.
+2. **Cero Dependencias**: Prohibido el uso de `npm`, `package.json`, Vite, Webpack o Node.js dentro de `/Prototype`.
+3. **Ejecución Instantánea**: Debe poder abrirse con *Live Server* o doble clic en cualquier navegador web moderno.
+4. **Objetivo Exclusivo**: Experimentar layout, micro-interacciones, arrastre de nodos con transformaciones GPU, cálculo de conectores Bezier SVG, alternancia de temas y ergonomía general antes de abstraerlos a componentes de producción.
 
 ---
 
 ## 2. Stack Tecnológico Canónico del Frontend Real
 
-Cuando los prototipos cumplan su ciclo de validación, la implementación de producción se ejecutará bajo el siguiente stack:
+Al culminar la validación en el prototipo, la aplicación de producción se implementará bajo el siguiente stack:
 
 | Capa | Tecnología | Justificación Técnica |
 | :--- | :--- | :--- |
-| **Framework Base** | **React 18+** | Renderizado concurrente, ecosistema de componentes maduro y compatibilidad directa con librerías especializadas de diagramado de nodos (React Flow). |
-| **Herramienta de Build** | **Vite** | Instant server start mediante ESM nativo, Hot Module Replacement (HMR) ultrarrápido y compilación de producción optimizada mediante Rollup. |
-| **Lenguaje** | **TypeScript (`strict: true`)** | Tipado estricto alineado con los DTOs y tipos del backend (`User`, `Project`, `Requirement`, `ApiResponse<T>`), eliminando bugs en runtime. |
-| **Sistema de Estilos** | **Vanilla CSS + Design Tokens** | Control milimétrico de propiedades visuales, animaciones de alto rendimiento mediante aceleración por GPU (`transform`, `opacity`) y cero sobrecarga de CSS-in-JS en runtime. |
-| **Gestión de Estado** | **Context API + Zustand** | Context API para estados globales de aplicación (autenticación, usuario activo, tema). Zustand para el estado complejo, serialización y grafos del Canvas ERD. |
-| **Cliente HTTP** | **Axios Centralizado** | Configuración de interceptores para inyección de JWT, propagación de `X-Request-Id`, manejo centralizado del envelope de respuesta y desconexión automática ante respuestas 401. |
-| **Iconografía** | **Lucide Icons (SVG)** | Iconos vectoriales limpios, consistentes, escalables y con tree-shaking para optimizar el bundle final. |
+| **Framework Base** | **React 18+** | Concurrencia, suspense para carga progresiva y soporte de nodos gráficos en árbol virtual. |
+| **Build Tool** | **Vite** | Arranque ultrarrápido con ESM nativo, HMR sub-segundo y empaquetado optimizado mediante Rollup. |
+| **Lenguaje** | **TypeScript (`strict: true`)** | Cero `any`. Tipado simétrico con los DTOs y tipos del backend (`User`, `Project`, `Requirement`, `ApiResponse<T>`). |
+| **Sistema de Estilos** | **Vanilla CSS + Design Tokens** | Control nativo de `backdrop-filter`, animaciones GPU (`transform: translate3d`) y cero overhead de CSS-in-JS. |
+| **Lienzo ERD** | **React Flow (@xyflow/react)** | Gestión determinista de nodos arrastrables, puertos magnéticos y aristas Bezier interactivas. |
+| **Gestión de Estado** | **Zustand + Context API** | Context API para Auth y Tema; Zustand para el grafo del canvas ERD, nodos seleccionados y sincronización. |
+| **Cliente HTTP** | **Axios Centralizado** | Interceptores para inyección JWT, propagación de `X-Request-Id` y desempaquetado del envelope estándar. |
+| **Iconografía** | **Material Symbols Outlined + Lucide** | Iconos vectoriales limpios con alineación tipográfica perfecta y soporte de ligaduras. |
 
 ---
 
-## 3. Sistema de Diseño (Design System) y Estética Visual
+## 3. Sistema de Diseño (Design System): Apple visionOS Liquid Glassmorphism (v2) & NotebookLM Studio
 
-DevSculptor debe transmitir una estética **"Cyber-Engineered & Precision Tool"**: moderna, sobria, técnica y orientada a la productividad prolongada sin fatiga visual.
+### 3.1. Filosofía Visual, Geometría Arquitectónica y Física del Cristal
 
-### 3.1. Paleta de Colores (Tokens Semánticos)
+DevSculptor abandona el "glassmorphism genérico de cartón translúcido" (fondos planos semiopacos que lavan el contraste) y evoluciona hacia una implementación de grado de ingeniería: **Apple visionOS Liquid Glassmorphism (v2)** articulada con el **Workspace Tripartito de Google NotebookLM Studio**.
 
-Se establece un esquema Dark Mode de alto contraste y balance tonal refinado:
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                        ANATOMÍA ÓPTICA DE UNA SUPERFICIE DE VIDRIO                      │
+│                                                                                        │
+│  Luz Cenital                                                                           │
+│      │                                                                                 │
+│      ▼   ┌──────────────────────────────────────────────────────────────────────────┐  │
+│  [ SHEEN ]   Bisel Superior Especular: inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.48) │  │
+│          ├──────────────────────────────────────────────────────────────────────────┤  │
+│          │ Gradiente Angular 135°: Refracción de luz (12% -> 2% -> 4%)              │  │
+│  [ CUERPO│ Transparencia Neta: 20% a 35% (var(--glass-window) / var(--glass-card))   │  │
+│   VIDRIO]│ Desenfoque Gaussiano Óptico Saturado: blur(18px) + saturate(190%)        │  │
+│          ├──────────────────────────────────────────────────────────────────────────┤  │
+│  [ OCULTA]   Sombra de Oclusión Inferior: inset 0 -1px 1px 0 rgba(255, 255, 255, 0.08)│  │
+│          └──────────────────────────────────────────────────────────────────────────┘  │
+│                  Sombra Profunda Proyectada: 0 16px 40px -8px rgba(0, 0, 0, 0.5)      │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 1. Principios de Física Óptica del Cristal
+* **Reflejo Especular Superior (*Specular Sheen*):** Toda ventana y tarjeta de cristal posee un fino resplandor blanco puro en su arista superior (`inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.48)` en Dark Mode; `0.98` en Light Mode). Esto emula la luz cenital rebotando en el bisel pulido del vidrio.
+* **Gradiente de Refracción Angular:** La superficie no es un color plano, sino un gradiente a 135 grados (`linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.02) 40%, rgba(255, 255, 255, 0.04) 100%)`) superpuesto al color translúcido base.
+* **Saturación Cromática Obligatoria (`saturate`):** Un desenfoque común (`blur(...)`) deslava los colores de fondo, tornándolos lechosos o grisáceos. En DevSculptor, todo `backdrop-filter` acompaña el blur con saturación potenciada (`saturate(170% a 210%)`), manteniendo la vitalidad de las formas que transitan por detrás.
+* **Translucidez Dinámica Alta:** Los fondos de cristal mantienen una opacidad real entre el **20% y 35%**. Esto permite que el wallpaper y los orbes de luz ambiental respiren y se filtren sutilmente a través de la UI sin comprometer la legibilidad de los textos.
+
+#### 2. Geometría Refinada y Radios Arquitectónicos (Menor Border-Radius)
+A diferencia de los estilos de consumo masivo con bordes exageradamente redondos (20px - 28px) que desperdician espacio y transmiten informalidad ("look de juguete"), DevSculptor adopta una **geometría arquitectónica de precisión**:
+* **`--radius-window: 10px`**: Marcos perimetrales de ventanas y paneles estructurales (TopBar, Nav, Workspace, Copiloto).
+* **`--radius-card: 7px`**: Tarjetas de contenido técnico (ítems de requisitos, actas ADRs, métricas del copiloto).
+* **`--radius-node: 8px`**: Nodos de entidad y tablas de base de datos en el lienzo ERD.
+* **`--radius-btn: 6px`**: Botones táctiles, inputs y selectores.
+* **`--radius-pill: 9999px`**: Exclusivo para píldoras conmutadoras (Sol/Luna, telemetría de estado) y badges de clasificación.
+
+---
+
+### 3.2. Arquitectura de Fondo Multicapa: Wallpaper Canvas, Ondas y Orbes
+
+Para que el efecto de refracción del cristal cobre vida, la interfaz descansa sobre un canvas de fondo compuesto por **4 capas orquestadas** bajo el contenedor `.wallpaper-canvas`:
+
+```html
+<!-- Arquitectura Canónica del Fondo de Vidrio (Wallpaper Canvas) -->
+<div class="wallpaper-canvas">
+  <!-- Capa 1: Fotografía de Paisaje Apple Retina HD -->
+  <div id="wallpaper-bg" class="wallpaper-img"></div>
+  
+  <!-- Capa 2: Malla Gradiente de Ondas Dinámicas -->
+  <div class="wallpaper-wave-overlay"></div>
+  
+  <!-- Capa 3: Micro-Retícula Topográfica de Precisión -->
+  <div class="wallpaper-topo-pattern"></div>
+  
+  <!-- Capa 4: Orbes de Luz Ambiental con Deriva Cinemática GPU -->
+  <div class="ambient-orb orb-indigo"></div>
+  <div class="ambient-orb orb-cyan"></div>
+  <div class="ambient-orb orb-purple"></div>
+</div>
+```
 
 ```css
+/* ==========================================================================
+   Capas de Fondo: Naturaleza Apple & Patrón de Ondas Orgánicas
+   ========================================================================== */
+.wallpaper-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Capa 1: Fotografía de Paisaje Natural con Contraste y Calibración Óptica */
+.wallpaper-img {
+  position: absolute;
+  inset: -20px;
+  background-image: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2560&auto=format&fit=crop');
+  background-size: cover;
+  background-position: center 35%;
+  background-repeat: no-repeat;
+  filter: brightness(0.84) contrast(1.18) saturate(1.3);
+  transition: opacity 0.6s ease, filter 0.6s ease, background-image 0.6s ease;
+}
+
+html.light .wallpaper-img {
+  filter: brightness(0.98) contrast(1.08) saturate(1.15);
+}
+
+/* Capa 2: Malla de Ondas Gradiente Dinámica (Modo Fusión) */
+.wallpaper-wave-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 18% 22%, rgba(99, 102, 241, 0.32) 0%, transparent 45%),
+              radial-gradient(circle at 82% 78%, rgba(56, 189, 248, 0.28) 0%, transparent 50%),
+              radial-gradient(circle at 50% 105%, rgba(168, 85, 247, 0.22) 0%, transparent 55%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+html.light .wallpaper-wave-overlay {
+  mix-blend-mode: multiply;
+  opacity: 0.55;
+}
+
+/* Capa 3: Patrón de Puntos / Retícula Topográfica de Arquitecto */
+.wallpaper-topo-pattern {
+  position: absolute;
+  inset: 0;
+  opacity: 0.15;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.8) 1.2px, transparent 1.2px);
+  background-size: 28px 28px;
+  pointer-events: none;
+}
+
+/* Capa 4: Orbes Ambientales con Animación Acelerada por GPU */
+.ambient-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.50;
+  animation: orbFloat 24s ease-in-out infinite alternate;
+}
+
+.orb-indigo {
+  top: -5%;
+  left: 25%;
+  width: 650px;
+  height: 650px;
+  background: rgba(99, 102, 241, 0.38);
+}
+
+.orb-cyan {
+  bottom: -5%;
+  right: 15%;
+  width: 600px;
+  height: 600px;
+  background: rgba(56, 189, 248, 0.32);
+  animation-delay: -9s;
+}
+
+.orb-purple {
+  top: 45%;
+  left: -8%;
+  width: 500px;
+  height: 500px;
+  background: rgba(168, 85, 247, 0.26);
+  animation-delay: -16s;
+}
+
+@keyframes orbFloat {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(45px, 35px, 0) scale(1.08); }
+  100% { transform: translate3d(-35px, -25px, 0) scale(0.94); }
+}
+```
+
+---
+
+### 3.3. Paleta Dual Canónica de Tokens: visionOS Crystal Obsidian vs. Snow Spatial Glass
+
+El sistema implementa alternancia instantánea mediante clases `.dark` o `.light` aplicadas a la raíz `<html>` o al `<body>`:
+
+```css
+/* ==========================================================================
+   Design Tokens Canónicos: visionOS Crystal Obsidian vs. Snow Spatial Glass
+   ========================================================================== */
+
 :root {
-  /* --- Fondos y Superficies --- */
-  --bg-primary: #090d16;          /* Fondo base de la aplicación (Obsidian Deep) */
-  --bg-secondary: #0f172a;        /* Superficie de paneles laterales y navegación */
-  --bg-tertiary: #1e293b;         /* Fondo de tarjetas, modales y nodos del canvas */
-  --bg-canvas: #070a10;           /* Lienzo infinito con patrón de grilla sutil */
-  --bg-hover: rgba(255, 255, 255, 0.05);
+  /* --- MODO OSCURO (visionOS Crystal Obsidian — Por Defecto) --- */
+  --bg-space: #06080d;
+  
+  /* Superficies de Cristal Ultra-Translúcidas (Transparencia: 20% - 35%) */
+  --glass-nav: rgba(10, 14, 25, 0.35);
+  --glass-window: rgba(8, 12, 22, 0.26);
+  --glass-card: rgba(255, 255, 255, 0.04);
+  --glass-card-hover: rgba(255, 255, 255, 0.08);
+  --glass-card-selected: rgba(99, 102, 241, 0.20);
+  --glass-elevated: rgba(12, 16, 28, 0.65);
+  --glass-input: rgba(255, 255, 255, 0.05);
+  --glass-code: rgba(6, 9, 16, 0.72);
 
-  /* --- Bordes y Separadores --- */
-  --border-subtle: rgba(255, 255, 255, 0.08); /* Delimitador de contenedores */
-  --border-active: rgba(99, 102, 241, 0.4);   /* Borde con foco o selección */
-  --border-canvas-grid: rgba(255, 255, 255, 0.04);
+  /* Desenfoque Óptico con Saturación de Color */
+  --blur-window: blur(18px) saturate(190%);
+  --blur-card: blur(14px) saturate(170%);
+  --blur-modal: blur(35px) saturate(210%);
 
-  /* --- Textos y Tipografía --- */
-  --text-primary: #f8fafc;        /* Títulos y datos críticos (100% contraste) */
-  --text-secondary: #94a3b8;      /* Párrafos, labels e información secundaria */
-  --text-muted: #64748b;          /* Placeholders, metadatos y timestamps */
-  --text-accent: #818cf8;         /* Enlaces activos e indicadores */
+  /* Reflejos Especulares Biselados (Bordes de Vidrio de Alta Nitidez) */
+  --border-glass: 1px solid rgba(255, 255, 255, 0.24);
+  --border-glass-subtle: 1px solid rgba(255, 255, 255, 0.14);
+  --border-glass-light: 1px solid rgba(255, 255, 255, 0.38);
+  --border-focus: 1px solid rgba(129, 140, 248, 0.85);
 
-  /* --- Colores de Acento y Semántica --- */
-  --accent-primary: #6366f1;      /* Indigo/Violet: Acciones primarias, botones principales */
-  --accent-primary-hover: #4f46e5;
-  --accent-cyan: #06b6d4;         /* Cyan: Nodos de tablas, relaciones y esquemas DDL */
-  --accent-success: #10b981;      /* Emerald: Estados completados, guardado exitoso */
-  --accent-warning: #f59e0b;      /* Amber: Advertencias de gobernanza y deuda técnica */
-  --accent-danger: #ef4444;       /* Rose/Red: Eliminación destructiva y errores HTTP */
+  /* Sombras Multinivel con Inset Sheen Blanco Puro */
+  --shadow-window: 0 16px 40px -8px rgba(0, 0, 0, 0.5), 
+                   inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.48), 
+                   inset 0 -1px 1px 0 rgba(255, 255, 255, 0.08),
+                   inset 0 0 20px 0 rgba(255, 255, 255, 0.02);
+                   
+  --shadow-card: 0 4px 16px -2px rgba(0, 0, 0, 0.25), 
+                 inset 0 1px 0 0 rgba(255, 255, 255, 0.28);
+                 
+  --shadow-dock: 0 12px 30px -4px rgba(0, 0, 0, 0.65), 
+                 inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.55);
+                 
+  --shadow-node: 0 12px 28px -4px rgba(0, 0, 0, 0.45), 
+                 inset 0 1px 1px 0 rgba(255, 255, 255, 0.4),
+                 0 0 0 1px rgba(255, 255, 255, 0.18);
 
-  /* --- Badges de Modelado Relacional --- */
-  --badge-pk-bg: rgba(245, 158, 11, 0.15);
-  --badge-pk-color: #fbbf24;      /* Primay Key (Dorado/Ámbar) */
-  --badge-fk-bg: rgba(6, 182, 212, 0.15);
-  --badge-fk-color: #22d3ee;      /* Foreign Key (Cyan brillante) */
+  /* Tipografía de Alto Contraste */
+  --text-primary: #ffffff;
+  --text-secondary: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
 
-  /* --- Sombras y Efectos de Capa --- */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.6);
-  --glass-bg: rgba(15, 23, 42, 0.75);
-  --glass-blur: blur(12px);
+  /* Acentos de Cristal Luminoso */
+  --accent-indigo: #818cf8;
+  --accent-indigo-glow: rgba(99, 102, 241, 0.5);
+  --accent-cyan: #38bdf8;
+  --accent-cyan-glow: rgba(56, 189, 248, 0.4);
+  --accent-emerald: #34d399;
+  --accent-amber: #fbbf24;
+  --accent-rose: #f87171;
+
+  --canvas-grid-dot: rgba(255, 255, 255, 0.18);
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Geometría Arquitectónica Refinada */
+  --radius-pill: 9999px;
+  --radius-window: 10px;
+  --radius-card: 7px;
+  --radius-node: 8px;
+  --radius-btn: 6px;
+}
+
+/* --- MODO CLARO (visionOS Snow Spatial Glass) --- */
+html.light, body.light {
+  --bg-space: #dbe3ed;
+
+  --glass-nav: rgba(255, 255, 255, 0.55);
+  --glass-window: rgba(255, 255, 255, 0.42);
+  --glass-card: rgba(255, 255, 255, 0.40);
+  --glass-card-hover: rgba(255, 255, 255, 0.65);
+  --glass-card-selected: rgba(99, 102, 241, 0.16);
+  --glass-elevated: rgba(255, 255, 255, 0.82);
+  --glass-input: rgba(255, 255, 255, 0.55);
+  --glass-code: rgba(248, 250, 252, 0.80);
+
+  --border-glass: 1px solid rgba(255, 255, 255, 0.85);
+  --border-glass-subtle: 1px solid rgba(255, 255, 255, 0.55);
+  --border-glass-light: 1px solid rgba(255, 255, 255, 0.95);
+  --border-focus: 1px solid rgba(79, 70, 229, 0.7);
+
+  --shadow-window: 0 16px 40px -8px rgba(15, 23, 42, 0.15), 
+                   inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.98);
+                   
+  --shadow-card: 0 4px 14px -2px rgba(15, 23, 42, 0.08), 
+                 inset 0 1px 0 0 rgba(255, 255, 255, 0.9);
+                 
+  --shadow-dock: 0 10px 24px -4px rgba(15, 23, 42, 0.16), 
+                 inset 0 1.5px 1px 0 rgba(255, 255, 255, 1);
+                 
+  --shadow-node: 0 8px 20px -3px rgba(15, 23, 42, 0.12), 
+                 inset 0 1px 1px 0 rgba(255, 255, 255, 0.95), 
+                 0 0 0 1px rgba(255, 255, 255, 0.85);
+
+  --text-primary: #0f172a;
+  --text-secondary: #243046;
+  --text-muted: #53647a;
+  --text-dim: #7f90a5;
+
+  --accent-indigo: #4f46e5;
+  --accent-indigo-glow: rgba(79, 70, 229, 0.3);
+  --accent-cyan: #0284c7;
+  --accent-emerald: #059669;
+  --accent-amber: #d97706;
+  --accent-rose: #dc2626;
+
+  --canvas-grid-dot: rgba(15, 23, 42, 0.15);
 }
 ```
 
-### 3.2. Tipografía
-- **Fuente Principal (UI)**: `Inter`, `-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`.
-  - Excelente legibilidad en densidades pequeñas (badges, tablas de metadatos).
-- **Fuente Monoespaciada (Código y Esquemas)**: `JetBrains Mono`, `'Fira Code', 'Courier New', monospace`.
-  - Imprescindible para tipos de datos SQL (`VARCHAR(255)`, `UUID`, `TIMESTAMP`), visualización de scripts DDL y preview de paquetes OKF.
-- **Jerarquía**:
-  - H1 (Títulos de vista): `1.75rem (28px)` / SemiBold (600).
-  - H2 (Encabezados de panel/tarjeta): `1.25rem (20px)` / Medium (500).
-  - Body (Texto regular): `0.875rem (14px)` / Regular (400).
-  - Caption / Metadata / Badges: `0.75rem (12px)` / Medium (500).
+---
 
-### 3.3. Micro-interacciones y Transiciones
-- Las animaciones deben ser funcionales, no meramente decorativas:
-  - Transición estándar: `transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1)`.
-  - Botones y elementos interactivos: feedback visual con sutil elevación y cambio de luminosidad en `:hover`, reducción ligera de escala en `:active` (`transform: scale(0.98)`).
-  - Modales y Tooltips: Entrada con desvanecimiento y traslación vertical suave (`opacity: 0 -> 1`, `translateY(4px) -> translateY(0)`).
-  - Skeleton Loaders: Animación shimmer tipo gradiente lineal para indicar carga de listas o tablas sin generar saltos de layout (CLS = 0).
+### 3.4. Sistema de Elevación, Desenfoque Óptico Saturado y Reflejos Especulares Biselados
+
+La jerarquía de elevación en DevSculptor no se define únicamente por el eje Z de desplazamiento (`box-shadow`), sino por la **densidad óptica del cristal**:
+
+| Nivel de Capa | Clase Primitiva | Translucidez Base | Desenfoque + Saturación | Reflejo Especular Inset | Propósito en el Estudio |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **N0 — Base** | `.wallpaper-canvas` | 100% visible | Sin desenfoque | N/A | Fondo escénico con ondas y orbes cinéticos. |
+| **N1 — Ventana** | `.vision-window` | 26% a 42% | `blur(18px) saturate(190%)` | `inset 0 1.5px 1px rgba(255,255,255,0.48)` | Paneles estructurales (TopBar, Nav, Studio, Copiloto). |
+| **N2 — Tarjeta** | `.vision-card` | 4% a 8% | `blur(14px) saturate(170%)` | `inset 0 1px 0 rgba(255,255,255,0.28)` | Ítems de Requisitos, Actas ADRs, Contenedores internos. |
+| **N2.5 — Nodo ERD** | `.erd-node` | 65% a 82% | `blur(18px) saturate(190%)` | `inset 0 1px 1px rgba(255,255,255,0.4)` + Perímetro 1px | Tablas arrastrables en el lienzo interactivo de modelado. |
+| **N3 — Flotante** | `.vision-dock` | 65% a 82% | `blur(18px) saturate(190%)` | `inset 0 1.5px 1px rgba(255,255,255,0.55)` | Dock de controles de zoom del canvas e indicadores. |
+| **N4 — Modal** | `#export-modal`, etc. | 65% a 85% | `blur(35px) saturate(210%)` | `backdrop-blur-md` + Sombra profunda 24px | Ventanas modales de compilación OKF, creación y confirmación. |
 
 ---
 
-## 4. Ergonomía y Arquitectura del Canvas Interactivo (ERD)
+### 3.5. Tipografía Canónica y Jerarquías de Contraste
 
-El modelador relacional es el núcleo diferencial de DevSculptor. Su experiencia de uso debe compararse a herramientas profesionales de ingeniería visual (Figma, Miro, draw.io).
-
-### 4.1. Controles de Lienzo y Navegación
-- **Panning (Desplazamiento)**:
-  - Arrastre con botón central del ratón, o mantener pulsada la barra espaciadora + clic izquierdo y arrastrar.
-  - Soporte multitáctil y trackpad de dos dedos en laptops.
-- **Zooming (Escala)**:
-  - Rueda del ratón centrada en la posición exacta del cursor (`transform-origin: mouseX mouseY`).
-  - Límites seguros de zoom: mínimo `0.25x` (visión panorámica del esquema), máximo `2.0x` (inspección detallada de columnas y atributos).
-- **Minimapa y Controles Rápidos**:
-  - Panel flotante inferior con vista en miniatura de todas las entidades dispersas.
-  - Botón "Centrar Vista / Zoom to Fit" para re-enfocar todo el modelo en la pantalla.
-
-### 4.2. Anatomía de la Tarjeta de Tabla (Entity Node)
-Cada tabla en el canvas se estructura como un nodo atómico:
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│ 🗄️  users                                      [::] [⋮]     │ ◄── Header (Nombre + Acciones)
-├─────────────────────────────────────────────────────────────┤
-│ 🔑 id            UUID        NOT NULL                       │ ◄── PK Badge
-│    email         VARCHAR     UNIQUE, NOT NULL               │
-│    password_hash VARCHAR     NOT NULL                       │
-│ 🔗 role_id       UUID        FK -> roles.id                 │ ◄── FK Badge + Connector Port
-│    created_at    TIMESTAMPTZ DEFAULT now()                  │
-├─────────────────────────────────────────────────────────────┤
-│ + Agregar columna...                                        │ ◄── Inline quick-add
-└─────────────────────────────────────────────────────────────┘
-```
-
-- **Puertos de Conexión (Handles)**:
-  - Puntos de anclaje magnéticos laterales para tirar cables de relación entre tablas.
-  - Detección de cardinalidad visual: Marcadores en los extremos de la línea (1 a 1, 1 a N, N a M en notación Crow's Foot).
-- **Rendimiento de Renderizado**:
-  - Uso estricto de transformaciones CSS en GPU (`translate3d(x, y, 0)`).
-  - Los cálculos de líneas SVG conectores deben ejecutarse en `requestAnimationFrame` para mantener 60 FPS estables durante el arrastre de tablas.
+La legibilidad bajo fondos translúcidos requiere tipografías con alta altura de la "x" (x-height) y renderizado sub-pixel nítido:
+* **Tipografía de Interfaz (`--font-sans`):** **`Inter`** (pesos `300`, `400`, `500`, `600`, `700`). Se acompaña de `-webkit-font-smoothing: antialiased` en `<body>`.
+* **Tipografía de Código y Fórmulas (`--font-mono`):** **`JetBrains Mono`** (pesos `400`, `500`, `600`). Empleada obligatoriamente para:
+  - Identificadores de requisitos (`RF-01`, `RNF-02`).
+  - Actas de arquitectura (`ADR-01`, `ADR-02`).
+  - Tipos y nombres de columna en el canvas (`UUID PK`, `VARCHAR UNIQUE`).
+  - Salidas DDL, DTOs TypeScript, JSON Schema y modelos Pydantic.
+  - Indicadores numéricos de telemetría y puntuaciones de madurez (`100%`).
 
 ---
 
-## 5. Principios de UX/UI y Experiencia de Usuario
+### 3.6. Catálogo Canónico de Primitivas y Componentes Glassmórficos
 
-### 5.1. Regla de los 5 Estados de Interfaz
-Ninguna pantalla, lista o contenedor de datos puede implementarse sin definir explícitamente sus 5 estados:
+Las siguientes clases CSS son los bloques fundamentales de construcción visual en toda la aplicación:
 
-1. **Estado Inicial / En Espera (`Idle`)**: Controles listos para interactuar.
-2. **Estado de Carga (`Loading`)**: Skeleton loaders temáticos que replican la forma de las tarjetas o filas que se están trayendo del backend.
-3. **Estado Activo / Con Datos (`Success`)**: Datos presentados con jerarquía, paginación o scroll virtualizado si excede 50 elementos.
-4. **Estado Vacío (`Empty State`)**:
-   - Jamás dejar una pantalla en blanco o solo un mensaje "No hay datos".
-   - Debe incluir: Icono ilustrativo sutil, título explicativo ("No tienes proyectos aún"), párrafo orientativo y un **Call To Action (CTA)** destacado ("Crear mi primer proyecto").
-5. **Estado de Error (`Error State`)**:
-   - Mensaje comprensible para humanos (traduciendo códigos de error de la API).
-   - Botón de acción inmediata: "Reintentar" o "Contactar soporte".
-
-### 5.2. Guardado Progresivo y Prevención de Pérdida de Datos
-- **Autoguardado con Debounce**: Las modificaciones de texto en requerimientos o cambios de posición en el canvas se envían al backend con un debounce de 800ms.
-- **Indicador de Sincronización**: Un badge sutil en la barra superior muestra el estado en tiempo real:
-  - 🔄 *Sincronizando cambios...*
-  - 🟢 *Todos los cambios guardados*
-  - 🔴 *Error al guardar — Reintentando en 5s...*
-- **Confirmación Destructiva**: Cualquier eliminación de entidad (Proyecto, Requisito, Tabla) exige confirmación mediante un modal con foco atrapado y descripción clara del impacto ("Esta acción no se puede deshacer").
-
-### 5.3. Accesibilidad Universal (a11y — WCAG 2.1 AA)
-- **Ratio de Contraste**: Mínimo 4.5:1 entre el color del texto y su superficie de fondo.
-- **Navegación por Teclado**:
-  - Indicador de foco visible (`outline: 2px solid var(--accent-primary); outline-offset: 2px`).
-  - Soporte de shortcuts intuitivos: `Ctrl + S` (Guardar manual), `Delete / Backspace` (Eliminar nodo seleccionado), `Esc` (Cerrar modales o deseleccionar), `Tab` (Navegación secuencial accesible).
-- **Semántica y Atributos ARIA**:
-  - Uso estricto de elementos nativos (`<nav>`, `<main>`, `<aside>`, `<header>`, `<footer>`, `<button>`).
-  - Atributos dinámicos en componentes flotantes: `aria-expanded="true/false"`, `aria-haspopup="dialog"`, `role="region" aria-label="Lienzo de modelado"`.
-
----
-
-## 6. Integración con el Backend Core (Sprint 1)
-
-El frontend consumirá los servicios ya construidos y verificados en `devsculptor-backend`. Toda comunicación debe apegarse a los contratos vigentes:
-
-### 6.1. Contrato de Respuesta Unificado (Envelope)
-
-El frontend nunca asume payloads planos. Todos los clientes HTTP deben desempaquetar la estructura estándar:
-
-```typescript
-// src/types/api.types.ts
-
-// Respuesta exitosa estándar
-export interface ApiResponse<T> {
-  success: true;
-  data: T;
-  meta?: {
-    total: number;
-    limit: number;
-    offset: number;
-    hasMore: boolean;
-  };
-}
-
-// Respuesta de error estándar
-export interface ApiErrorResponse {
-  success: false;
-  error: {
-    code: string;       // Ej: "VALIDATION_ERROR", "NOT_FOUND", "UNAUTHORIZED", "CONFLICT"
-    message: string;    // Mensaje legible para el usuario
-    details?: Array<{   // Errores específicos de campos Zod
-      field: string;
-      message: string;
-    }>;
-  };
+#### 1. Ventana Estructural (`.vision-window`)
+```css
+.vision-window {
+  /* Gradiente angular que simula la refracción de luz sobre vidrio pulido */
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.02) 40%, rgba(255, 255, 255, 0.04) 100%), var(--glass-window);
+  backdrop-filter: var(--blur-window);
+  -webkit-backdrop-filter: var(--blur-window);
+  border: var(--border-glass);
+  box-shadow: var(--shadow-window);
+  border-radius: var(--radius-window);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
 }
 ```
 
-### 6.2. Cliente de API Centralizado (Axios Interceptors)
+#### 2. Tarjeta Interactiva (`.vision-card`)
+```css
+.vision-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.015) 100%), var(--glass-card);
+  backdrop-filter: var(--blur-card);
+  -webkit-backdrop-filter: var(--blur-card);
+  border: var(--border-glass-subtle);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
 
-```typescript
-// src/services/apiClient.ts
-import axios from 'axios';
+.vision-card:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.03) 100%), var(--glass-card-hover);
+  border-color: var(--border-glass-light);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px -2px rgba(0, 0, 0, 0.35), inset 0 1px 1px 0 rgba(255, 255, 255, 0.35);
+}
 
-export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Interceptor de Solicitud: Inyección de Token JWT y Request Tracking
-apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('devsculptor_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  // Genera o propaga un ID de solicitud para trazabilidad con Pino en backend
-  if (!config.headers['X-Request-Id']) {
-    config.headers['X-Request-Id'] = crypto.randomUUID();
-  }
-  return config;
-});
-
-// Interceptor de Respuesta: Manejo de Envelopes y Redirección 401
-apiClient.interceptors.response.use(
-  (response) => {
-    // Si la API devuelve el envelope { success: true, data: T }, retornamos la data directamente
-    return response.data;
-  },
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('devsculptor_token');
-      window.location.href = '/login';
-    }
-    return Promise.reject(error.response?.data?.error || {
-      code: 'NETWORK_ERROR',
-      message: 'No fue posible establecer conexión con el servidor.',
-    });
-  }
-);
+.vision-card.selected {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.22) 0%, rgba(99, 102, 241, 0.08) 100%), var(--glass-card-selected);
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px var(--accent-indigo-glow), var(--shadow-card);
+}
 ```
 
-### 6.3. Mapa de Consumo de Endpoints Disponibles
+#### 3. Botones Táctiles Hápticos (`.vision-btn`)
+```css
+.vision-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: var(--border-glass-subtle);
+  border-radius: var(--radius-btn);
+  cursor: pointer;
+  outline: none;
+  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.2), 0 2px 5px rgba(0, 0, 0, 0.2);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
 
-| Dominio | Método | Ruta del Backend | Uso en Frontend |
-| :--- | :--- | :--- | :--- |
-| **Auth** | `POST` | `/api/v1/auth/register` | Registro de nuevo usuario en formulario de onboarding. |
-| **Auth** | `POST` | `/api/v1/auth/login` | Autenticación, almacenamiento de JWT y perfil de usuario. |
-| **Auth** | `GET` | `/api/v1/auth/me` | Validación de sesión activa al recargar la página. |
-| **Projects** | `POST` | `/api/v1/projects` | Creación de nuevo proyecto de software. |
-| **Projects** | `GET` | `/api/v1/projects` | Listado paginado de proyectos en el Dashboard principal. |
-| **Projects** | `GET` | `/api/v1/projects/:id` | Carga de contexto del proyecto activo en el Workspace. |
-| **Projects** | `PUT` | `/api/v1/projects/:id` | Actualización de nombre o descripción del proyecto. |
-| **Projects** | `DELETE`| `/api/v1/projects/:id` | Eliminación de proyecto previa confirmación modal. |
-| **Requirements** | `POST` | `/api/v1/projects/:projectId/requirements` | Creación de Requisito Funcional (RF) o No Funcional (RNF). |
-| **Requirements** | `GET` | `/api/v1/projects/:projectId/requirements` | Matriz de requerimientos con filtros por tipo y prioridad. |
-| **Requirements** | `PUT` | `/api/v1/projects/:projectId/requirements/:id` | Edición de título, descripción o prioridad con autoguardado. |
-| **Requirements** | `DELETE`| `/api/v1/projects/:projectId/requirements/:id` | Eliminación de requisito del backlog técnico. |
+.vision-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: var(--border-glass-light);
+  transform: translateY(-0.5px);
+  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.35), 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+
+.vision-btn:active {
+  transform: scale(0.97);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.vision-btn-primary {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.95), rgba(79, 70, 229, 0.95));
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 14px var(--accent-indigo-glow), inset 0 1px 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.vision-btn-primary:hover {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  box-shadow: 0 6px 20px var(--accent-indigo-glow), inset 0 1px 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.vision-btn-pill {
+  border-radius: var(--radius-pill);
+  padding: 4px 12px;
+}
+
+.vision-btn-icon {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: var(--radius-btn);
+}
+```
+
+#### 4. Campos de Entrada de Cristal (`.vision-input`)
+```css
+.vision-input {
+  width: 100%;
+  padding: 7.5px 12px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--text-primary);
+  background: var(--glass-input);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: var(--border-glass);
+  border-radius: var(--radius-btn);
+  box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.vision-input:focus {
+  border-color: var(--border-focus);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 0 2.5px var(--accent-indigo-glow), inset 0 1px 1px 0 rgba(255, 255, 255, 0.25);
+}
+```
+
+#### 5. Pills de Estado y Badges Semánticos (`.vision-pill`)
+```css
+.vision-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  border-radius: 5px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.pill-indigo {
+  background: rgba(99, 102, 241, 0.25);
+  color: #c7d2fe;
+  border: 1px solid rgba(99, 102, 241, 0.5);
+}
+
+.pill-cyan {
+  background: rgba(56, 189, 248, 0.25);
+  color: #bae6fd;
+  border: 1px solid rgba(56, 189, 248, 0.5);
+}
+
+.pill-emerald {
+  background: rgba(52, 211, 153, 0.25);
+  color: #a7f3d0;
+  border: 1px solid rgba(52, 211, 153, 0.5);
+}
+
+.pill-amber {
+  background: rgba(251, 191, 36, 0.25);
+  color: #fef08a;
+  border: 1px solid rgba(251, 191, 36, 0.5);
+}
+
+.pill-rose {
+  background: rgba(248, 113, 113, 0.25);
+  color: #fecaca;
+  border: 1px solid rgba(248, 113, 113, 0.5);
+}
+```
+
+#### 6. Dock Flotante de Controles (`.vision-dock`)
+```css
+.vision-dock {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.03) 100%), var(--glass-elevated);
+  backdrop-filter: var(--blur-window);
+  -webkit-backdrop-filter: var(--blur-window);
+  border: var(--border-glass-light);
+  border-radius: var(--radius-btn);
+  box-shadow: var(--shadow-dock);
+  padding: 4px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+```
+
+#### 7. Bloques de Terminal y Código de Cristal (`.code-block`)
+```css
+.code-block {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.6;
+  background: var(--glass-code);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: var(--radius-card);
+  padding: 14px;
+  overflow: auto;
+  border: var(--border-glass-subtle);
+  box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.35);
+}
+```
+
+#### 8. Barra de Desplazamiento Translúcida (Minimalist Scrollbar)
+```css
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+html.light ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.22);
+}
+```
 
 ---
 
-## 7. Estructura Canónica de Directorios del Frontend Real
+### 3.7. Ergonomía Visual de Nodos ERD y Conectores Bezier SVG Neón
 
-Cuando se inicialice el proyecto en producción, se implementará la siguiente estructura modular:
+El lienzo interactivo de modelado de base de datos se rige por las siguientes especificaciones visuales de cristal y conectividad:
+
+```css
+/* Grilla Infinita de Puntos Radiales */
+.canvas-grid-bg {
+  background-color: transparent;
+  background-image: radial-gradient(var(--canvas-grid-dot) 1.2px, transparent 1.2px);
+  background-size: 20px 20px;
+}
+
+/* Nodo de Entidad Relacional (Tabla ERD) */
+.erd-node {
+  position: absolute;
+  width: 220px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.02) 100%), var(--glass-elevated);
+  backdrop-filter: var(--blur-window);
+  -webkit-backdrop-filter: var(--blur-window);
+  border: var(--border-glass-light);
+  border-radius: var(--radius-node);
+  box-shadow: var(--shadow-node);
+  cursor: grab;
+  z-index: 10;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.erd-node:active {
+  cursor: grabbing;
+}
+
+.erd-node.is-selected {
+  border-color: var(--accent-indigo);
+  box-shadow: 0 0 0 2.5px var(--accent-indigo-glow), var(--shadow-node);
+  z-index: 20;
+}
+
+.erd-node-header {
+  padding: 7px 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: var(--border-glass-subtle);
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-node) var(--radius-node) 0 0;
+}
+
+.erd-node-body {
+  padding: 3px 0;
+}
+
+.erd-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 11px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  position: relative;
+}
+
+.erd-row:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Conectores SVG Bezier Neón (Relaciones Relacionales) */
+.bezier-connector {
+  fill: none;
+  stroke: #38bdf8;
+  stroke-width: 2px;
+  stroke-dasharray: 5 3;
+  opacity: 0.95;
+  filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.7));
+}
+```
+
+---
+
+### 3.8. Reglas de Implementación en Producción (React 18, Tailwind y GPU)
+
+Para trasladar este sistema desde el sandbox de prototipado hacia `devsculptor-frontend`:
+1. **SSOT de Estilos:** Crear `src/styles/tokens.css` y `src/styles/glassmorphism.css` conteniendo exactamente estas reglas nativas.
+2. **Compatibilidad con Tailwind CSS:** No intentar recrear las sombras compuestas multinivel y gradientes de refracción mediante clases ad-hoc (`shadow-[...]`). En su lugar, registrar las clases semánticas `.vision-window`, `.vision-card`, `.vision-btn` y sus variantes en el plugin de componentes de Tailwind o consumirlas directamente vía `@apply` o imports globales.
+3. **Aceleración por Hardware (GPU):**
+   - El arrastre de nodos y el zoom en React Flow deben ejecutarse usando transformaciones GPU (`transform: translate3d(x, y, 0) scale(z)`).
+   - Aplicar `will-change: transform` durante interacciones dinámicas y retirarlo al entrar en reposo para evitar fugas de memoria gráfica.
+4. **Respeto a Preferencias del Sistema:** Consultar `window.matchMedia('(prefers-color-scheme: light)')` en la inicialización si no existe clave previa en `localStorage`.
+
+---
+
+## 4. Estructura Canónica de Pantallas y Flujos de Navegación
+
+### 4.1. Mapa General de Navegación y Flujo del Usuario
+
+El flujo de la aplicación se divide en 3 pantallas de nivel superior organizadas jerárquicamente:
+
+```mermaid
+graph TD
+    A[Pantalla 0: Auth Portal /auth] -->|Login exitoso + JWT| B[Pantalla 1: Projects Hub /projects]
+    B -->|Crear nuevo proyecto| B1[Modal: Nuevo Proyecto]
+    B1 -->|POST /projects| B
+    B -->|Seleccionar proyecto| C[Pantalla 2: Estudio de Gobernanza /projects/:id]
+    
+    subgraph Estudio de Gobernanza Tripartito
+        C --> D1[Paso 1: Conversación view-chat]
+        C --> D2[Paso 2: Requisitos RF/RNF view-reqs]
+        C --> D3[Paso 3: Documentación & ADRs view-docs]
+        C --> D4[Paso 4: Canvas ERD & Scripts view-canvas]
+        C --> D5[Paso 5: Compilación OKF export-modal]
+    end
+
+    D5 -->|Descargar ZIP| E[Prompt Bundle para Cursor / Claude]
+```
+
+---
+
+### 4.2. Pantalla 0: Portal de Acceso y Autenticación (`/auth`)
+
+* **Rutas URL**: `/login`, `/register`.
+* **Propósito**: Entrada segura al sistema mediante credenciales validadas con bcrypt y JWT.
+* **Layout**: Centrado absoluto (`AuthLayout`), fondo `var(--bg-desktop)` con sutil orbe de gradiente radial índigo en el fondo.
+* **Componentes Principales**:
+  - `AuthCard` (`glass-window` de 380px de ancho con sombra profunda).
+  - Encabezado de marca con isotipo pulsante y título "DevSculptor".
+  - Selector de Sol/Luna en la esquina superior derecha del card.
+  - Pestañas conmutables "Iniciar Sesión" y "Crear Cuenta".
+  - Formulario reactivo con campos validados en tiempo real con Zod:
+    - Registro: `full_name` (min 2), `email` (RFC format), `password` (min 8 chars).
+    - Login: `email`, `password`.
+  - Botón primario con feedback de carga (`.apple-btn-primary`).
+  - Mensajes de error tipados mediante el envelope de la API (`401 Credenciales inválidas`, `409 Email ya registrado`).
+* **Comportamiento & Persistencia**:
+  - Al recibir respuesta 200/201: Almacena `token` en `localStorage.getItem('devsculptor_token')` y perfil en el store global.
+  - Redirección automática inmediata hacia `/projects`.
+
+---
+
+### 4.3. Pantalla 1: Hub de Proyectos & Portafolio (`/projects`)
+
+* **Rutas URL**: `/projects`.
+* **Propósito**: Gestión del portafolio personal de proyectos del usuario (aislamiento horizontal garantizado por backend).
+* **Layout**: `DashboardLayout` con barra superior Apple Glass y contenedor centrado maximizado (`max-w-6xl mx-auto p-6`).
+* **Componentes Principales**:
+  1. **Barra Superior**:
+     - Logo y nombre de la plataforma.
+     - Buscador reactivo de proyectos con debounce.
+     - Botón flotante `+ Nuevo Proyecto`.
+     - Toggle de tema Sol/Luna.
+     - Menú de perfil de usuario (`full_name`, `email`, botón *Cerrar Sesión*).
+  2. **Banner de Métricas de Portafolio**:
+     - Resumen general: Total de Proyectos, Índice de Madurez Promedio (obtenido de los SPs), Total de ADRs aprobados.
+  3. **Grid de Proyectos (`ProjectGrid`)**:
+     - Tarjetas en grid responsivo (1 a 3 columnas) con clase `glass-card`.
+     - Cada tarjeta (`ProjectCard`) exhibe:
+       - Nombre del proyecto (`name`).
+       - Badge de estilo arquitectónico (`architecture_style`, ej. *Monolito Modular*, *Microservicios*).
+       - Descripción truncada.
+       - Barra de progreso del **Maturity Index** (0% a 100% calculado por el SP de PostgreSQL).
+       - Conteo rápido de requisitos asociados (`RF` y `RNF`) y tablas en Canvas.
+       - Fecha de última modificación (`updated_at` formateado).
+       - Menú contextual `[⋮]`: Editar metadatos, Eliminar proyecto (con modal destructivo).
+  4. **Modal "Crear Nuevo Proyecto" (`CreateProjectModal`)**:
+     - Campos: `name` (requerido), `description` (opcional), `architecture_style` (selector).
+     - Validación Zod: Unicidad de nombre por usuario antes de enviar.
+     - Envío `POST /api/v1/projects` y apertura directa del workspace creado.
+  5. **Estados UI**:
+     - *Loading*: 6 skeletons de tarjetas con efecto shimmer.
+     - *Empty State*: Ilustración sutil de planos de arquitectura, título *"No tienes proyectos activos"*, y CTA *"Comenzar nuevo diseño"*.
+
+---
+
+### 4.4. Pantalla 2: Estudio de Gobernanza Tripartito NotebookLM (`/projects/:projectId`)
+
+Es la pantalla central de DevSculptor. Su disposición replica el layout de **3 paneles fluidos** sin barras de scroll generales en la ventana:
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│  [●] DevSculptor | Proyecto: Core MVP  ──  Fase Pre-Código  ──  [● Supabase RLS] [☼/☽] [Avatar]  │ ◄─ TopBar
+├───────────────────┬──────────────────────────────────────────────────────┬───────────────────────┤
+│ 1. INICIO         │                                                      │  COPILOTO & FUENTES   │
+│    Conversación   │  [ ESPACIO DE TRABAJO DINÁMICO / WORKSPACE STUDIO ]  │  - Integridad 3FN 100%│
+│                   │                                                      │  - Seguridad RLS 6/6  │
+│ 2. REQUISITOS     │  Conmuta de forma reactiva entre:                    │  - Maturity Index: 100│
+│    RF / RNF (5)   │  1. view-chat   (Entrevista y captura con IA)        │                       │
+│                   │  2. view-reqs   (Matriz estructurada de requisitos)  │  Consultas rápidas:   │
+│ 3. DOCUMENTACIÓN  │  3. view-docs   (Actas ADRs y especificaciones)      │  - Validar RF con DDL │
+│    ADRs (4)       │  4. view-canvas (Lienzo ERD + Scripts SQL/TS/JSON/Py)│  - Auditar Triggers   │
+│                   │                                                      │  - Preparar OKF       │
+│ 4. MODELADOR      │                                                      │                       │
+│    Canvas & DDL   │                                                      │  Fase Pre-Código:     │
+│ ───────────────── │                                                      │  Validado sin deuda   │
+│ [ Compilar OKF ]  │                                                      │                       │
+└───────────────────┴──────────────────────────────────────────────────────┴───────────────────────┘
+  PANEL IZQ (260px)                  PANEL CENTRAL (Flex-1)                   PANEL DER (270px)
+```
+
+---
+
+#### 4.4.1. Barra Superior Integrada (Apple Glass TopBar)
+- Altura fija `h-11`, píldora flotante con `!rounded-full`, margen superior y separación de paneles.
+- **Izquierda**: Isotipo índigo pulsante, marca DevSculptor, divisor vertical y nombre del proyecto activo con enlace de retorno al Hub (`/projects`).
+- **Centro**: Badge de fase metodológica (`pill-indigo: Gobernanza Pre-Código`) y versión de compilación.
+- **Derecha**:
+  - Telemetría de base de datos (`pill-emerald: Supabase RLS Conectado`).
+  - Botón selector Sol/Luna (`#theme-toggle`).
+  - Avatar del usuario autenticado con iniciales.
+
+---
+
+#### 4.4.2. Panel Izquierdo: Flujo Guiado en 5 Pasos (Navigation Pipeline)
+- Ancho rígido `260px`, superficie `glass-window`, sin scroll exterior.
+- Encabezado con título `FLUJO DE TRABAJO` y badge `5 PASOS`.
+- Contenedor de botones de paso (`.nav-step`), cada uno con icono temático, título en negrita, subtítulo explicativo y badge contador:
+  - **Paso 1: Inicio (`view-chat`)**: Icono `chat_bubble`, *"Conversación — Captura de idea y alcance"*.
+  - **Paso 2: Requisitos (`view-reqs`)**: Icono `checklist`, *"Requisitos RF/RNF"*, badge ámbar con conteo dinámico.
+  - **Paso 3: Documentación (`view-docs`)**: Icono `description`, *"Documentos & ADRs"*, badge cyan con total de actas.
+  - **Paso 4: Modelador & Código (`view-canvas`)**: Icono `schema`, *"Canvas & Scripts — SQL, TypeScript, JSON, Py"*.
+- **Paso 5: Botón Inferior Anclado**: Botón full-width índigo destacado con icono `folder_zip` *"Compilar & Exportar"* que abre el modal OKF.
+
+---
+
+#### 4.4.3. Panel Central: Workspace / Studio de 4 Vistas Activas
+
+##### Vista 1: Conversación Inicial & Entrevista de Alcance (`view-chat`)
+- **Propósito**: Dialogar en lenguaje natural con el *Arquitecto DevSculptor (IA)* para vaciar ideas de software, descubrir reglas de negocio implícitas y extraer automáticamente artefactos estructurados.
+- **Header**: Título "Conversación Inicial", descripción de alcance y badge de estado `EN CURSO`.
+- **Stream de Mensajes**:
+  - Mensajes del Asistente (`chat-bubble-assistant`): fondo translúcido, borde suave, con extracción destacada de requisitos detectados y tablas sugeridas.
+  - Mensajes del Usuario (`chat-bubble-user`): burbuja índigo alineada a la derecha.
+- **Chips de Sugerencia Rápida (Floating Chips)**:
+  - Píldoras con prompts rápidos con un solo clic: `+ Añadir tabla audit_logs`, `+ RNF Latencia < 500ms`, `🔍 Validar 3FN`.
+- **Input de Entrada Flotante**:
+  - Campo estilo Apple Input (`apple-input`) con botón circular de envío y atajo `Enter`.
+
+##### Vista 2: Matriz de Requisitos RF y RNF (`view-reqs`)
+- **Propósito**: Gestionar la lista formal de requisitos de ingeniería según el estándar IEEE-830.
+- **Header**: Título "Requisitos Recopilados", contador y botón `+ Nuevo Requisito`.
+- **Listado de Requisitos**:
+  - Tarjetas interactivas con layout horizontal (`glass-card`):
+    - Código en tipografía monoespaciada: `RF-01`, `RNF-02` (validado bajo regex `/^(RF|RNF)-\d{2,3}$/`).
+    - Pill de tipo: `RF` (Ámbar) o `RNF` (Cyan).
+    - Pill de prioridad: `ALTA`, `MEDIA`, `LOW`.
+    - Título y descripción detallada del requerimiento.
+    - Entidad relacionada del Canvas (ej. tabla `users`, `projects`).
+    - Botones de acción rápida: Editar (abre drawer) y Eliminar.
+- **Drawer Lateral de Requisito (`RequirementDrawer`)**:
+  - Edición con autoguardado (debounce 800ms) y sincronización contra `PUT /api/v1/projects/:projectId/requirements/:id`.
+
+##### Vista 3: Catálogo de Documentación & ADRs (`view-docs`)
+- **Propósito**: Formalizar y consultar las actas de decisión arquitectónica (Architecture Decision Records) mitigando la pérdida de contexto histórico.
+- **Header**: Título "Documentos Generados", subtítulo explicativo y botón `+ Nueva Acta`.
+- **Visualizador de ADRs**:
+  - Tarjetas de decisión técnica (`doc-card`) que exhiben:
+    - Identificador: `ADR-01`, `ADR-02`.
+    - Badge de Máquina de Estados:
+      - `PROPOSED`: Ámbar translúcido (decisión en evaluación).
+      - `ACCEPTED`: Esmeralda translúcido (decisión ratificada e inmutable).
+      - `REJECTED`: Rojo translúcido (decisión descartada con justificación).
+    - Título del dilema arquitectónico (ej. *Monolito Modular vs Microservicios*, *pg.Pool nativo vs ORMs*).
+    - Resumen del contexto, decisión tomada y consecuencias.
+  - Controles de Transición de Estado:
+    - Botones para "Aceptar Decisión" o "Rechazar Decisión" que ejecutan `PATCH /api/v1/projects/:projectId/decisions/:id/status`.
+    - Cumplimiento estricto de inmutabilidad: si el ADR ya fue aceptado o rechazado, el estado se bloquea en la interfaz.
+  - Especificaciones Complementarias: Tarjeta especial `SPEC-01: Contrato API REST OpenAPI 3.1`.
+
+##### Vista 4: Canvas ERD & Salidas de Scripts Multi-Lenguaje (`view-canvas`)
+- **Propósito**: Diseñar visualmente la base de datos relacional y generar en tiempo real código estandarizado listo para producción.
+- **Barra de Sub-pestañas de Formato**:
+  - Selector conmutador:
+    - `[schema] Lienzo Gráfico` (Lienzo interactivo ERD).
+    - `[database] PostgreSQL DDL` (Script SQL normalizado).
+    - `[code] TypeScript DTOs` (Schemas Zod y tipos `z.infer`).
+    - `[data_object] JSON Schema` (Especificación JSON Schema v7).
+    - `[terminal] Python Pydantic` (Modelos Pydantic v2).
+  - Botón de utilidad: `[content_copy] Copiar Código` con toast de confirmación.
+- **Área 1: Lienzo Gráfico ERD (`#canvas-visual-area`)**:
+  - Fondo infinito con grilla de puntos (`canvas-dot-grid`).
+  - Nodos de tabla arrastrables (`.erd-node`):
+    - Encabezado con icono de tabla, nombre en negrita monoespaciada y badge (`RLS`, `FK`).
+    - Filas de atributos con indicación de Clave Primaria (`🔑 id UUID PK` en dorado), Clave Foránea (`🔗 user_id FK → users` en cyan) y campos regulares (`VARCHAR`, `TIMESTAMPTZ`).
+  - Conectores SVG Bezier interactivos trazados automáticamente entre los puertos de las tablas relacionadas.
+  - Dock Flotante de Zoom en la base: botones `[-]`, indicador porcentual `100%` y `[+]`.
+  - Pestaña de Auditoría de Canvas: Lista desplegable conectada a `GET /api/v1/projects/:projectId/audit-logs` que visualiza las inserciones y mutaciones atómicas registradas por el trigger de PostgreSQL (`INSERT`, `UPDATE`, `DELETE`, `payload_before`, `payload_after`).
+- **Área 2: Salida de Scripts Formateados (`#canvas-code-area`)**:
+  - Bloque con fondo de terminal (`--bg-code`), resaltado sintáctico y opción de copia directa.
+
+---
+
+#### 4.4.4. Panel Derecho: Copiloto & Inspector de Contexto (Metrics & Sources)
+- Ancho rígido `270px`, superficie `glass-window`, sin scroll exterior.
+- **Encabezado**: Título "Copiloto" con indicador cyan pulsante y badge `ACTIVO`.
+- **Métricas de Motor en Vivo**:
+  - Tarjetas de telemetría conectadas al Stored Procedure `sp_calculate_project_metrics`:
+    - `INTEGRIDAD: 100%` (3FN Normalizado).
+    - `SEGURIDAD: 6/6` (Políticas RLS activas en Supabase).
+    - `MATURITY INDEX`: Índice compuesto de madurez técnica (0 a 100 puntos).
+- **Consultas Contextuales Sugeridas (`copilot-chip`)**:
+  - Botones con acciones heurísticas inmediatas:
+    - `🔍 Validar RF-01 con DDL`: Analiza si los requisitos funcionales están soportados por columnas de la base de datos.
+    - `🛡️ Auditar triggers RLS`: Verifica la coherencia de seguridad y el parámetro `search_path`.
+    - `📦 Preparar paquete LLM`: Sintetiza el estado para exportación.
+- **Certificación de Estado Metodológico**:
+  - Tarjeta inferior esmeralda: *"Fase Pre-Código — Diseño validado sin deuda técnica. Listo para exportar hacia Cursor o Claude"*.
+
+---
+
+#### 4.4.5. Modal de Compilación & Exportación OKF (`export-modal`)
+- **Propósito**: Empaquetar todo el proyecto en un archivo comprimido (.zip) con la estructura documental determinista OKF (*Optimal Knowledge Format*), diseñado específicamente para ser consumido por agentes de IA externos (Cursor, Claude, NotebookLM) sin saturar su ventana de contexto.
+- **Disparador**: Botón "Compilar & Exportar" del panel de flujo o chip del copiloto.
+- **Layout**: Modal flotante centrado sobre backdrop desenfocado (`bg-black/60 backdrop-blur-sm`).
+- **Opciones de Compilación**:
+  - Checkboxes seleccionables por carpetas de contexto:
+    - `[x] /skills/`: Manual `devsculptor-architect` y reglas metodológicas de conducta.
+    - `[x] /database/`: Esquemas PostgreSQL DDL, Triggers, SPs y políticas RLS.
+    - `[x] /documentation/`: Requisitos RF/RNF, actas ADRs y contratos de API.
+- **Proceso de Compilación**:
+  - Barra de estado animada *"Empaquetando artefactos en ZIP..."*.
+  - Generación en cliente/servidor del paquete comprimido y descarga automática del archivo `DevSculptor_{projectName}_OKF_Bundle.zip`.
+
+---
+
+## 5. Ergonomía y Arquitectura del Canvas Interactivo (ERD) & Salidas Multi-Lenguaje
+
+### 5.1. Mecánicas de Navegación y Rendimiento
+- **Navegación Fluida**:
+  - Pan mediante arrastre con botón central del ratón o `Espacio + Clic Izquierdo`.
+  - Zoom mediante rueda del ratón (`0.25x` a `2.0x`) con transformaciones CSS basadas en GPU (`transform: translate3d(...) scale(...)`).
+- **Conectores Bezier Dinámicos**:
+  - Las curvas SVG entre nodos se recalculan en tiempo real dentro del ciclo de renderizado `requestAnimationFrame`, garantizando una tasa de refresco constante de 60 cuadros por segundo sin bloqueo del hilo principal.
+- **Sincronización Transaccional de Posición**:
+  - Las coordenadas `position_x` y `position_y` de cada nodo de tabla se persisten mediante debouncing (800ms) invocando `PUT /api/v1/projects/:projectId/canvas/:canvasId`.
+
+---
+
+## 6. Principios de UX/UI y Experiencia de Usuario
+
+1. **La Regla Inquebrantable de los 5 Estados de Interfaz**:
+   - `Idle`: Controles listos con micro-animación en hover.
+   - `Loading`: Skeletons animados que replican la estructura geométrica final.
+   - `Success`: Datos ordenados con jerarquía tipográfica estricta.
+   - `Empty State`: Gráfica conceptual, texto explicativo del valor y botón de acción (CTA).
+   - `Error State`: Explicación amigable en lenguaje natural y botón de reintento.
+2. **Autoguardado con Debounce**:
+   - Toda entrada de texto (requisitos, actas, tablas) se guarda de manera transparente tras 800ms de inactividad de teclado, mostrando un badge de sincronización (🔄 Guardando... / 🟢 Guardado).
+3. **Confirmación de Acciones Destructivas**:
+   - Eliminar proyectos, requisitos o tablas de canvas requiere confirmación explícita mediante un modal de advertencia (`accent-danger`).
+
+---
+
+## 7. Integración con el Backend Core (Sprint 1) & Mapeo Pantalla-API
+
+Toda la interfaz web se integra directamente con los servicios construidos en `devsculptor-backend`. A continuación se mapea cada pantalla con su contrato REST correspondiente:
+
+| Pantalla / Vista | Método HTTP | Endpoint del Backend | Descripción de la Operación |
+| :--- | :---: | :--- | :--- |
+| **Auth / Login** | `POST` | `/api/v1/auth/login` | Autenticación con email/password y retorno de JWT. |
+| **Auth / Register**| `POST` | `/api/v1/auth/register`| Creación de usuario y entrega de token inicial. |
+| **Projects Hub** | `GET` | `/api/v1/projects` | Listado paginado de proyectos del usuario autenticado. |
+| **Projects Hub** | `POST` | `/api/v1/projects` | Creación de nuevo proyecto de software. |
+| **Projects Hub** | `PUT` | `/api/v1/projects/:id` | Actualización de nombre o estilo de arquitectura. |
+| **Projects Hub** | `DELETE`| `/api/v1/projects/:id` | Eliminación en cascada de un proyecto. |
+| **Workspace / Reqs**| `GET` | `/api/v1/projects/:id/requirements` | Obtención de matriz de requisitos filtrable por `?type=`. |
+| **Workspace / Reqs**| `POST` | `/api/v1/projects/:id/requirements` | Alta de requisito (código regex `/^(RF\|RNF)-\d{2,3}$/`). |
+| **Workspace / Reqs**| `PUT` | `/api/v1/projects/:id/requirements/:reqId` | Edición reactiva de título, prioridad o descripción. |
+| **Workspace / Reqs**| `DELETE`| `/api/v1/projects/:id/requirements/:reqId` | Eliminación de un requisito del proyecto. |
+| **Workspace / Docs**| `GET` | `/api/v1/projects/:id/decisions` | Consulta de actas ADRs registradas (filtro `?status=`). |
+| **Workspace / Docs**| `POST` | `/api/v1/projects/:id/decisions` | Creación de nuevo ADR en estado inicial `PROPOSED`. |
+| **Workspace / Docs**| `PATCH` | `/api/v1/projects/:id/decisions/:decId/status` | Transición de estado (`ACCEPTED` / `REJECTED`). |
+| **Workspace / Canvas**|`GET` | `/api/v1/projects/:id/canvas` | Carga de tablas, columnas JSON y coordenadas visuales. |
+| **Workspace / Canvas**|`POST` | `/api/v1/projects/:id/canvas` | Creación de entidad en canvas (dispara trigger auditoría). |
+| **Workspace / Canvas**|`PUT` | `/api/v1/projects/:id/canvas/:canvasId` | Actualización de esquema o posición X/Y del nodo. |
+| **Workspace / Canvas**|`DELETE`| `/api/v1/projects/:id/canvas/:canvasId` | Eliminación de tabla del canvas (dispara trigger). |
+| **Workspace / Canvas**|`GET` | `/api/v1/projects/:id/audit-logs` | Historial de auditoría generado por `fn_audit_canvas_entities`. |
+| **Copiloto / Metrics**|`GET` | `/api/v1/projects/:id/metrics` | Ejecución del SP `sp_calculate_project_metrics` y `maturity_index`. |
+
+---
+
+## 8. Estructura Canónica de Directorios del Frontend Real
 
 ```
 devsculptor-frontend/
@@ -307,74 +1019,86 @@ devsculptor-frontend/
 ├── src/
 │   ├── assets/                     # SVGs, logotipos y recursos vectoriales
 │   ├── components/                 # Componentes UI transversales (Átomo / Molécula)
-│   │   ├── ui/                     # Button, Input, Modal, Dropdown, Badge, Spinner
+│   │   ├── ui/                     # AppleButton, AppleInput, Modal, Badge, PillTag, ThemeToggle
 │   │   ├── feedback/               # Toast, Skeleton, Alert, ConfirmDialog
-│   │   └── navigation/             # Navbar, Sidebar, Breadcrumb, UserMenu
+│   │   └── navigation/             # AppleTopBar, FlowSidebar, CopilotInspector
 │   │
 │   ├── features/                   # MÓDULOS DE NEGOCIO (Alta cohesión)
 │   │   ├── auth/                   # LoginForm, RegisterForm, useAuth
-│   │   ├── projects/               # ProjectCard, ProjectList, CreateProjectModal
-│   │   ├── requirements/           # RequirementsTable, RequirementDetailDrawer
-│   │   ├── canvas/                 # EntityNode, ConnectionLine, CanvasToolbar, Minimap
-│   │   └── export/                 # PromptBundlePreview, ZipDownloadButton
+│   │   ├── projects/               # ProjectCard, ProjectGrid, CreateProjectModal
+│   │   ├── requirements/           # RequirementsMatrix, RequirementDrawer, QuickAddReq
+│   │   ├── decisions/              # DecisionsList, DecisionCard, StatusTransitionModal
+│   │   ├── canvas/                 # ErdCanvas, EntityNode, BezierConnector, ZoomDock, ScriptPreview
+│   │   └── export/                 # OkfExportModal, BundleProgress, ZipGenerator
 │   │
 │   ├── layouts/                    # Plantillas estructurales de vista
-│   │   ├── AuthLayout.tsx          # Vistas centradas para login/registro
-│   │   ├── DashboardLayout.tsx     # Barra superior + navegación lateral
-│   │   └── WorkspaceLayout.tsx     # Layout maximizado para el Canvas ERD
+│   │   ├── AuthLayout.tsx          # Vista centrada minimalista
+│   │   ├── DashboardLayout.tsx     # Barra superior + grilla de proyectos
+│   │   └── StudioLayout.tsx        # Layout tripartito NotebookLM (Nav + Workspace + Copiloto)
 │   │
 │   ├── hooks/                      # Custom hooks reutilizables
 │   │   ├── useDebounce.ts          # Optimización de inputs y autoguardado
 │   │   ├── useCanvasTransform.ts   # Matemáticas de pan, zoom y coordenadas relativas
-│   │   └── useKeyboardShortcuts.ts # Atajos de teclado accesibles
+│   │   ├── useTheme.ts             # Alternancia Sol/Luna y persistencia en localStorage
+│   │   └── useKeyboardShortcuts.ts # Atajos de teclado accesibles (Ctrl+S, Delete, Esc)
 │   │
-│   ├── services/                   # Clientes HTTP y llamadas al backend
-│   │   ├── apiClient.ts            # Instancia Axios con interceptores
+│   ├── services/                   # Clientes HTTP hacia devsculptor-backend
+│   │   ├── apiClient.ts            # Instancia Axios con interceptores de JWT y Request-Id
 │   │   ├── auth.service.ts
 │   │   ├── projects.service.ts
-│   │   └── requirements.service.ts
+│   │   ├── requirements.service.ts
+│   │   ├── canvas.service.ts
+│   │   ├── decisions.service.ts
+│   │   └── metrics.service.ts
 │   │
 │   ├── stores/                     # Estado global con Zustand
-│   │   ├── useCanvasStore.ts       # Nodos, conexiones, historial Undo/Redo
-│   │   └── useProjectStore.ts      # Proyecto activo y metadatos de sesión
+│   │   ├── useCanvasStore.ts       # Grafo ERD, coordenadas, selección y subpestaña activa
+│   │   ├── useProjectStore.ts      # Proyecto activo y métricas del SP
+│   │   └── useAuthStore.ts         # Token JWT y perfil de usuario activo
 │   │
 │   ├── styles/                     # Estilos globales y tokens
-│   │   ├── tokens.css              # Variables CSS (paleta, fuentes, sombras)
-│   │   ├── reset.css               # Reset moderno de box-sizing y tipografía
-│   │   └── globals.css             # Clases utilitarias y estilos base del body
+│   │   ├── tokens.css              # Variables CSS (Obsidian Depth & Snow Style)
+│   │   ├── reset.css               # Reset moderno
+│   │   └── globals.css             # Clases utilitarias de cristal y grilla
 │   │
 │   ├── types/                      # Definiciones TypeScript de dominio y API
 │   │   ├── api.types.ts
 │   │   ├── auth.types.ts
 │   │   ├── project.types.ts
-│   │   └── canvas.types.ts
+│   │   ├── requirement.types.ts
+│   │   ├── canvas.types.ts
+│   │   └── decision.types.ts
 │   │
-│   ├── App.tsx                     # Enrutador principal de la aplicación
+│   ├── App.tsx                     # Enrutador principal de la aplicación (React Router)
 │   └── main.tsx                    # Punto de entrada de Vite
 │
-├── .env.example                    # VITE_API_URL documentada
-├── index.html                      # HTML raíz con tipografía precargada
+├── .env.example                    # VITE_API_URL=http://localhost:3000/api/v1
+├── index.html                      # HTML raíz con Inter y JetBrains Mono
 ├── package.json
-├── tsconfig.json                   # Strict TypeScript configurado
-└── vite.config.ts                  # Configuración de Vite y alias de rutas
+├── tsconfig.json                   # Strict mode activado
+└── vite.config.ts                  # Configuración de Vite y alias de rutas (@/*)
 ```
 
 ---
 
-## 8. Matriz de Buenas Prácticas Frontend (Do's & Don'ts)
+## 9. Matriz de Buenas Prácticas Frontend (Do's & Don'ts)
 
 | Área | Lo que un Ingeniero Frontend HACE (Do) | Lo que un Ingeniero Frontend NUNCA hace (Don't) |
 | :--- | :--- | :--- |
-| **Estilos & Colores** | Usa variables CSS semánticas (`var(--bg-primary)`). | Jamás escribe valores hexadecimales "hardcodeados" dispersos en hojas de estilo (`#1e293b`). |
+| **Glassmorphism & Física Óptica** | Aplica la fórmula completa: refracción angular 135°, `backdrop-filter: blur(...) saturate(...)` y reflejo especular blanco en bisel (`inset 0 1.5px 1px 0 rgba(255,255,255,0.48)`). | Jamás usa fondos translúcidos planos (`background: rgba(0,0,0,0.5)`) sin desenfoque ni bisel (lucen como plástico sucio y destruyen el contraste). |
+| **Geometría Arquitectónica** | Emplea radios compactos de ingeniería (`10px` ventanas, `7px` tarjetas, `8px` nodos, `6px` botones) reservando píldora (`9999px`) solo a badges. | Prohibido usar border-radius gigantes "burbuja" (`20px - 30px`) en tarjetas y nodos técnicos que devoran el espacio útil y restan rigor visual. |
+| **Rendimiento de GPU** | Delega el arrastre de tablas ERD y zoom a transformaciones GPU (`translate3d(x,y,0)` y `requestAnimationFrame`). | Jamás manipula propiedades de reflujo (`top`, `left`, `margin`) de forma síncrona en eventos `mousemove` del canvas. |
+| **Estilos & Tokens** | Usa variables CSS semánticas de cristal (`var(--glass-window)`, `var(--glass-card)`, `var(--border-glass)`). | Jamás escribe colores hexadecimales fijos dispersos en el código (`#1e293b`). |
+| **Dual Theme** | Implementa transiciones suaves y contraste verificado tanto en Sol como en Luna. | No hardcodea modo oscuro permanente rompiendo la experiencia en modo claro. |
 | **Tipado TypeScript** | Tipa todas las props, estados y respuestas HTTP con interfaces explícitas. | Prohibido el uso de `any` para salir del paso. |
-| **Manejo de Respuestas** | Desempaqueta `response.data` respetando el envelope del backend. | Nunca asume que el backend devuelve un array plano sin verificar `success: true`. |
-| **Canvas & Eventos** | Aplica `requestAnimationFrame` y transformaciones GPU (`translate3d`). | Jamás manipula `top` y `left` de forma síncrona en eventos `mousemove` (provoca reflow masivo). |
-| **Feedback al Usuario** | Muestra Skeletons y Toasts para confirmar operaciones asíncronas. | Nunca deja la pantalla congelada sin indicador de carga ni feedback. |
-| **Formularios** | Valida campos en tiempo real antes de enviar y replica restricciones Zod. | No envía payloads vacíos esperando que el backend descubra los errores. |
-| **Seguridad de Tokens** | Limpia el token y redirige a login ante respuestas 401. | Nunca almacena contraseñas en claro ni ignora la expiración del token JWT. |
-| **Accesibilidad (a11y)** | Incluye `aria-label`, foco visual navegable y soporte de teclado. | Prohibido usar `<div>` con `onClick` sin `role="button"`, `tabIndex={0}` ni listener de `Enter/Space`. |
+| **Manejo de Respuestas** | Desempaqueta `response.data` respetando el envelope `{ success: true, data: T }`. | Nunca asume que el backend devuelve arrays planos sin validar `success: true`. |
+| **Máquina de Estados ADRs** | Bloquea la mutación de estado una vez que un ADR pasa a `ACCEPTED` o `REJECTED`. | Nunca permite revertir una decisión aprobada sin levantar una nueva acta. |
+| **Feedback al Usuario** | Muestra Skeletons, Toasts y badges de autoguardado para confirmar operaciones. | Nunca deja la pantalla congelada sin indicador visual de progreso. |
+| **Formularios & Validación** | Valida campos en tiempo real antes de enviar, replicando los schemas Zod del backend. | No envía payloads vacíos esperando que el backend descubra los errores. |
+| **Seguridad de Tokens** | Limpia el token y redirige a `/login` ante cualquier respuesta `401 Unauthorized`. | Nunca almacena contraseñas en claro ni ignora la expiración del token. |
+| **Accesibilidad (a11y)** | Incluye `aria-label`, foco visual navegable y soporte de atajos de teclado (`Ctrl+S`, `Esc`). | Prohibido usar `<div>` con `onClick` sin `role="button"` ni accesibilidad por teclado. |
 
 ---
 
-> **Regla de Oro para el Frontend**:  
-> *«Un buen diseño no es solo cómo se ve, sino cómo responde al usuario. Si el Canvas tiene lag, si un botón no da feedback de carga o si un error técnico asusta al usuario, la arquitectura de interfaz ha fallado.»*
+> **Regla de Oro para el Frontend de DevSculptor**:  
+> *«La interfaz debe sentirse como un instrumento de precisión arquitectónica. Si el usuario siente fricción, si el canvas se traba o si la gobernanza pre-código parece un trámite burocrático en lugar de una ventaja estratégica, el diseño debe ser refinado.»*

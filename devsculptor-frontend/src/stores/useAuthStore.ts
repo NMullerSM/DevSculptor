@@ -1,0 +1,71 @@
+import { create } from 'zustand';
+import { User, LoginPayload, RegisterPayload } from '@/types/auth.types';
+import { authService } from '@/services/auth.service';
+
+interface AuthState {
+  user: User | null;
+  token: string | null;
+  isLoading: boolean;
+  error: string | null;
+
+  login: (payload: LoginPayload) => Promise<void>;
+  register: (payload: RegisterPayload) => Promise<void>;
+  logout: () => void;
+  initAuth: () => void;
+  clearError: () => void;
+}
+
+export const useAuthStore = create<AuthState>((set) => ({
+  user: null,
+  token: null,
+  isLoading: false,
+  error: null,
+
+  initAuth: () => {
+    try {
+      const storedToken = localStorage.getItem('devsculptor_token');
+      const storedUser = localStorage.getItem('devsculptor_user');
+      if (storedToken && storedUser) {
+        set({ token: storedToken, user: JSON.parse(storedUser) });
+      }
+    } catch {
+      localStorage.removeItem('devsculptor_token');
+      localStorage.removeItem('devsculptor_user');
+    }
+  },
+
+  login: async (payload: LoginPayload) => {
+    set({ isLoading: true, error: null });
+    try {
+      const { user, token } = await authService.login(payload);
+      localStorage.setItem('devsculptor_token', token);
+      localStorage.setItem('devsculptor_user', JSON.stringify(user));
+      set({ user, token, isLoading: false, error: null });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error al iniciar sesión';
+      set({ error: message, isLoading: false });
+      throw err;
+    }
+  },
+
+  register: async (payload: RegisterPayload) => {
+    set({ isLoading: true, error: null });
+    try {
+      const { user, token } = await authService.register(payload);
+      localStorage.setItem('devsculptor_token', token);
+      localStorage.setItem('devsculptor_user', JSON.stringify(user));
+      set({ user, token, isLoading: false, error: null });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error al registrar usuario';
+      set({ error: message, isLoading: false });
+      throw err;
+    }
+  },
+
+  logout: () => {
+    authService.logout();
+    set({ user: null, token: null, error: null });
+  },
+
+  clearError: () => set({ error: null }),
+}));
