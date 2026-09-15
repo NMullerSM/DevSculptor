@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { CanvasEntity, CreateCanvasEntityPayload, AuditLogEntry } from '@/types/canvas.types';
+import { CanvasEntity, CreateCanvasEntityPayload, UpdateCanvasEntityPayload, AuditLogEntry } from '@/types/canvas.types';
 import { canvasService } from '@/services/canvas.service';
 
 export type CanvasSubTab = 'erd' | 'sql' | 'ts' | 'json' | 'py' | 'audit';
@@ -22,6 +22,7 @@ interface CanvasState {
   resetZoom: () => void;
   updatePosition: (projectId: string, entityId: string, x: number, y: number) => Promise<void>;
   createEntity: (projectId: string, payload: CreateCanvasEntityPayload) => Promise<CanvasEntity>;
+  updateEntity: (projectId: string, entityId: string, payload: UpdateCanvasEntityPayload) => Promise<CanvasEntity>;
   deleteEntity: (projectId: string, entityId: string) => Promise<void>;
   fetchAuditLogs: (projectId: string) => Promise<void>;
 }
@@ -89,6 +90,22 @@ export const useCanvasStore = create<CanvasState>((set) => ({
       return created;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Error al crear tabla';
+      set({ error: message, isLoading: false });
+      throw err;
+    }
+  },
+
+  updateEntity: async (projectId: string, entityId: string, payload: UpdateCanvasEntityPayload) => {
+    set({ isLoading: true, error: null });
+    try {
+      const updated = await canvasService.updateEntity(projectId, entityId, payload);
+      set((state) => ({
+        entities: state.entities.map((e) => (e.id === entityId ? updated : e)),
+        isLoading: false,
+      }));
+      return updated;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error al actualizar tabla';
       set({ error: message, isLoading: false });
       throw err;
     }

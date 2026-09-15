@@ -1,5 +1,10 @@
 import { CanvasEntity } from '@/types/canvas.types';
 
+export type SqlDialect = 'postgres' | 'mysql' | 'sqlite' | 'oracle';
+
+/**
+ * Generador DDL para PostgreSQL 15+ (Estándar Nativo DevSculptor)
+ */
 export function generatePostgreSqlDdl(entities: CanvasEntity[]): string {
   if (entities.length === 0) return '-- No hay tablas definidas en el Canvas.';
 
@@ -9,18 +14,30 @@ export function generatePostgreSqlDdl(entities: CanvasEntity[]): string {
   ddl += `-- ==========================================================================\n\n`;
   ddl += `CREATE EXTENSION IF NOT EXISTS "uuid-ossp";\n\n`;
 
+  const fkStatements: string[] = [];
+
   entities.forEach((entity) => {
     ddl += `CREATE TABLE IF NOT EXISTS ${entity.table_name} (\n`;
     const cols = Array.isArray(entity.columns_json) ? entity.columns_json : [];
     const lines = cols.map((c) => {
       let line = `  ${c.name} ${c.type}`;
-      if (c.isPk) line += ' PRIMARY KEY';
+      if (c.isPk || c.is_pk) line += ' PRIMARY KEY';
       if (c.unique) line += ' UNIQUE';
-      if (c.nullable === false && !c.isPk) line += ' NOT NULL';
+      if (c.nullable === false && !(c.isPk || c.is_pk)) line += ' NOT NULL';
+
+      // Foreign key tracking
+      const targetTable = c.referencesTable || c.references_table;
+      const targetCol = c.referencesColumn || c.references_column || 'id';
+      if ((c.isFk || c.is_fk || targetTable) && targetTable) {
+        fkStatements.push(
+          `ALTER TABLE ${entity.table_name} ADD CONSTRAINT fk_${entity.table_name}_${c.name} ` +
+          `FOREIGN KEY (${c.name}) REFERENCES ${targetTable}(${targetCol}) ON DELETE CASCADE;`
+        );
+      }
       return line;
     });
 
-    // Default timestamps
+    // Default audit columns
     lines.push(`  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP`);
     lines.push(`  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP`);
 
@@ -30,6 +47,183 @@ export function generatePostgreSqlDdl(entities: CanvasEntity[]): string {
     // RLS Policy boilerplate
     ddl += `ALTER TABLE ${entity.table_name} ENABLE ROW LEVEL SECURITY;\n\n`;
   });
+
+  if (fkStatements.length > 0) {
+    ddl += `-- ==========================================================================\n`;
+    ddl += `-- Restricciones de Integridad Referencial (Foreign Keys)\n`;
+    ddl += `-- ==========================================================================\n`;
+    ddl += fkStatements.join('\n') + '\n\n';
+  }
+
+  return ddl;
+}
+
+/**
+ * Generador DDL para MySQL 8.0+ / MariaDB
+ */
+export function generateMySqlDdl(entities: CanvasEntity[]): string {
+  if (entities.length === 0) return '-- No hay tablas definidas en el Canvas.';
+
+  let ddl = `-- ==========================================================================\n`;
+  ddl += `-- DevSculptor DDL Compilation — MySQL 8.0+ / MariaDB\n`;
+  ddl += `-- ==========================================================================\n\n`;
+  ddl += `SET FOREIGN_KEY_CHECKS = 0;\n\n`;
+
+  const mapMySqlType = (type: string): string => {
+    const t = type.toLowerCase();
+    if (t.includes('uuid')) return 'CHAR(36)';
+    if (t.includes('serial') || t.includes('bigint')) return 'BIGINT AUTO_INCREMENT';
+    if (t.includes('int')) return 'INT';
+    if (t.includes('bool')) return 'TINYINT(1)';
+    if (t.includes('timestamptz') || t.includes('timestamp')) return 'DATETIME DEFAULT CURRENT_TIMESTAMP';
+    if (t.includes('json')) return 'JSON';
+    if (t.includes('text')) return 'LONGTEXT';
+    return type;
+  };
+
+  const fkStatements: string[] = [];
+
+  entities.forEach((entity) => {
+    ddl += `CREATE TABLE IF NOT EXISTS \`${entity.table_name}\` (\n`;
+    const cols = Array.isArray(entity.columns_json) ? entity.columns_json : [];
+    const lines = cols.map((c) => {
+      let line = `  \`${c.name}\` ${mapMySqlType(c.type)}`;
+      if (c.isPk || c.is_pk) line += ' PRIMARY KEY';
+      if (c.unique) line += ' UNIQUE';
+      if (c.nullable === false && !(c.isPk || c.is_pk)) line += ' NOT NULL';
+
+      const targetTable = c.referencesTable || c.references_table;
+      const targetCol = c.referencesColumn || c.references_column || 'id';
+      if ((c.isFk || c.is_fk || targetTable) && targetTable) {
+        fkStatements.push(
+          `ALTER TABLE \`${entity.table_name}\` ADD CONSTRAINT \`fk_${entity.table_name}_${c.name}\` ` +
+          `FOREIGN KEY (\`${c.name}\`) REFERENCES \`${targetTable}\`(\`${targetCol}\`) ON DELETE CASCADE;`
+        );
+      }
+      return line;
+    });
+
+    lines.push(`  \`created_at\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`);
+    lines.push(`  \`updated_at\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`);
+
+    ddl += lines.join(',\n');
+    ddl += `\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;\n\n`;
+  });
+
+  if (fkStatements.length > 0) {
+    ddl += `-- Relaciones Foráneas\n`;
+    ddl += fkStatements.join('\n') + '\n\n';
+  }
+
+  ddl += `SET FOREIGN_KEY_CHECKS = 1;\n`;
+  return ddl;
+}
+
+/**
+ * Generador DDL para SQLite 3
+ */
+export function generateSqliteDdl(entities: CanvasEntity[]): string {
+  if (entities.length === 0) return '-- No hay tablas definidas en el Canvas.';
+
+  let ddl = `-- ==========================================================================\n`;
+  ddl += `-- DevSculptor DDL Compilation — SQLite 3\n`;
+  ddl += `-- ==========================================================================\n\n`;
+  ddl += `PRAGMA foreign_keys = ON;\n\n`;
+
+  const mapSqliteType = (type: string): string => {
+    const t = type.toLowerCase();
+    if (t.includes('int') || t.includes('serial') || t.includes('bool')) return 'INTEGER';
+    if (t.includes('float') || t.includes('double') || t.includes('decimal')) return 'REAL';
+    return 'TEXT';
+  };
+
+  entities.forEach((entity) => {
+    ddl += `CREATE TABLE IF NOT EXISTS "${entity.table_name}" (\n`;
+    const cols = Array.isArray(entity.columns_json) ? entity.columns_json : [];
+    const lines = cols.map((c) => {
+      let line = `  "${c.name}" ${mapSqliteType(c.type)}`;
+      if (c.isPk || c.is_pk) line += ' PRIMARY KEY';
+      if (c.unique) line += ' UNIQUE';
+      if (c.nullable === false && !(c.isPk || c.is_pk)) line += ' NOT NULL';
+      return line;
+    });
+
+    // Foreign keys inline for SQLite
+    cols.forEach((c) => {
+      const targetTable = c.referencesTable || c.references_table;
+      const targetCol = c.referencesColumn || c.references_column || 'id';
+      if ((c.isFk || c.is_fk || targetTable) && targetTable) {
+        lines.push(`  FOREIGN KEY ("${c.name}") REFERENCES "${targetTable}"("${targetCol}") ON DELETE CASCADE`);
+      }
+    });
+
+    lines.push(`  "created_at" TEXT NOT NULL DEFAULT (datetime('now'))`);
+    lines.push(`  "updated_at" TEXT NOT NULL DEFAULT (datetime('now'))`);
+
+    ddl += lines.join(',\n');
+    ddl += `\n);\n\n`;
+  });
+
+  return ddl;
+}
+
+/**
+ * Generador DDL para Oracle Database 19c / 21c Enterprise
+ */
+export function generateOracleDdl(entities: CanvasEntity[]): string {
+  if (entities.length === 0) return '-- No hay tablas definidas en el Canvas.';
+
+  let ddl = `-- ==========================================================================\n`;
+  ddl += `-- DevSculptor DDL Compilation — Oracle Database 19c / 21c Enterprise\n`;
+  ddl += `-- ==========================================================================\n\n`;
+
+  const mapOracleType = (type: string): string => {
+    const t = type.toLowerCase();
+    if (t.includes('uuid')) return 'VARCHAR2(36)';
+    if (t.includes('serial') || t.includes('int')) return 'NUMBER(10)';
+    if (t.includes('bool')) return 'NUMBER(1)';
+    if (t.includes('timestamptz') || t.includes('timestamp')) return 'TIMESTAMP WITH TIME ZONE';
+    if (t.includes('json')) return 'CLOB CHECK (json IS JSON)';
+    if (t.includes('text')) return 'CLOB';
+    if (t.includes('varchar')) return type.replace(/varchar/i, 'VARCHAR2');
+    return 'VARCHAR2(255)';
+  };
+
+  const fkStatements: string[] = [];
+
+  entities.forEach((entity) => {
+    const tableNameUpper = entity.table_name.toUpperCase();
+    ddl += `CREATE TABLE ${tableNameUpper} (\n`;
+    const cols = Array.isArray(entity.columns_json) ? entity.columns_json : [];
+    const lines = cols.map((c) => {
+      const colNameUpper = c.name.toUpperCase();
+      let line = `  ${colNameUpper} ${mapOracleType(c.type)}`;
+      if (c.isPk || c.is_pk) line += ' PRIMARY KEY';
+      if (c.unique) line += ' UNIQUE';
+      if (c.nullable === false && !(c.isPk || c.is_pk)) line += ' NOT NULL';
+
+      const targetTable = c.referencesTable || c.references_table;
+      const targetCol = c.referencesColumn || c.references_column || 'id';
+      if ((c.isFk || c.is_fk || targetTable) && targetTable) {
+        fkStatements.push(
+          `ALTER TABLE ${tableNameUpper} ADD CONSTRAINT FK_${tableNameUpper}_${colNameUpper} ` +
+          `FOREIGN KEY (${colNameUpper}) REFERENCES ${targetTable.toUpperCase()}(${targetCol.toUpperCase()}) ON DELETE CASCADE;`
+        );
+      }
+      return line;
+    });
+
+    lines.push(`  CREATED_AT TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL`);
+    lines.push(`  UPDATED_AT TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL`);
+
+    ddl += lines.join(',\n');
+    ddl += `\n);\n/\n\n`;
+  });
+
+  if (fkStatements.length > 0) {
+    ddl += `-- Oracle Foreign Keys\n`;
+    ddl += fkStatements.join('\n') + '\n';
+  }
 
   return ddl;
 }

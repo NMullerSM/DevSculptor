@@ -1,12 +1,23 @@
 import { z } from 'zod';
 
-export const columnDefinitionSchema = z.object({
-  name: z.string().min(1, 'El nombre de la columna es requerido'),
-  type: z.string().min(1, 'El tipo de dato es requerido'),
-  is_pk: z.boolean().default(false),
-  nullable: z.boolean().default(true),
-  default_value: z.string().optional(),
-});
+export const columnDefinitionSchema = z
+  .object({
+    name: z.string().min(1, 'El nombre de la columna es requerido'),
+    type: z.string().min(1, 'El tipo de dato es requerido'),
+    is_pk: z.boolean().optional().default(false),
+    isPk: z.boolean().optional(),
+    is_fk: z.boolean().optional().default(false),
+    isFk: z.boolean().optional(),
+    references_table: z.string().optional(),
+    referencesTable: z.string().optional(),
+    references_column: z.string().optional(),
+    referencesColumn: z.string().optional(),
+    cardinality: z.enum(['1:1', '1:N', 'N:M']).optional(),
+    nullable: z.boolean().optional().default(true),
+    unique: z.boolean().optional().default(false),
+    default_value: z.string().optional(),
+  })
+  .passthrough();
 
 export const createCanvasEntitySchema = z.object({
   table_name: z

@@ -8,6 +8,7 @@ interface EntityNodeProps {
   onSelect: (id: string) => void;
   onPositionChange: (id: string, x: number, y: number) => void;
   onDelete: (id: string) => void;
+  onEdit: (entity: CanvasEntity) => void;
 }
 
 export const EntityNode: React.FC<EntityNodeProps> = ({
@@ -17,6 +18,7 @@ export const EntityNode: React.FC<EntityNodeProps> = ({
   onSelect,
   onPositionChange,
   onDelete,
+  onEdit,
 }) => {
   const [pos, setPos] = useState({ x: entity.position_x, y: entity.position_y });
   const isDragging = useRef(false);
@@ -69,20 +71,33 @@ export const EntityNode: React.FC<EntityNodeProps> = ({
         transform: `translate3d(${pos.x}px, ${pos.y}px, 0)`,
       }}
       onMouseDown={handleMouseDown}
+      onDoubleClick={() => onEdit(entity)}
       className={`erd-node ${isSelected ? 'is-selected' : ''}`}
     >
       {/* Cabecera de Tabla */}
-      <div className="erd-node-header">
+      <div className="erd-node-header cursor-grab active:cursor-grabbing">
         <div className="flex items-center gap-1.5 min-w-0">
           <span className="material-symbols-outlined text-[13px] text-cyan-400">table_chart</span>
-          <span className="font-mono font-bold text-xs text-white truncate">
+          <span className="font-mono font-bold text-xs text-white truncate" title={entity.table_name}>
             {entity.table_name}
           </span>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           <span className="text-[8px] font-mono px-1.5 py-0.5 rounded-[3px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
             RLS
           </span>
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(entity);
+            }}
+            className="text-muted hover:text-cyan-300 p-0.5 rounded transition-colors"
+            title="Editar tabla y columnas (ALTER TABLE)"
+          >
+            <span className="material-symbols-outlined text-[12px]">tune</span>
+          </button>
+
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -99,21 +114,24 @@ export const EntityNode: React.FC<EntityNodeProps> = ({
       {/* Filas de Atributos */}
       <div className="erd-node-body">
         {columns.map((col, index) => {
+          const isPk = col.isPk || col.is_pk;
+          const isFk = col.isFk || col.is_fk || Boolean(col.referencesTable || col.references_table);
+
           return (
             <div key={index} className="erd-row">
               <div className="flex items-center gap-1.5 min-w-0">
-                {col.isPk ? (
-                  <span className="text-amber-400 font-bold text-[10px]">🔑</span>
-                ) : col.isFk ? (
-                  <span className="text-cyan-400 text-[10px]">🔗</span>
+                {isPk ? (
+                  <span className="text-amber-400 font-bold text-[10px]" title="Primary Key">🔑</span>
+                ) : isFk ? (
+                  <span className="text-cyan-400 text-[10px]" title={`Foreign Key: ${col.referencesTable || col.references_table}`}>🔗</span>
                 ) : (
                   <span className="w-1.5 h-1.5 rounded-full bg-white/20" />
                 )}
                 <span
                   className={`truncate ${
-                    col.isPk
+                    isPk
                       ? 'text-amber-300 font-semibold'
-                      : col.isFk
+                      : isFk
                       ? 'text-cyan-300'
                       : 'text-white/90'
                   }`}
@@ -121,9 +139,16 @@ export const EntityNode: React.FC<EntityNodeProps> = ({
                   {col.name}
                 </span>
               </div>
-              <span className="text-[9.5px] text-muted font-mono shrink-0 ml-2">
-                {col.type}
-              </span>
+              <div className="flex items-center gap-1 shrink-0 ml-2">
+                <span className="text-[9.5px] text-muted font-mono">
+                  {col.type}
+                </span>
+                {col.unique && (
+                  <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-purple-500/20 text-purple-300">
+                    UQ
+                  </span>
+                )}
+              </div>
             </div>
           );
         })}

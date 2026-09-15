@@ -5,8 +5,14 @@ export interface CanvasColumn {
   isFk?: boolean;
   referencesTable?: string;
   referencesColumn?: string;
+  cardinality?: '1:1' | '1:N' | 'N:M';
   nullable?: boolean;
   unique?: boolean;
+  is_pk?: boolean;
+  is_fk?: boolean;
+  references_table?: string;
+  references_column?: string;
+  default_value?: string;
 }
 
 export interface CanvasEntity {

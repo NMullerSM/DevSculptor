@@ -4,8 +4,10 @@ interface VisionModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
+  description?: string;
   icon?: string;
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   children: React.ReactNode;
 }
 
@@ -13,8 +15,10 @@ export const VisionModal: React.FC<VisionModalProps> = ({
   isOpen,
   onClose,
   title,
+  description,
   icon,
-  maxWidth = 'md',
+  maxWidth,
+  size = 'md',
   children,
 }) => {
   useEffect(() => {
@@ -29,12 +33,14 @@ export const VisionModal: React.FC<VisionModalProps> = ({
 
   if (!isOpen) return null;
 
+  const activeSize = maxWidth || size;
+
   const maxWidthClass = {
     sm: 'max-w-sm',
     md: 'max-w-md',
     lg: 'max-w-lg',
     xl: 'max-w-xl',
-  }[maxWidth];
+  }[activeSize];
 
   return (
     <div
@@ -47,17 +53,22 @@ export const VisionModal: React.FC<VisionModalProps> = ({
     >
       <div className={`vision-window ${maxWidthClass} w-full p-5 flex flex-col gap-4 shadow-2xl`}>
         <div className="flex items-center justify-between pb-2 border-b border-white/[0.08]">
-          <div className="flex items-center gap-2">
-            {icon && (
-              <span className="material-symbols-outlined text-indigo-400 text-lg leading-none">
-                {icon}
-              </span>
+          <div className="flex flex-col gap-0.5 min-w-0 pr-2">
+            <div className="flex items-center gap-2">
+              {icon && (
+                <span className="material-symbols-outlined text-indigo-400 text-lg leading-none">
+                  {icon}
+                </span>
+              )}
+              <h3 className="font-semibold text-xs text-white tracking-tight truncate">{title}</h3>
+            </div>
+            {description && (
+              <p className="text-[11px] text-muted leading-tight font-mono">{description}</p>
             )}
-            <h3 className="font-semibold text-xs text-white tracking-tight">{title}</h3>
           </div>
           <button
             onClick={onClose}
-            className="vision-btn vision-btn-icon text-xs text-muted hover:text-white"
+            className="vision-btn vision-btn-icon text-xs text-muted hover:text-white shrink-0"
             aria-label="Cerrar modal"
           >
             <span className="material-symbols-outlined text-xs">close</span>

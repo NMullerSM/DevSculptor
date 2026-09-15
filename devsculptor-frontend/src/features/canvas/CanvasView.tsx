@@ -4,12 +4,22 @@ import { EntityNode } from './EntityNode';
 import { BezierConnectors } from './BezierConnectors';
 import { CanvasAuditView } from './CanvasAuditView';
 import { CreateEntityModal } from './CreateEntityModal';
+import { EditEntityModal } from './EditEntityModal';
+import { CanvasDrawer } from './CanvasDrawer';
+import { SqlImportModal } from './SqlImportModal';
+import { NormalizationCheckerModal } from './NormalizationCheckerModal';
 import { VisionButton } from '@/components/ui/VisionButton';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { CanvasEntity } from '@/types/canvas.types';
 import {
   generatePostgreSqlDdl,
+  generateMySqlDdl,
+  generateSqliteDdl,
+  generateOracleDdl,
   generateTypeScriptDtos,
   generateJsonSchema,
   generatePythonPydantic,
+  SqlDialect,
 } from './scriptGenerators';
 
 interface CanvasViewProps {
@@ -30,9 +40,16 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
     selectEntity,
     updatePosition,
     deleteEntity,
+    createEntity,
   } = useCanvasStore();
 
   const [isAddTableOpen, setIsAddTableOpen] = useState(false);
+  const [editingEntity, setEditingEntity] = useState<CanvasEntity | null>(null);
+  const [entityToDelete, setEntityToDelete] = useState<CanvasEntity | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isNormalizationOpen, setIsNormalizationOpen] = useState(false);
+  const [sqlDialect, setSqlDialect] = useState<SqlDialect>('postgres');
   const [copyFeedback, setCopyFeedback] = useState(false);
 
   useEffect(() => {
@@ -44,6 +61,9 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
   const getCodeContent = () => {
     switch (activeSubTab) {
       case 'sql':
+        if (sqlDialect === 'mysql') return generateMySqlDdl(entities);
+        if (sqlDialect === 'sqlite') return generateSqliteDdl(entities);
+        if (sqlDialect === 'oracle') return generateOracleDdl(entities);
         return generatePostgreSqlDdl(entities);
       case 'ts':
         return generateTypeScriptDtos(entities);
@@ -68,9 +88,75 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
     }
   };
 
+  const handleAddQuickTemplate = async (templateId: string) => {
+    const offsetIndex = entities.length;
+    const posX = 100 + (offsetIndex % 3) * 260;
+    const posY = 100 + Math.floor(offsetIndex / 3) * 230;
+
+    let payload = null;
+
+    if (templateId === 'auth') {
+      payload = {
+        table_name: `users_${offsetIndex + 1}`,
+        columns_json: [
+          { name: 'id', type: 'UUID', isPk: true, is_pk: true, nullable: false },
+          { name: 'email', type: 'VARCHAR(255)', nullable: false, unique: true },
+          { name: 'password_hash', type: 'VARCHAR(255)', nullable: false },
+          { name: 'full_name', type: 'VARCHAR(150)', nullable: true },
+          { name: 'role', type: 'VARCHAR(30)', nullable: false, default_value: "'developer'" },
+        ],
+        position_x: posX,
+        position_y: posY,
+      };
+    } else if (templateId === 'orders') {
+      payload = {
+        table_name: `orders_${offsetIndex + 1}`,
+        columns_json: [
+          { name: 'id', type: 'UUID', isPk: true, is_pk: true, nullable: false },
+          { name: 'customer_id', type: 'UUID', isFk: true, is_fk: true, cardinality: '1:N' as const, nullable: false },
+          { name: 'order_number', type: 'VARCHAR(50)', unique: true, nullable: false },
+          { name: 'total_amount', type: 'DECIMAL(12,2)', nullable: false },
+          { name: 'status', type: 'VARCHAR(20)', nullable: false },
+        ],
+        position_x: posX,
+        position_y: posY,
+      };
+    } else if (templateId === 'products') {
+      payload = {
+        table_name: `products_${offsetIndex + 1}`,
+        columns_json: [
+          { name: 'id', type: 'UUID', isPk: true, is_pk: true, nullable: false },
+          { name: 'sku', type: 'VARCHAR(50)', unique: true, nullable: false },
+          { name: 'title', type: 'VARCHAR(200)', nullable: false },
+          { name: 'price', type: 'DECIMAL(10,2)', nullable: false },
+          { name: 'stock', type: 'INTEGER', nullable: false },
+        ],
+        position_x: posX,
+        position_y: posY,
+      };
+    } else if (templateId === 'audit') {
+      payload = {
+        table_name: `audit_logs_${offsetIndex + 1}`,
+        columns_json: [
+          { name: 'id', type: 'UUID', isPk: true, is_pk: true, nullable: false },
+          { name: 'action', type: 'VARCHAR(50)', nullable: false },
+          { name: 'entity_name', type: 'VARCHAR(100)', nullable: false },
+          { name: 'payload_json', type: 'JSONB', nullable: true },
+          { name: 'user_session', type: 'VARCHAR(100)', nullable: true },
+        ],
+        position_x: posX,
+        position_y: posY,
+      };
+    }
+
+    if (payload) {
+      await createEntity(projectId, payload);
+    }
+  };
+
   const subtabs: { id: CanvasSubTab; label: string; icon: string }[] = [
     { id: 'erd', label: 'Lienzo ERD', icon: 'schema' },
-    { id: 'sql', label: 'PostgreSQL DDL', icon: 'database' },
+    { id: 'sql', label: 'DDL Multi-Motor', icon: 'database' },
     { id: 'ts', label: 'TypeScript DTOs', icon: 'code' },
     { id: 'json', label: 'JSON Schema', icon: 'data_object' },
     { id: 'py', label: 'Python Pydantic', icon: 'terminal' },
@@ -79,7 +165,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
 
   return (
     <div className="flex-1 flex flex-col h-full relative overflow-hidden select-none">
-      {/* Barra de Subpestañas de Formato */}
+      {/* Barra Superior de Subpestañas */}
       <div className="h-10 px-3 border-b border-white/[0.06] flex items-center justify-between bg-black/20 shrink-0 z-20">
         <div className="flex items-center gap-1 overflow-x-auto">
           {subtabs.map((tab) => (
@@ -97,15 +183,57 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Selector de Dialecto Multi-Motor cuando está en SQL */}
+          {activeSubTab === 'sql' && (
+            <div className="flex items-center gap-1 bg-black/40 border border-white/10 rounded-lg p-0.5 font-mono text-[10.5px]">
+              <span className="text-muted px-1 text-[10px]">Motor:</span>
+              {(['postgres', 'mysql', 'sqlite', 'oracle'] as SqlDialect[]).map((d) => (
+                <button
+                  key={d}
+                  onClick={() => setSqlDialect(d)}
+                  className={`px-2 py-0.5 rounded capitalize transition-colors ${
+                    sqlDialect === d
+                      ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40'
+                      : 'text-white/60 hover:text-white'
+                  }`}
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
+          )}
+
           {activeSubTab === 'erd' && (
-            <VisionButton
-              size="sm"
-              icon="add"
-              onClick={() => setIsAddTableOpen(true)}
-              className="text-emerald-400 hover:text-emerald-300"
-            >
-              Añadir Tabla
-            </VisionButton>
+            <>
+              <VisionButton
+                size="sm"
+                icon="file_upload"
+                onClick={() => setIsImportOpen(true)}
+                variant="secondary"
+                className="text-indigo-400 hover:text-indigo-300"
+              >
+                Importar SQL
+              </VisionButton>
+
+              <VisionButton
+                size="sm"
+                icon="verified"
+                onClick={() => setIsNormalizationOpen(true)}
+                variant="secondary"
+                className="text-emerald-400 hover:text-emerald-300"
+              >
+                Auditoría 3FN
+              </VisionButton>
+
+              <VisionButton
+                size="sm"
+                icon="add"
+                onClick={() => setIsAddTableOpen(true)}
+                className="text-cyan-400 hover:text-cyan-300"
+              >
+                Añadir Tabla
+              </VisionButton>
+            </>
           )}
 
           {activeSubTab !== 'erd' && activeSubTab !== 'audit' && (
@@ -128,7 +256,19 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
           className="flex-1 canvas-grid-bg relative overflow-hidden select-none"
           onClick={() => selectEntity(null)}
         >
-          {/* Conectores Bezier SVG */}
+          {/* Drawer Lateral Retráctil del Lienzo */}
+          <CanvasDrawer
+            isOpen={isDrawerOpen}
+            onToggle={() => setIsDrawerOpen(!isDrawerOpen)}
+            entities={entities}
+            onSelectEntity={(id) => selectEntity(id)}
+            onEditEntity={(entity) => setEditingEntity(entity)}
+            onAddQuickTemplate={handleAddQuickTemplate}
+            onOpenImport={() => setIsImportOpen(true)}
+            onOpenNormalization={() => setIsNormalizationOpen(true)}
+          />
+
+          {/* Conectores Bezier SVG con Badges de Cardinalidad */}
           <BezierConnectors entities={entities} zoom={zoom} />
 
           {/* Área de Nodos Arrastrables con Zoom */}
@@ -147,10 +287,10 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
                 isSelected={selectedEntityId === entity.id}
                 onSelect={(id) => selectEntity(id)}
                 onPositionChange={(id, x, y) => updatePosition(projectId, id, x, y)}
+                onEdit={(ent) => setEditingEntity(ent)}
                 onDelete={(id) => {
-                  if (confirm(`¿Eliminar la tabla "${entity.table_name}"?`)) {
-                    deleteEntity(projectId, id);
-                  }
+                  const target = entities.find((e) => e.id === id);
+                  if (target) setEntityToDelete(target);
                 }}
               />
             ))}
@@ -185,7 +325,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
         </div>
       )}
 
-      {/* Vista 2: Previsualización de Código Multi-Lenguaje */}
+      {/* Vista 2: Previsualización de Código Multi-Lenguaje y Multi-Dialecto */}
       {activeSubTab !== 'erd' && activeSubTab !== 'audit' && (
         <div className="flex-1 overflow-auto p-4 font-mono text-xs text-white leading-relaxed bg-[#0b0f19] fade-in">
           <pre className="whitespace-pre select-text font-mono text-[11.5px] text-white/90">
@@ -202,6 +342,45 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
         isOpen={isAddTableOpen}
         onClose={() => setIsAddTableOpen(false)}
         projectId={projectId}
+      />
+
+      {/* Modal Editar / Alterar Tabla (ALTER TABLE) */}
+      <EditEntityModal
+        isOpen={Boolean(editingEntity)}
+        onClose={() => setEditingEntity(null)}
+        entity={editingEntity}
+        projectId={projectId}
+      />
+
+      {/* Modal Importar Script SQL */}
+      <SqlImportModal
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        projectId={projectId}
+      />
+
+      {/* Modal Validador 3FN */}
+      <NormalizationCheckerModal
+        isOpen={isNormalizationOpen}
+        onClose={() => setIsNormalizationOpen(false)}
+        entities={entities}
+      />
+
+      {/* Modal de Confirmación para Eliminar Tabla */}
+      <ConfirmModal
+        isOpen={Boolean(entityToDelete)}
+        title="Eliminar Tabla del Esquema"
+        description={`¿Estás seguro de que deseas eliminar permanentemente la tabla "${entityToDelete?.table_name}"? Se perderán las columnas asociadas y las relaciones de clave foránea.`}
+        confirmText="Eliminar Tabla"
+        cancelText="Cancelar"
+        variant="danger"
+        onConfirm={async () => {
+          if (entityToDelete) {
+            await deleteEntity(projectId, entityToDelete.id);
+            setEntityToDelete(null);
+          }
+        }}
+        onClose={() => setEntityToDelete(null)}
       />
     </div>
   );
