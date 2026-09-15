@@ -25,7 +25,13 @@ export abstract class BaseRepository<T extends { id: string }> implements IRepos
       throw new Error(`No hay columnas válidas para insertar en ${this.tableName}`);
     }
 
-    const values = keys.map((k) => (data as Record<string, unknown>)[k]);
+    const values = keys.map((k) => {
+      const val = (data as Record<string, unknown>)[k];
+      if (k.endsWith('_json') || k.endsWith('_payload') || k === 'columns_json') {
+        return typeof val === 'object' && val !== null ? JSON.stringify(val) : val;
+      }
+      return val;
+    });
     const columnNames = keys.join(', ');
     const placeholders = keys.map((_, idx) => `$${idx + 1}`).join(', ');
 
@@ -123,7 +129,16 @@ export abstract class BaseRepository<T extends { id: string }> implements IRepos
     }
 
     const setClauses = keys.map((k, idx) => `${k} = $${idx + 2}`).join(', ');
-    const values = [id, ...keys.map((k) => (data as Record<string, unknown>)[k])];
+    const values = [
+      id,
+      ...keys.map((k) => {
+        const val = (data as Record<string, unknown>)[k];
+        if (k.endsWith('_json') || k.endsWith('_payload') || k === 'columns_json') {
+          return typeof val === 'object' && val !== null ? JSON.stringify(val) : val;
+        }
+        return val;
+      }),
+    ];
 
     const query = `
       UPDATE ${this.tableName}
