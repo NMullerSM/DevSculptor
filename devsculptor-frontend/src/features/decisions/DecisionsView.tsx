@@ -4,6 +4,8 @@ import { Decision, DecisionStatus } from '@/types/decision.types';
 import { VisionButton } from '@/components/ui/VisionButton';
 import { VisionPill } from '@/components/ui/VisionPill';
 import { CreateDecisionModal } from './CreateDecisionModal';
+import { EditDecisionModal } from './EditDecisionModal';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { useProjectStore } from '@/stores/useProjectStore';
 
 interface DecisionsViewProps {
@@ -19,17 +21,21 @@ export const DecisionsView: React.FC<DecisionsViewProps> = ({
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingDecision, setEditingDecision] = useState<Decision | null>(null);
+  const [deletingDecision, setDeletingDecision] = useState<Decision | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const { fetchMetrics } = useProjectStore();
 
   const loadDecisions = async () => {
     setIsLoading(true);
+    setActionError(null);
     try {
       const statusParam = filterStatus === 'ALL' ? undefined : (filterStatus as DecisionStatus);
       const data = await decisionsService.getAllByProject(projectId, statusParam);
       setDecisions(data);
       if (onCountChange) onCountChange(data.length);
-    } catch {
-      // Fallback
+    } catch (err: unknown) {
+      setActionError(err instanceof Error ? err.message : 'Error al cargar actas ADR');
     } finally {
       setIsLoading(false);
     }
@@ -42,26 +48,27 @@ export const DecisionsView: React.FC<DecisionsViewProps> = ({
   }, [projectId, filterStatus]);
 
   const handleStatusChange = async (decisionId: string, nextStatus: 'ACCEPTED' | 'REJECTED') => {
+    setActionError(null);
     try {
       const updated = await decisionsService.changeStatus(projectId, decisionId, nextStatus);
       setDecisions((prev) => prev.map((d) => (d.id === decisionId ? updated : d)));
       // Refrescar métricas ya que los ADRs aceptados impactan el Maturity Index
       await fetchMetrics(projectId);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Error al cambiar estado de la decisión');
+    } catch (err: unknown) {
+      setActionError(err instanceof Error ? err.message : 'Error al cambiar estado de la decisión');
     }
   };
 
-  const handleDelete = async (decisionId: string) => {
-    if (!confirm('¿Deseas eliminar este registro de decisión arquitectónica?')) return;
+  const handleConfirmDelete = async () => {
+    if (!deletingDecision) return;
     try {
-      await decisionsService.delete(projectId, decisionId);
-      const remaining = decisions.filter((d) => d.id !== decisionId);
+      await decisionsService.delete(projectId, deletingDecision.id);
+      const remaining = decisions.filter((d) => d.id !== deletingDecision.id);
       setDecisions(remaining);
       if (onCountChange) onCountChange(remaining.length);
       await fetchMetrics(projectId);
-    } catch (err) {
-      console.error(err);
+    } catch (err: unknown) {
+      setActionError(err instanceof Error ? err.message : 'Error al eliminar acta ADR');
     }
   };
 
@@ -145,9 +152,16 @@ export const DecisionsView: React.FC<DecisionsViewProps> = ({
                       {adr.status}
                     </VisionPill>
                     <button
-                      onClick={() => handleDelete(adr.id)}
+                      onClick={() => setEditingDecision(adr)}
+                      className="vision-btn vision-btn-icon text-muted hover:text-indigo-300 text-xs"
+                      title="Editar acta ADR"
+                    >
+                      <span className="material-symbols-outlined text-xs">edit</span>
+                    </button>
+                    <button
+                      onClick={() => setDeletingDecision(adr)}
                       className="vision-btn vision-btn-icon text-muted hover:text-rose-400 text-xs"
-                      title="Eliminar acta"
+                      title="Eliminar acta ADR"
                     >
                       <span className="material-symbols-outlined text-xs">delete</span>
                     </button>
@@ -227,12 +241,38 @@ export const DecisionsView: React.FC<DecisionsViewProps> = ({
         )}
       </div>
 
+      {actionError && (
+        <div className="p-2.5 rounded-[6px] bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[11px] shrink-0">
+          {actionError}
+        </div>
+      )}
+
       {/* Modal Nueva Acta */}
       <CreateDecisionModal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
         projectId={projectId}
         onCreated={() => loadDecisions()}
+      />
+
+      {/* Modal Editar Acta */}
+      <EditDecisionModal
+        isOpen={!!editingDecision}
+        onClose={() => setEditingDecision(null)}
+        projectId={projectId}
+        decision={editingDecision}
+        onUpdated={() => loadDecisions()}
+      />
+
+      {/* Diálogo Confirmar Eliminación */}
+      <ConfirmModal
+        isOpen={!!deletingDecision}
+        onClose={() => setDeletingDecision(null)}
+        onConfirm={handleConfirmDelete}
+        title="Eliminar Acta de Decisión (ADR)"
+        description={`¿Estás seguro de eliminar el acta "${deletingDecision?.code} - ${deletingDecision?.title}"? Esta acción impactará el cálculo de métricas del proyecto.`}
+        confirmText="Eliminar Acta"
+        variant="danger"
       />
     </div>
   );

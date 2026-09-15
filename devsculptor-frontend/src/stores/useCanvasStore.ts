@@ -72,8 +72,9 @@ export const useCanvasStore = create<CanvasState>((set) => ({
         position_x: x,
         position_y: y,
       });
-    } catch (err) {
-      console.error('Error al persistir posición del nodo:', err);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error al persistir posición del nodo';
+      set({ error: message });
     }
   },
 
@@ -111,8 +112,9 @@ export const useCanvasStore = create<CanvasState>((set) => ({
     try {
       const logs = await canvasService.getAuditLogs(projectId);
       set({ auditLogs: logs });
-    } catch (err) {
-      console.error('Error al obtener audit logs:', err);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error al obtener audit logs';
+      set({ error: message });
     }
   },
 }));

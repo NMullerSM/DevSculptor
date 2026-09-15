@@ -24,8 +24,10 @@ export interface CreateRequirementPayload {
 }
 
 export interface UpdateRequirementPayload {
+  code?: string;
   title?: string;
   description?: string;
+  type?: RequirementType;
   priority?: RequirementPriority;
   entity_relation?: string;
 }

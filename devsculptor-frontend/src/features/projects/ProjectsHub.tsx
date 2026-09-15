@@ -3,6 +3,8 @@ import { useProjectStore } from '@/stores/useProjectStore';
 import { VisionButton } from '@/components/ui/VisionButton';
 import { VisionPill } from '@/components/ui/VisionPill';
 import { CreateProjectModal } from './CreateProjectModal';
+import { EditProjectModal } from './EditProjectModal';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Project } from '@/types/project.types';
 
 interface ProjectsHubProps {
@@ -12,6 +14,8 @@ interface ProjectsHubProps {
 export const ProjectsHub: React.FC<ProjectsHubProps> = ({ onOpenProject }) => {
   const { projects, fetchProjects, isLoading, deleteProject } = useProjectStore();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [deletingProject, setDeletingProject] = useState<Project | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -129,11 +133,19 @@ export const ProjectsHub: React.FC<ProjectsHubProps> = ({ onOpenProject }) => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (confirm(`¿Estás seguro de eliminar el proyecto "${project.name}"? Esta acción no se puede deshacer.`)) {
-                        deleteProject(project.id);
-                      }
+                      setEditingProject(project);
                     }}
-                    className="ml-2 vision-btn vision-btn-icon text-muted hover:text-rose-400 shrink-0"
+                    className="ml-2 vision-btn vision-btn-icon text-muted hover:text-indigo-300 shrink-0"
+                    title="Editar metadatos del proyecto"
+                  >
+                    <span className="material-symbols-outlined text-xs">tune</span>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeletingProject(project);
+                    }}
+                    className="ml-1 vision-btn vision-btn-icon text-muted hover:text-rose-400 shrink-0"
                     title="Eliminar proyecto"
                   >
                     <span className="material-symbols-outlined text-xs">delete</span>
@@ -150,6 +162,29 @@ export const ProjectsHub: React.FC<ProjectsHubProps> = ({ onOpenProject }) => {
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
         onCreated={() => fetchProjects()}
+      />
+
+      {/* Modal Editar Proyecto */}
+      <EditProjectModal
+        isOpen={!!editingProject}
+        onClose={() => setEditingProject(null)}
+        project={editingProject}
+        onUpdated={() => fetchProjects()}
+      />
+
+      {/* Diálogo Confirmar Eliminación */}
+      <ConfirmModal
+        isOpen={!!deletingProject}
+        onClose={() => setDeletingProject(null)}
+        onConfirm={async () => {
+          if (deletingProject) {
+            await deleteProject(deletingProject.id);
+          }
+        }}
+        title="Eliminar Proyecto"
+        description={`¿Estás seguro de eliminar el proyecto "${deletingProject?.name}"? Esta acción eliminará en cascada todos sus requisitos, tablas del canvas y decisiones asociadas de forma irreversible.`}
+        confirmText="Eliminar Proyecto"
+        variant="danger"
       />
     </div>
   );

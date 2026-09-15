@@ -21,6 +21,7 @@ export const OkfExportModal: React.FC<OkfExportModalProps> = ({ isOpen, onClose 
   const [includeSkills, setIncludeSkills] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -124,8 +125,8 @@ export const OkfExportModal: React.FC<OkfExportModalProps> = ({ isOpen, onClose 
         setProgress(0);
         onClose();
       }, 700);
-    } catch (err) {
-      console.error(err);
+    } catch (err: unknown) {
+      setExportError(err instanceof Error ? err.message : 'Error al compilar el archivo ZIP');
       setIsExporting(false);
     }
   };
@@ -139,6 +140,11 @@ export const OkfExportModal: React.FC<OkfExportModalProps> = ({ isOpen, onClose 
       maxWidth="md"
     >
       <div className="space-y-3.5 text-xs">
+        {exportError && (
+          <div className="p-2.5 rounded-[6px] bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[11px]">
+            {exportError}
+          </div>
+        )}
         <p className="text-secondary text-[11.5px] leading-relaxed">
           Selecciona los artefactos técnicos que conformarán el **Prompt Bundle** para alimentar agentes de IA externos (Cursor, Claude, NotebookLM) sin alucinaciones ni saturación de contexto:
         </p>

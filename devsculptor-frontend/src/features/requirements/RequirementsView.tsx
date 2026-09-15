@@ -4,6 +4,8 @@ import { Requirement, RequirementType } from '@/types/requirement.types';
 import { VisionButton } from '@/components/ui/VisionButton';
 import { VisionPill } from '@/components/ui/VisionPill';
 import { CreateRequirementModal } from './CreateRequirementModal';
+import { EditRequirementModal } from './EditRequirementModal';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 
 interface RequirementsViewProps {
   projectId: string;
@@ -19,16 +21,20 @@ export const RequirementsView: React.FC<RequirementsViewProps> = ({
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingReq, setEditingReq] = useState<Requirement | null>(null);
+  const [deletingReq, setDeletingReq] = useState<Requirement | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const loadRequirements = async () => {
     setIsLoading(true);
+    setActionError(null);
     try {
       const typeParam = filterType === 'ALL' ? undefined : (filterType as RequirementType);
       const data = await requirementsService.getAllByProject(projectId, typeParam);
       setRequirements(data);
       if (onCountChange) onCountChange(data.length);
-    } catch {
-      // Fallback a lista inicial si la API o proyecto es nuevo
+    } catch (err: unknown) {
+      setActionError(err instanceof Error ? err.message : 'Error al cargar requisitos');
     } finally {
       setIsLoading(false);
     }
@@ -47,15 +53,15 @@ export const RequirementsView: React.FC<RequirementsViewProps> = ({
       (r.description && r.description.toLowerCase().includes(search.toLowerCase()))
   );
 
-  const handleDelete = async (requirementId: string) => {
-    if (!confirm('¿Deseas eliminar este requisito de la matriz?')) return;
+  const handleConfirmDelete = async () => {
+    if (!deletingReq) return;
     try {
-      await requirementsService.delete(projectId, requirementId);
-      const updated = requirements.filter((r) => r.id !== requirementId);
+      await requirementsService.delete(projectId, deletingReq.id);
+      const updated = requirements.filter((r) => r.id !== deletingReq.id);
       setRequirements(updated);
       if (onCountChange) onCountChange(updated.length);
-    } catch (err) {
-      console.error(err);
+    } catch (err: unknown) {
+      setActionError(err instanceof Error ? err.message : 'Error al eliminar requisito');
     }
   };
 
@@ -155,7 +161,15 @@ export const RequirementsView: React.FC<RequirementsViewProps> = ({
 
               <div className="flex items-center gap-1 shrink-0 self-end md:self-start">
                 <button
-                  onClick={() => handleDelete(req.id)}
+                  onClick={() => setEditingReq(req)}
+                  className="vision-btn vision-btn-icon text-muted hover:text-indigo-300"
+                  title="Editar requisito"
+                  aria-label="Editar requisito"
+                >
+                  <span className="material-symbols-outlined text-xs">edit</span>
+                </button>
+                <button
+                  onClick={() => setDeletingReq(req)}
                   className="vision-btn vision-btn-icon text-muted hover:text-rose-400"
                   title="Eliminar requisito"
                   aria-label="Eliminar requisito"
@@ -168,12 +182,38 @@ export const RequirementsView: React.FC<RequirementsViewProps> = ({
         )}
       </div>
 
+      {actionError && (
+        <div className="p-2.5 rounded-[6px] bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[11px] shrink-0">
+          {actionError}
+        </div>
+      )}
+
       {/* Modal Nuevo Requisito */}
       <CreateRequirementModal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
         projectId={projectId}
         onCreated={() => loadRequirements()}
+      />
+
+      {/* Modal Editar Requisito */}
+      <EditRequirementModal
+        isOpen={!!editingReq}
+        onClose={() => setEditingReq(null)}
+        projectId={projectId}
+        requirement={editingReq}
+        onUpdated={() => loadRequirements()}
+      />
+
+      {/* Diálogo Confirmar Eliminación */}
+      <ConfirmModal
+        isOpen={!!deletingReq}
+        onClose={() => setDeletingReq(null)}
+        onConfirm={handleConfirmDelete}
+        title="Eliminar Requisito"
+        description={`¿Estás seguro de eliminar el requisito "${deletingReq?.code} - ${deletingReq?.title}" de la matriz IEEE-830?`}
+        confirmText="Eliminar Requisito"
+        variant="danger"
       />
     </div>
   );
