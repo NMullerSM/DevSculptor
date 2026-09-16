@@ -41,7 +41,6 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
     setTransientPosition,
     updatePosition,
     deleteEntity,
-    createEntity,
   } = useCanvasStore();
 
   const [isAddTableOpen, setIsAddTableOpen] = useState(false);
@@ -86,72 +85,6 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
       setTimeout(() => setCopyFeedback(false), 2000);
     } catch {
       // Fallback
-    }
-  };
-
-  const handleAddQuickTemplate = async (templateId: string) => {
-    const offsetIndex = entities.length;
-    const posX = 100 + (offsetIndex % 3) * 260;
-    const posY = 100 + Math.floor(offsetIndex / 3) * 230;
-
-    let payload = null;
-
-    if (templateId === 'auth') {
-      payload = {
-        table_name: `users_${offsetIndex + 1}`,
-        columns_json: [
-          { name: 'id', type: 'UUID', isPk: true, is_pk: true, nullable: false },
-          { name: 'email', type: 'VARCHAR(255)', nullable: false, unique: true },
-          { name: 'password_hash', type: 'VARCHAR(255)', nullable: false },
-          { name: 'full_name', type: 'VARCHAR(150)', nullable: true },
-          { name: 'role', type: 'VARCHAR(30)', nullable: false, default_value: "'developer'" },
-        ],
-        position_x: posX,
-        position_y: posY,
-      };
-    } else if (templateId === 'orders') {
-      payload = {
-        table_name: `orders_${offsetIndex + 1}`,
-        columns_json: [
-          { name: 'id', type: 'UUID', isPk: true, is_pk: true, nullable: false },
-          { name: 'customer_id', type: 'UUID', isFk: true, is_fk: true, cardinality: '1:N' as const, nullable: false },
-          { name: 'order_number', type: 'VARCHAR(50)', unique: true, nullable: false },
-          { name: 'total_amount', type: 'DECIMAL(12,2)', nullable: false },
-          { name: 'status', type: 'VARCHAR(20)', nullable: false },
-        ],
-        position_x: posX,
-        position_y: posY,
-      };
-    } else if (templateId === 'products') {
-      payload = {
-        table_name: `products_${offsetIndex + 1}`,
-        columns_json: [
-          { name: 'id', type: 'UUID', isPk: true, is_pk: true, nullable: false },
-          { name: 'sku', type: 'VARCHAR(50)', unique: true, nullable: false },
-          { name: 'title', type: 'VARCHAR(200)', nullable: false },
-          { name: 'price', type: 'DECIMAL(10,2)', nullable: false },
-          { name: 'stock', type: 'INTEGER', nullable: false },
-        ],
-        position_x: posX,
-        position_y: posY,
-      };
-    } else if (templateId === 'audit') {
-      payload = {
-        table_name: `audit_logs_${offsetIndex + 1}`,
-        columns_json: [
-          { name: 'id', type: 'UUID', isPk: true, is_pk: true, nullable: false },
-          { name: 'action', type: 'VARCHAR(50)', nullable: false },
-          { name: 'entity_name', type: 'VARCHAR(100)', nullable: false },
-          { name: 'payload_json', type: 'JSONB', nullable: true },
-          { name: 'user_session', type: 'VARCHAR(100)', nullable: true },
-        ],
-        position_x: posX,
-        position_y: posY,
-      };
-    }
-
-    if (payload) {
-      await createEntity(projectId, payload);
     }
   };
 
@@ -205,36 +138,21 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
           )}
 
           {activeSubTab === 'erd' && (
-            <>
-              <VisionButton
-                size="sm"
-                icon="file_upload"
-                onClick={() => setIsImportOpen(true)}
-                variant="secondary"
-                className="text-indigo-400 hover:text-indigo-300"
-              >
-                Importar SQL
-              </VisionButton>
-
-              <VisionButton
-                size="sm"
-                icon="verified"
-                onClick={() => setIsNormalizationOpen(true)}
-                variant="secondary"
-                className="text-emerald-400 hover:text-emerald-300"
-              >
-                Auditoría 3FN
-              </VisionButton>
-
-              <VisionButton
-                size="sm"
-                icon="add"
-                onClick={() => setIsAddTableOpen(true)}
-                className="text-cyan-400 hover:text-cyan-300"
-              >
-                Añadir Tabla
-              </VisionButton>
-            </>
+            <div className="flex items-center gap-2">
+              <span className="text-[10.5px] font-mono text-muted bg-white/[0.04] px-2 py-0.5 rounded border border-white/5">
+                {entities.length} {entities.length === 1 ? 'tabla' : 'tablas'}
+              </span>
+              {!isDrawerOpen && (
+                <VisionButton
+                  size="sm"
+                  icon="view_sidebar"
+                  onClick={() => setIsDrawerOpen(true)}
+                  className="text-cyan-400 hover:text-cyan-300"
+                >
+                  Modelado
+                </VisionButton>
+              )}
+            </div>
           )}
 
           {activeSubTab !== 'erd' && activeSubTab !== 'audit' && (
@@ -264,7 +182,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
             entities={entities}
             onSelectEntity={(id) => selectEntity(id)}
             onEditEntity={(entity) => setEditingEntity(entity)}
-            onAddQuickTemplate={handleAddQuickTemplate}
+            onAddTable={() => setIsAddTableOpen(true)}
             onOpenImport={() => setIsImportOpen(true)}
             onOpenNormalization={() => setIsNormalizationOpen(true)}
           />
