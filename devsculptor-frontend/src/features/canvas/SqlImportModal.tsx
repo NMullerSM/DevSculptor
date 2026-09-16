@@ -231,10 +231,10 @@ export const SqlImportModal: React.FC<SqlImportModalProps> = ({
 
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <label className="text-[11px] font-mono text-white/80">Sentencias SQL DDL</label>
+            <label className="text-[11px] font-mono text-secondary">Sentencias SQL DDL</label>
             <button
               onClick={() => setSqlContent(SAMPLE_SQL)}
-              className="text-[10px] font-mono text-cyan-400 hover:text-cyan-300 transition-colors"
+              className="text-[10px] font-mono text-cyan-600 dark:text-cyan-400 hover:text-cyan-500 transition-colors"
             >
               Cargar Ejemplo
             </button>
@@ -246,23 +246,23 @@ export const SqlImportModal: React.FC<SqlImportModalProps> = ({
               setParsedPreview([]);
             }}
             rows={10}
-            className="w-full text-xs font-mono bg-black/40 border border-white/10 rounded-lg p-3 text-cyan-300 focus:outline-none focus:border-cyan-500/50 resize-none custom-scrollbar leading-relaxed"
+            className="w-full text-xs font-mono bg-[var(--glass-input)] border border-[var(--border-glass-subtle)] rounded-lg p-3 text-primary focus:outline-none focus:border-cyan-500/50 resize-none custom-scrollbar leading-relaxed"
             placeholder="CREATE TABLE ..."
           />
         </div>
 
         {/* Previsualización de Tablas Detectadas */}
         {parsedPreview.length > 0 && (
-          <div className="p-3 rounded-lg bg-white/[0.02] border border-white/10 space-y-2">
-            <div className="text-xs font-mono font-medium text-emerald-400 flex items-center gap-1.5">
+          <div className="p-3 rounded-lg bg-[var(--glass-card)] border border-[var(--border-glass-subtle)] space-y-2">
+            <div className="text-xs font-mono font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
               <span className="material-symbols-outlined text-sm">task_alt</span>
               <span>{parsedPreview.length} tablas detectadas y listas para importar:</span>
             </div>
             <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
               {parsedPreview.map((pt, i) => (
-                <div key={i} className="p-2 rounded bg-black/30 border border-white/5 text-[11px] font-mono">
-                  <div className="text-white font-semibold flex items-center gap-1">
-                    <span className="material-symbols-outlined text-xs text-cyan-400">table_chart</span>
+                <div key={i} className="p-2 rounded bg-[var(--glass-input)] border border-[var(--border-glass-subtle)] text-[11px] font-mono">
+                  <div className="text-primary font-semibold flex items-center gap-1">
+                    <span className="material-symbols-outlined text-xs text-cyan-600 dark:text-cyan-400">table_chart</span>
                     <span>{pt.tableName}</span>
                   </div>
                   <div className="text-muted text-[9.5px]">

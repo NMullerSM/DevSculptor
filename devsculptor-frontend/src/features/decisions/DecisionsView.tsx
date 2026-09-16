@@ -75,9 +75,9 @@ export const DecisionsView: React.FC<DecisionsViewProps> = ({
   return (
     <div className="flex-1 flex flex-col h-full p-4 gap-3 select-none">
       {/* Encabezado */}
-      <div className="flex items-center justify-between pb-2 border-b border-white/[0.06] shrink-0">
+      <div className="flex items-center justify-between pb-2 border-b border-[var(--border-glass-subtle)] shrink-0">
         <div>
-          <h2 className="text-xs font-semibold text-white">
+          <h2 className="text-xs font-semibold text-primary">
             Registro de Decisiones de Arquitectura (ADRs)
           </h2>
           <p className="text-[10.5px] text-secondary font-mono">
@@ -102,12 +102,12 @@ export const DecisionsView: React.FC<DecisionsViewProps> = ({
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="vision-btn text-xs !py-1 bg-black/30"
+          className="vision-btn text-xs !py-1 bg-[var(--glass-input)] text-primary"
         >
-          <option value="ALL" className="bg-slate-900 text-white">Todos los estados</option>
-          <option value="PROPOSED" className="bg-slate-900 text-white">En Evaluación (PROPOSED)</option>
-          <option value="ACCEPTED" className="bg-slate-900 text-white">Ratificadas (ACCEPTED)</option>
-          <option value="REJECTED" className="bg-slate-900 text-white">Descartadas (REJECTED)</option>
+          <option value="ALL" className="bg-slate-900 text-white dark:bg-slate-900">Todos los estados</option>
+          <option value="PROPOSED" className="bg-slate-900 text-white dark:bg-slate-900">En Evaluación (PROPOSED)</option>
+          <option value="ACCEPTED" className="bg-slate-900 text-white dark:bg-slate-900">Ratificadas (ACCEPTED)</option>
+          <option value="REJECTED" className="bg-slate-900 text-white dark:bg-slate-900">Descartadas (REJECTED)</option>
         </select>
         <span className="text-[10.5px] font-mono text-muted ml-auto">
           {decisions.length} {decisions.length === 1 ? 'acta registrada' : 'actas registradas'}
@@ -115,7 +115,7 @@ export const DecisionsView: React.FC<DecisionsViewProps> = ({
       </div>
 
       {/* Lista de Actas ADR */}
-      <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+      <div className="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar">
         {isLoading && decisions.length === 0 ? (
           <div className="text-center py-8 text-xs text-muted font-mono">Cargando actas ADR...</div>
         ) : decisions.length === 0 ? (
@@ -131,15 +131,15 @@ export const DecisionsView: React.FC<DecisionsViewProps> = ({
             return (
               <div
                 key={adr.id}
-                className="vision-card p-4 space-y-3 hover:border-white/20 transition-all border-white/[0.08]"
+                className="vision-card p-4 space-y-3 hover:border-indigo-500/30 transition-all border-[var(--border-glass-subtle)]"
               >
                 {/* Cabecera del Acta */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-xs text-white bg-white/[0.08] px-2 py-0.5 rounded-[4px] border border-white/15">
+                    <span className="font-mono font-bold text-xs text-primary bg-black/5 dark:bg-white/[0.08] px-2 py-0.5 rounded-[4px] border border-[var(--border-glass-subtle)]">
                       {adr.code}
                     </span>
-                    <h3 className="font-semibold text-xs text-white tracking-tight">
+                    <h3 className="font-semibold text-xs text-primary tracking-tight">
                       {adr.title}
                     </h3>
                   </div>
@@ -153,14 +153,14 @@ export const DecisionsView: React.FC<DecisionsViewProps> = ({
                     </VisionPill>
                     <button
                       onClick={() => setEditingDecision(adr)}
-                      className="vision-btn vision-btn-icon text-muted hover:text-indigo-300 text-xs"
+                      className="vision-btn vision-btn-icon text-muted hover:text-indigo-500 dark:hover:text-indigo-300 text-xs"
                       title="Editar acta ADR"
                     >
                       <span className="material-symbols-outlined text-xs">edit</span>
                     </button>
                     <button
                       onClick={() => setDeletingDecision(adr)}
-                      className="vision-btn vision-btn-icon text-muted hover:text-rose-400 text-xs"
+                      className="vision-btn vision-btn-icon text-muted hover:text-rose-500 text-xs"
                       title="Eliminar acta ADR"
                     >
                       <span className="material-symbols-outlined text-xs">delete</span>
@@ -173,17 +173,17 @@ export const DecisionsView: React.FC<DecisionsViewProps> = ({
                   <span className="text-[10px] font-mono text-muted uppercase tracking-wider block">
                     Contexto y Fuerzas:
                   </span>
-                  <p className="text-[11.5px] text-secondary leading-relaxed bg-black/20 p-2 rounded-[5px]">
+                  <p className="text-[11.5px] text-secondary leading-relaxed bg-black/5 dark:bg-black/20 p-2 rounded-[5px]">
                     {adr.context}
                   </p>
                 </div>
 
                 {/* Decisión Adoptada */}
                 <div className="space-y-1 text-xs">
-                  <span className="text-[10px] font-mono text-indigo-400 uppercase tracking-wider block font-semibold">
+                  <span className="text-[10px] font-mono text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block font-semibold">
                     Decisión Ratificada:
                   </span>
-                  <p className="text-[11.5px] text-white leading-relaxed bg-indigo-500/[0.06] border border-indigo-500/20 p-2 rounded-[5px]">
+                  <p className="text-[11.5px] text-primary leading-relaxed bg-indigo-500/[0.06] border border-indigo-500/20 p-2 rounded-[5px]">
                     {adr.decision}
                   </p>
                 </div>

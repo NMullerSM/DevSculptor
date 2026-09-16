@@ -119,7 +119,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
         <div className="flex items-center gap-2">
           {/* Selector de Dialecto Multi-Motor cuando está en SQL */}
           {activeSubTab === 'sql' && (
-            <div className="flex items-center gap-1 bg-black/40 border border-white/10 rounded-lg p-0.5 font-mono text-[10.5px]">
+            <div className="flex items-center gap-1 bg-[var(--glass-card)] border border-[var(--border-glass-subtle)] rounded-lg p-0.5 font-mono text-[10.5px]">
               <span className="text-muted px-1 text-[10px]">Motor:</span>
               {(['postgres', 'mysql', 'sqlite', 'oracle'] as SqlDialect[]).map((d) => (
                 <button
@@ -127,8 +127,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
                   onClick={() => setSqlDialect(d)}
                   className={`px-2 py-0.5 rounded capitalize transition-colors ${
                     sqlDialect === d
-                      ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40'
-                      : 'text-white/60 hover:text-white'
+                      ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 font-bold border border-cyan-500/40'
+                      : 'text-muted hover:text-primary'
                   }`}
                 >
                   {d}
@@ -139,7 +139,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
 
           {activeSubTab === 'erd' && (
             <div className="flex items-center gap-2">
-              <span className="text-[10.5px] font-mono text-muted bg-white/[0.04] px-2 py-0.5 rounded border border-white/5">
+              <span className="text-[10.5px] font-mono text-muted bg-[var(--glass-card)] px-2 py-0.5 rounded border border-[var(--border-glass-subtle)]">
                 {entities.length} {entities.length === 1 ? 'tabla' : 'tablas'}
               </span>
               {!isDrawerOpen && (
@@ -225,21 +225,21 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
             <div className="vision-dock">
               <button
                 onClick={zoomOut}
-                className="vision-btn vision-btn-icon text-xs text-muted hover:text-white"
+                className="vision-btn vision-btn-icon text-xs text-muted hover:text-primary"
                 title="Alejar lienzo"
               >
                 <span className="material-symbols-outlined text-xs">remove</span>
               </button>
               <button
                 onClick={resetZoom}
-                className="font-mono text-[10.5px] text-secondary px-1 hover:text-white"
-                title="Restablecer a 100%"
+                className="font-mono text-[10.5px] text-secondary px-1 hover:text-primary"
+                title="Restablecer zoom a 100%"
               >
                 {Math.round(zoom * 100)}%
               </button>
               <button
                 onClick={zoomIn}
-                className="vision-btn vision-btn-icon text-xs text-muted hover:text-white"
+                className="vision-btn vision-btn-icon text-xs text-muted hover:text-primary"
                 title="Acercar lienzo"
               >
                 <span className="material-symbols-outlined text-xs">add</span>
@@ -251,8 +251,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
 
       {/* Vista 2: Previsualización de Código Multi-Lenguaje y Multi-Dialecto */}
       {activeSubTab !== 'erd' && activeSubTab !== 'audit' && (
-        <div className="flex-1 overflow-auto p-4 font-mono text-xs text-white leading-relaxed bg-[#0b0f19] fade-in">
-          <pre className="whitespace-pre select-text font-mono text-[11.5px] text-white/90">
+        <div className="flex-1 overflow-auto p-4 font-mono text-xs text-primary leading-relaxed bg-[var(--glass-code)] fade-in">
+          <pre className="whitespace-pre select-text font-mono text-[11.5px] text-primary">
             {getCodeContent()}
           </pre>
         </div>

@@ -34,7 +34,7 @@ export const ProjectsHub: React.FC<ProjectsHubProps> = ({ onOpenProject }) => {
       {/* Encabezado del Hub */}
       <div className="vision-window p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-lg font-bold text-white tracking-tight">
+          <h1 className="text-lg font-bold text-primary tracking-tight">
             Portafolio de Arquitectura de Software
           </h1>
           <p className="text-xs text-secondary mt-0.5 font-mono">
@@ -69,11 +69,11 @@ export const ProjectsHub: React.FC<ProjectsHubProps> = ({ onOpenProject }) => {
         </div>
       ) : filteredProjects.length === 0 ? (
         <div className="vision-window p-12 text-center flex flex-col items-center justify-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-white/[0.04] border border-white/10 flex items-center justify-center text-muted">
+          <div className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/[0.04] border border-[var(--border-glass-subtle)] flex items-center justify-center text-muted">
             <span className="material-symbols-outlined text-2xl">folder_open</span>
           </div>
           <div>
-            <h3 className="font-semibold text-sm text-white">No hay proyectos registrados</h3>
+            <h3 className="font-semibold text-sm text-primary">No hay proyectos registrados</h3>
             <p className="text-xs text-muted mt-1 max-w-sm">
               Inicializa tu primer proyecto de software para comenzar la captura de requisitos y el modelado ERD.
             </p>
@@ -105,7 +105,7 @@ export const ProjectsHub: React.FC<ProjectsHubProps> = ({ onOpenProject }) => {
                   </span>
                 </div>
 
-                <h3 className="font-bold text-sm text-white group-hover:text-indigo-300 transition-colors">
+                <h3 className="font-bold text-sm text-primary group-hover:text-indigo-500 dark:group-hover:text-indigo-300 transition-colors">
                   {project.name}
                 </h3>
 
@@ -114,7 +114,7 @@ export const ProjectsHub: React.FC<ProjectsHubProps> = ({ onOpenProject }) => {
                 </p>
 
                 <div className="pt-1">
-                  <span className="text-[10.5px] font-mono text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded-[4px] border border-cyan-400/20">
+                  <span className="text-[10.5px] font-mono text-cyan-600 dark:text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded-[4px] border border-cyan-400/20">
                     {project.architecture_style}
                   </span>
                 </div>

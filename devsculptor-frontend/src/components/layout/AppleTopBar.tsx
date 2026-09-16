@@ -31,13 +31,13 @@ export const AppleTopBar: React.FC<AppleTopBarProps> = ({
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)]" />
-          <span className="font-semibold text-xs tracking-tight text-white">DevSculptor</span>
+          <span className="font-semibold text-xs tracking-tight text-primary">DevSculptor</span>
         </div>
 
-        <div className="h-3 w-px bg-white/10 mx-0.5" />
+        <div className="h-3 w-px bg-[var(--border-glass-subtle)] mx-0.5" />
 
         {/* Switch: Estudio vs Hub */}
-        <div className="flex items-center gap-1 bg-white/[0.04] p-0.5 rounded-[7px] border border-white/[0.08]">
+        <div className="flex items-center gap-1 bg-black/5 dark:bg-white/[0.04] p-0.5 rounded-[7px] border border-[var(--border-glass-subtle)]">
           <button
             onClick={() => onNavigateScreen('studio')}
             className={`vision-btn !py-1 !px-2.5 text-[11px] ${
@@ -62,7 +62,7 @@ export const AppleTopBar: React.FC<AppleTopBarProps> = ({
       {/* Centro: Proyecto Activo */}
       <div className="hidden md:flex items-center gap-2">
         <span className="text-[11px] text-muted font-mono">Proyecto:</span>
-        <span className="font-semibold text-xs text-white">
+        <span className="font-semibold text-xs text-primary">
           {activeProject ? activeProject.name : 'Sin proyecto seleccionado'}
         </span>
         <VisionPill variant="indigo" className="text-[8.5px]">

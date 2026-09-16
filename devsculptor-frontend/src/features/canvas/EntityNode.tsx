@@ -84,13 +84,13 @@ export const EntityNode: React.FC<EntityNodeProps> = ({
       {/* Cabecera de Tabla */}
       <div className="erd-node-header cursor-grab active:cursor-grabbing">
         <div className="flex items-center gap-1.5 min-w-0">
-          <span className="material-symbols-outlined text-[13px] text-cyan-400">table_chart</span>
-          <span className="font-mono font-bold text-xs text-white truncate" title={entity.table_name}>
+          <span className="material-symbols-outlined text-[13px] text-cyan-500 dark:text-cyan-400">table_chart</span>
+          <span className="font-mono font-bold text-xs text-primary truncate" title={entity.table_name}>
             {entity.table_name}
           </span>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          <span className="text-[8px] font-mono px-1.5 py-0.5 rounded-[3px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+          <span className="text-[8px] font-mono px-1.5 py-0.5 rounded-[3px] bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30">
             RLS
           </span>
 
@@ -99,7 +99,7 @@ export const EntityNode: React.FC<EntityNodeProps> = ({
               e.stopPropagation();
               onEdit(entity);
             }}
-            className="text-muted hover:text-cyan-300 p-0.5 rounded transition-colors"
+            className="text-muted hover:text-cyan-500 dark:hover:text-cyan-300 p-0.5 rounded transition-colors"
             title="Editar tabla y columnas (ALTER TABLE)"
           >
             <span className="material-symbols-outlined text-[12px]">tune</span>
@@ -110,7 +110,7 @@ export const EntityNode: React.FC<EntityNodeProps> = ({
               e.stopPropagation();
               onDelete(entity.id);
             }}
-            className="text-muted hover:text-rose-400 p-0.5 rounded transition-colors"
+            className="text-muted hover:text-rose-500 p-0.5 rounded transition-colors"
             title="Eliminar tabla"
           >
             <span className="material-symbols-outlined text-[11px]">close</span>
@@ -128,19 +128,19 @@ export const EntityNode: React.FC<EntityNodeProps> = ({
             <div key={index} className="erd-row">
               <div className="flex items-center gap-1.5 min-w-0">
                 {isPk ? (
-                  <span className="text-amber-400 font-bold text-[10px]" title="Primary Key">🔑</span>
+                  <span className="text-amber-500 dark:text-amber-400 font-bold text-[10px]" title="Primary Key">🔑</span>
                 ) : isFk ? (
-                  <span className="text-cyan-400 text-[10px]" title={`Foreign Key: ${col.referencesTable || col.references_table}`}>🔗</span>
+                  <span className="text-cyan-500 dark:text-cyan-400 text-[10px]" title={`Foreign Key: ${col.referencesTable || col.references_table}`}>🔗</span>
                 ) : (
-                  <span className="w-1.5 h-1.5 rounded-full bg-white/20" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400/40 dark:bg-white/20" />
                 )}
                 <span
                   className={`truncate ${
                     isPk
-                      ? 'text-amber-300 font-semibold'
+                      ? 'text-amber-600 dark:text-amber-300 font-semibold'
                       : isFk
-                      ? 'text-cyan-300'
-                      : 'text-white/90'
+                      ? 'text-cyan-600 dark:text-cyan-300 font-medium'
+                      : 'text-primary'
                   }`}
                 >
                   {col.name}
@@ -151,7 +151,7 @@ export const EntityNode: React.FC<EntityNodeProps> = ({
                   {col.type}
                 </span>
                 {col.unique && (
-                  <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-purple-500/20 text-purple-300">
+                  <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-purple-500/20 text-purple-700 dark:text-purple-300">
                     UQ
                   </span>
                 )}

@@ -102,10 +102,10 @@ html.light, body.light {
                  inset 0 1px 1px 0 rgba(255, 255, 255, 0.95), 
                  0 0 0 1px rgba(255, 255, 255, 0.85);
 
-  --text-primary: #0f172a;
-  --text-secondary: #243046;
-  --text-muted: #53647a;
-  --text-dim: #7f90a5;
+  --text-primary: #090d16;
+  --text-secondary: #1e293b;
+  --text-muted: #334155;
+  --text-dim: #64748b;
 
   --accent-indigo: #4f46e5;
   --accent-indigo-glow: rgba(79, 70, 229, 0.3);

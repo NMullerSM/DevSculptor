@@ -68,9 +68,9 @@ export const RequirementsView: React.FC<RequirementsViewProps> = ({
   return (
     <div className="flex-1 flex flex-col h-full p-4 gap-3 select-none">
       {/* Encabezado */}
-      <div className="flex items-center justify-between pb-2 border-b border-white/[0.06] shrink-0">
+      <div className="flex items-center justify-between pb-2 border-b border-[var(--border-glass-subtle)] shrink-0">
         <div>
-          <h2 className="text-xs font-semibold text-white">Matriz de Requisitos (IEEE-830)</h2>
+          <h2 className="text-xs font-semibold text-primary">Matriz de Requisitos (IEEE-830)</h2>
           <p className="text-[10.5px] text-secondary font-mono">
             Parametrizados bajo formato formal y validados con Zod.
           </p>
@@ -97,11 +97,11 @@ export const RequirementsView: React.FC<RequirementsViewProps> = ({
         <select
           value={filterType}
           onChange={(e) => setFilterType(e.target.value)}
-          className="vision-btn text-xs !py-1 bg-black/30"
+          className="vision-btn text-xs !py-1 bg-[var(--glass-input)] text-primary"
         >
-          <option value="ALL" className="bg-slate-900 text-white">Todos los tipos</option>
-          <option value="RF" className="bg-slate-900 text-white">Solo RF (Funcionales)</option>
-          <option value="RNF" className="bg-slate-900 text-white">Solo RNF (No Funcionales)</option>
+          <option value="ALL" className="bg-slate-900 text-white dark:bg-slate-900">Todos los tipos</option>
+          <option value="RF" className="bg-slate-900 text-white dark:bg-slate-900">Solo RF (Funcionales)</option>
+          <option value="RNF" className="bg-slate-900 text-white dark:bg-slate-900">Solo RNF (No Funcionales)</option>
         </select>
         <span className="text-[10.5px] font-mono text-muted ml-auto">
           {filtered.length} {filtered.length === 1 ? 'requisito' : 'requisitos'}
@@ -109,7 +109,7 @@ export const RequirementsView: React.FC<RequirementsViewProps> = ({
       </div>
 
       {/* Lista de Requisitos */}
-      <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+      <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
         {isLoading && requirements.length === 0 ? (
           <div className="text-center py-8 text-xs text-muted font-mono">Cargando requisitos...</div>
         ) : filtered.length === 0 ? (
@@ -120,11 +120,11 @@ export const RequirementsView: React.FC<RequirementsViewProps> = ({
           filtered.map((req) => (
             <div
               key={req.id}
-              className="vision-card p-3 flex flex-col md:flex-row md:items-start justify-between gap-3 hover:border-white/20 transition-all"
+              className="vision-card p-3 flex flex-col md:flex-row md:items-start justify-between gap-3 hover:border-indigo-500/30 transition-all"
             >
               <div className="space-y-1.5 flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-mono font-bold text-xs text-white bg-white/[0.06] px-2 py-0.5 rounded-[4px] border border-white/10">
+                  <span className="font-mono font-bold text-xs text-primary bg-black/5 dark:bg-white/[0.06] px-2 py-0.5 rounded-[4px] border border-[var(--border-glass-subtle)]">
                     {req.code}
                   </span>
                   <VisionPill variant={req.type === 'RF' ? 'amber' : 'cyan'}>
@@ -133,22 +133,22 @@ export const RequirementsView: React.FC<RequirementsViewProps> = ({
                   <span
                     className={`text-[9.5px] font-mono px-2 py-0.5 rounded-[4px] font-medium ${
                       req.priority === 'HIGH'
-                        ? 'text-rose-400 bg-rose-500/10 border border-rose-500/20'
+                        ? 'text-rose-500 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20'
                         : req.priority === 'MEDIUM'
-                        ? 'text-amber-400 bg-amber-500/10 border border-amber-500/20'
-                        : 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20'
+                        ? 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20'
+                        : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20'
                     }`}
                   >
                     PRIORIDAD {req.priority}
                   </span>
                   {req.entity_relation && (
-                    <span className="text-[10px] font-mono text-cyan-300 bg-cyan-500/10 px-2 py-0.5 rounded-[4px] border border-cyan-500/20">
+                    <span className="text-[10px] font-mono text-cyan-600 dark:text-cyan-300 bg-cyan-500/10 px-2 py-0.5 rounded-[4px] border border-cyan-500/20">
                       Entidad: {req.entity_relation}
                     </span>
                   )}
                 </div>
 
-                <h3 className="font-semibold text-xs text-white tracking-tight">
+                <h3 className="font-semibold text-xs text-primary tracking-tight">
                   {req.title}
                 </h3>
 

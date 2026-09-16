@@ -158,7 +158,7 @@ export const OkfExportModal: React.FC<OkfExportModalProps> = ({ isOpen, onClose 
               className="rounded accent-indigo-500"
             />
             <div>
-              <div className="font-semibold text-white">/documentation/</div>
+              <div className="font-semibold text-primary">/documentation/</div>
               <div className="text-[10px] text-muted font-sans">
                 Requisitos IEEE-830, Actas ADRs y especificación técnica OpenAPI
               </div>
@@ -173,7 +173,7 @@ export const OkfExportModal: React.FC<OkfExportModalProps> = ({ isOpen, onClose 
               className="rounded accent-indigo-500"
             />
             <div>
-              <div className="font-semibold text-white">/database/</div>
+              <div className="font-semibold text-primary">/database/</div>
               <div className="text-[10px] text-muted font-sans">
                 PostgreSQL DDL (3FN), Triggers de auditoría y políticas RLS
               </div>
@@ -188,7 +188,7 @@ export const OkfExportModal: React.FC<OkfExportModalProps> = ({ isOpen, onClose 
               className="rounded accent-indigo-500"
             />
             <div>
-              <div className="font-semibold text-white">/skills/</div>
+              <div className="font-semibold text-primary">/skills/</div>
               <div className="text-[10px] text-muted font-sans">
                 Manual de ingeniería devsculptor-architect y directrices de arquitectura
               </div>

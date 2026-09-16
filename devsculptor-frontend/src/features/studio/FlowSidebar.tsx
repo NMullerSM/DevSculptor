@@ -57,7 +57,7 @@ export const FlowSidebar: React.FC<FlowSidebarProps> = ({
   return (
     <aside className="vision-window w-[250px] shrink-0 flex flex-col p-3 gap-3 select-none">
       {/* Encabezado */}
-      <div className="flex items-center justify-between pb-1.5 border-b border-white/[0.06]">
+      <div className="flex items-center justify-between pb-1.5 border-b border-[var(--border-glass-subtle)]">
         <span className="text-[10px] font-mono uppercase tracking-wider text-muted font-semibold">
           Flujo de Trabajo
         </span>
@@ -67,7 +67,7 @@ export const FlowSidebar: React.FC<FlowSidebarProps> = ({
       </div>
 
       {/* Lista de Pasos */}
-      <div className="flex-1 overflow-y-auto space-y-2 text-xs pr-0.5">
+      <div className="flex-1 overflow-y-auto space-y-2 text-xs pr-0.5 custom-scrollbar">
         {steps.map((step) => {
           const isSelected = activeStep === step.id;
           return (
@@ -82,7 +82,7 @@ export const FlowSidebar: React.FC<FlowSidebarProps> = ({
                 {step.icon}
               </span>
               <div className="min-w-0 flex-1">
-                <div className="font-semibold text-white truncate text-xs">{step.title}</div>
+                <div className="font-semibold text-primary truncate text-xs">{step.title}</div>
                 <div className="text-[10px] text-secondary truncate font-mono">{step.subtitle}</div>
               </div>
               {step.badge && (
@@ -96,7 +96,7 @@ export const FlowSidebar: React.FC<FlowSidebarProps> = ({
       </div>
 
       {/* Paso 5: Botón Inferior Anclado de Exportación OKF */}
-      <div className="pt-2 border-t border-white/[0.06]">
+      <div className="pt-2 border-t border-[var(--border-glass-subtle)]">
         <VisionButton
           variant="primary"
           icon="folder_zip"

@@ -133,7 +133,7 @@ export const NormalizationCheckerModal: React.FC<NormalizationCheckerModalProps>
               {totalScore}%
             </div>
             <div>
-              <div className="text-sm font-semibold text-white">
+              <div className="text-sm font-semibold text-primary">
                 {totalScore >= 85
                   ? 'Esquema Altamente Normalizado (3FN)'
                   : totalScore >= 60
@@ -147,10 +147,10 @@ export const NormalizationCheckerModal: React.FC<NormalizationCheckerModalProps>
           </div>
 
           <div className="flex items-center gap-1.5 text-xs font-mono">
-            <span className="px-2 py-1 rounded bg-white/5 border border-white/10 text-cyan-300">
+            <span className="px-2 py-1 rounded bg-[var(--glass-card)] border border-[var(--border-glass-subtle)] text-cyan-600 dark:text-cyan-300">
               Mecánica: Activa
             </span>
-            <span className="px-2 py-1 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-300">
+            <span className="px-2 py-1 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-300">
               IA: Lista para S3-Épica B
             </span>
           </div>
@@ -166,12 +166,12 @@ export const NormalizationCheckerModal: React.FC<NormalizationCheckerModalProps>
             diagnostics.map((d, i) => (
               <div
                 key={i}
-                className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] space-y-2"
+                className="p-3 rounded-lg bg-[var(--glass-card)] border border-[var(--border-glass-subtle)] space-y-2"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[14px] text-cyan-400">table_chart</span>
-                    <span className="font-mono font-semibold text-xs text-white">{d.tableName}</span>
+                    <span className="material-symbols-outlined text-[14px] text-cyan-500 dark:text-cyan-400">table_chart</span>
+                    <span className="font-mono font-semibold text-xs text-primary">{d.tableName}</span>
                   </div>
 
                   {/* Badges de 1FN, 2FN, 3FN */}

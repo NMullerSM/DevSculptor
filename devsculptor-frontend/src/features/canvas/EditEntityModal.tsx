@@ -188,7 +188,7 @@ export const EditEntityModal: React.FC<EditEntityModalProps> = ({
 
         {/* Nombre de la Tabla */}
         <div className="space-y-1">
-          <label className="text-[11px] font-medium text-white/80 font-mono">Nombre de la Tabla (SQL)</label>
+          <label className="text-[11px] font-medium text-secondary font-mono">Nombre de la Tabla (SQL)</label>
           <VisionInput
             value={tableName}
             onChange={(e) => setTableName(e.target.value)}
@@ -200,14 +200,14 @@ export const EditEntityModal: React.FC<EditEntityModalProps> = ({
         {/* Editor de Columnas */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="text-[11px] font-medium text-white/80 font-mono flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[13px] text-cyan-400">table_rows</span>
+            <label className="text-[11px] font-medium text-secondary font-mono flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[13px] text-cyan-500 dark:text-cyan-400">table_rows</span>
               Columnas y Atributos ({columns.length})
             </label>
             <button
               type="button"
               onClick={handleAddColumn}
-              className="text-[11px] text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-mono transition-colors"
+              className="text-[11px] text-cyan-600 dark:text-cyan-400 hover:text-cyan-500 flex items-center gap-1 font-mono transition-colors"
             >
               <span className="material-symbols-outlined text-xs">add_circle</span>
               Añadir Columna
@@ -218,7 +218,7 @@ export const EditEntityModal: React.FC<EditEntityModalProps> = ({
             {columns.map((col, idx) => (
               <div
                 key={idx}
-                className="p-2.5 rounded-lg bg-white/[0.03] border border-white/[0.08] flex flex-col gap-2 transition-all hover:border-white/15"
+                className="p-2.5 rounded-lg bg-[var(--glass-card)] border border-[var(--border-glass-subtle)] flex flex-col gap-2 transition-all hover:border-indigo-500/30"
               >
                 <div className="flex items-center gap-2">
                   <div className="flex-1">
@@ -227,7 +227,7 @@ export const EditEntityModal: React.FC<EditEntityModalProps> = ({
                       value={col.name}
                       onChange={(e) => handleColumnChange(idx, 'name', e.target.value)}
                       placeholder="nombre_columna"
-                      className="w-full text-xs font-mono bg-black/30 border border-white/10 rounded px-2 py-1 text-white focus:outline-none focus:border-cyan-500/50"
+                      className="w-full text-xs font-mono bg-[var(--glass-input)] border border-[var(--border-glass-subtle)] rounded px-2 py-1 text-primary focus:outline-none focus:border-cyan-500/50"
                     />
                   </div>
 
@@ -235,10 +235,10 @@ export const EditEntityModal: React.FC<EditEntityModalProps> = ({
                     <select
                       value={col.type}
                       onChange={(e) => handleColumnChange(idx, 'type', e.target.value)}
-                      className="w-full text-xs font-mono bg-black/40 border border-white/10 rounded px-2 py-1 text-cyan-300 focus:outline-none focus:border-cyan-500/50"
+                      className="w-full text-xs font-mono bg-[var(--glass-input)] border border-[var(--border-glass-subtle)] rounded px-2 py-1 text-cyan-600 dark:text-cyan-300 focus:outline-none focus:border-cyan-500/50"
                     >
                       {COMMON_DATA_TYPES.map((dt) => (
-                        <option key={dt} value={dt} className="bg-slate-900 text-white">
+                        <option key={dt} value={dt} className="bg-slate-900 text-white dark:bg-slate-900">
                           {dt}
                         </option>
                       ))}
@@ -298,11 +298,11 @@ export const EditEntityModal: React.FC<EditEntityModalProps> = ({
                     <select
                       value={col.referencesTable || ''}
                       onChange={(e) => handleColumnChange(idx, 'referencesTable', e.target.value)}
-                      className="text-[10.5px] font-mono bg-black/50 border border-white/10 rounded px-1.5 py-0.5 text-white focus:outline-none"
+                      className="text-[10.5px] font-mono bg-[var(--glass-input)] border border-[var(--border-glass-subtle)] rounded px-1.5 py-0.5 text-primary focus:outline-none"
                     >
                       <option value="">Selecciona tabla...</option>
                       {otherTables.map((t) => (
-                        <option key={t.id} value={t.table_name} className="bg-slate-900 text-white">
+                        <option key={t.id} value={t.table_name} className="bg-slate-900 text-white dark:bg-slate-900">
                           {t.table_name}
                         </option>
                       ))}
@@ -312,11 +312,11 @@ export const EditEntityModal: React.FC<EditEntityModalProps> = ({
                     <select
                       value={col.cardinality || '1:N'}
                       onChange={(e) => handleColumnChange(idx, 'cardinality', e.target.value)}
-                      className="text-[10.5px] font-mono bg-black/50 border border-white/10 rounded px-1.5 py-0.5 text-emerald-400 focus:outline-none"
+                      className="text-[10.5px] font-mono bg-[var(--glass-input)] border border-[var(--border-glass-subtle)] rounded px-1.5 py-0.5 text-emerald-600 dark:text-emerald-400 focus:outline-none"
                     >
-                      <option value="1:1" className="bg-slate-900 text-white">1:1 (Uno a Uno)</option>
-                      <option value="1:N" className="bg-slate-900 text-white">1:N (Uno a Muchos)</option>
-                      <option value="N:M" className="bg-slate-900 text-white">N:M (Muchos a Muchos)</option>
+                      <option value="1:1" className="bg-slate-900 text-white dark:bg-slate-900">1:1 (Uno a Uno)</option>
+                      <option value="1:N" className="bg-slate-900 text-white dark:bg-slate-900">1:N (Uno a Muchos)</option>
+                      <option value="N:M" className="bg-slate-900 text-white dark:bg-slate-900">N:M (Muchos a Muchos)</option>
                     </select>
                   </div>
                 )}
@@ -326,7 +326,7 @@ export const EditEntityModal: React.FC<EditEntityModalProps> = ({
         </div>
 
         {/* Acciones */}
-        <div className="flex items-center justify-end gap-2 pt-3 border-t border-white/[0.08]">
+        <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--border-glass-subtle)]">
           <VisionButton type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>
             Cancelar
           </VisionButton>

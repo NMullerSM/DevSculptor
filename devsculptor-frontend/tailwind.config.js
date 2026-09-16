@@ -18,6 +18,16 @@ export default {
         'accent-emerald': 'var(--accent-emerald)',
         'accent-amber': 'var(--accent-amber)',
         'accent-rose': 'var(--accent-rose)',
+        primary: 'var(--text-primary)',
+        secondary: 'var(--text-secondary)',
+        muted: 'var(--text-muted)',
+        dim: 'var(--text-dim)',
+      },
+      textColor: {
+        primary: 'var(--text-primary)',
+        secondary: 'var(--text-secondary)',
+        muted: 'var(--text-muted)',
+        dim: 'var(--text-dim)',
       },
       fontFamily: {
         sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'sans-serif'],

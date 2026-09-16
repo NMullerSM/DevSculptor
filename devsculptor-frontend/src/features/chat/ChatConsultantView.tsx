@@ -110,9 +110,9 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
   return (
     <div className="flex-1 flex flex-col h-full p-4 gap-3 select-none">
       {/* Encabezado */}
-      <div className="flex items-center justify-between pb-2 border-b border-white/[0.06] shrink-0">
+      <div className="flex items-center justify-between pb-2 border-b border-[var(--border-glass-subtle)] shrink-0">
         <div>
-          <h2 className="text-xs font-semibold text-white">Conversación con el Arquitecto de Software</h2>
+          <h2 className="text-xs font-semibold text-primary">Conversación con el Arquitecto de Software</h2>
           <p className="text-[10.5px] text-secondary font-mono">
             Extracción guiada de requerimientos, modelo de datos y decisiones técnicas.
           </p>
@@ -121,28 +121,28 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
       </div>
 
       {/* Stream de Mensajes */}
-      <div className="flex-1 overflow-y-auto space-y-3 pr-1 flex flex-col">
+      <div className="flex-1 overflow-y-auto space-y-3 pr-1 flex flex-col custom-scrollbar">
         {messages.map((m) => {
           if (m.sender === 'assistant') {
             return (
               <div
                 key={m.id}
-                className="vision-card p-3.5 mr-8 md:mr-16 text-xs text-white/95 border-white/10 space-y-2"
+                className="vision-card p-3.5 mr-8 md:mr-16 text-xs text-primary border-[var(--border-glass-subtle)] space-y-2"
               >
                 <div className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
-                  <strong className="text-indigo-400 font-mono text-[11px]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400" />
+                  <strong className="text-indigo-600 dark:text-indigo-400 font-mono text-[11px]">
                     Arquitecto DevSculptor:
                   </strong>
                 </div>
                 <p className="leading-relaxed text-[11.5px]">{m.content}</p>
 
                 {m.specs && m.specs.length > 0 && (
-                  <div className="mt-2 pt-2 border-t border-white/[0.06] space-y-1 font-mono text-[11px]">
+                  <div className="mt-2 pt-2 border-t border-[var(--border-glass-subtle)] space-y-1 font-mono text-[11px]">
                     {m.specs.map((spec, i) => (
                       <div key={i} className="flex items-start gap-2">
                         <span className={`font-semibold ${spec.color}`}>{spec.code}</span>
-                        <span className="text-white font-sans text-xs">{spec.text}</span>
+                        <span className="text-primary font-sans text-xs">{spec.text}</span>
                       </div>
                     ))}
                   </div>
@@ -154,9 +154,9 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
           return (
             <div
               key={m.id}
-              className="vision-card p-3 self-end ml-8 md:ml-16 bg-indigo-600/20 border-indigo-500/30 text-xs text-white max-w-xl"
+              className="vision-card p-3 self-end ml-8 md:ml-16 bg-indigo-600/15 dark:bg-indigo-600/20 border-indigo-500/30 text-xs text-primary max-w-xl"
             >
-              <div className="text-[10px] text-indigo-300 font-mono mb-1">Tú (Arquitecto):</div>
+              <div className="text-[10px] text-indigo-600 dark:text-indigo-300 font-mono mb-1">Tú (Arquitecto):</div>
               <p className="leading-relaxed text-[11.5px]">{m.content}</p>
             </div>
           );
