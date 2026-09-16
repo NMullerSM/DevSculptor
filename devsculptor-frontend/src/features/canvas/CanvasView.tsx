@@ -182,6 +182,10 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
             entities={entities}
             onSelectEntity={(id) => selectEntity(id)}
             onEditEntity={(entity) => setEditingEntity(entity)}
+            onDeleteEntity={(id) => {
+              const target = entities.find((e) => e.id === id);
+              if (target) setEntityToDelete(target);
+            }}
             onAddTable={() => setIsAddTableOpen(true)}
             onOpenImport={() => setIsImportOpen(true)}
             onOpenNormalization={() => setIsNormalizationOpen(true)}

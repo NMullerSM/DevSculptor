@@ -305,3 +305,25 @@
 html.light ::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.22);
 }
+
+/* ==========================================================================
+   Panel de Modelado (visionOS Drawer) Adaptativo Claro / Oscuro
+   ========================================================================== */
+.vision-drawer {
+  background: var(--glass-elevated);
+  backdrop-filter: var(--blur-modal);
+  -webkit-backdrop-filter: var(--blur-modal);
+  border-right: var(--border-glass);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-window);
+}
+
+.vision-drawer-subtle {
+  background: var(--glass-card);
+  border: var(--border-glass-subtle);
+}
+
+.vision-drawer-subtle:hover {
+  background: var(--glass-card-hover);
+  border-color: var(--border-glass);
+}
