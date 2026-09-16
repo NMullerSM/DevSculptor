@@ -353,10 +353,10 @@ html.light, body.light {
                  inset 0 1px 1px 0 rgba(255, 255, 255, 0.95), 
                  0 0 0 1px rgba(255, 255, 255, 0.85);
 
-  --text-primary: #0f172a;
-  --text-secondary: #243046;
-  --text-muted: #53647a;
-  --text-dim: #7f90a5;
+  --text-primary: #090d16;
+  --text-secondary: #1e293b;
+  --text-muted: #334155;
+  --text-dim: #64748b;
 
   --accent-indigo: #4f46e5;
   --accent-indigo-glow: rgba(79, 70, 229, 0.3);
@@ -366,6 +366,35 @@ html.light, body.light {
   --accent-rose: #dc2626;
 
   --canvas-grid-dot: rgba(15, 23, 42, 0.15);
+}
+
+/* ==========================================================================
+   Utilidades Tipográficas y Píldoras de Alto Contraste en Modo Claro
+   ========================================================================== */
+html.light .pill-indigo  { background: rgba(99, 102, 241, 0.16); color: #312e81; border: 1px solid rgba(99, 102, 241, 0.4); }
+html.light .pill-cyan    { background: rgba(14, 165, 233, 0.16); color: #0c4a6e; border: 1px solid rgba(14, 165, 233, 0.4); }
+html.light .pill-emerald { background: rgba(16, 185, 129, 0.16); color: #064e3b; border: 1px solid rgba(16, 185, 129, 0.4); }
+html.light .pill-amber   { background: rgba(245, 158, 11, 0.16); color: #78350f; border: 1px solid rgba(245, 158, 11, 0.4); }
+html.light .pill-rose    { background: rgba(244, 63, 94, 0.16);  color: #881337; border: 1px solid rgba(244, 63, 94, 0.4); }
+
+.text-primary   { color: var(--text-primary) !important; }
+.text-secondary { color: var(--text-secondary) !important; }
+.text-muted     { color: var(--text-muted) !important; }
+.text-dim       { color: var(--text-dim) !important; }
+
+/* Drawer Lateral de Modelado Adaptativo */
+.vision-drawer {
+  background: var(--glass-elevated);
+  backdrop-filter: var(--blur-modal);
+  -webkit-backdrop-filter: var(--blur-modal);
+  border-right: var(--border-glass);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-window);
+}
+
+.vision-drawer-subtle {
+  background: var(--glass-card);
+  border: var(--border-glass-subtle);
 }
 ```
 
@@ -957,14 +986,111 @@ Es la pantalla central de DevSculptor. Su disposición replica el layout de **3 
 
 ## 5. Ergonomía y Arquitectura del Canvas Interactivo (ERD) & Salidas Multi-Lenguaje
 
-### 5.1. Mecánicas de Navegación y Rendimiento
-- **Navegación Fluida**:
-  - Pan mediante arrastre con botón central del ratón o `Espacio + Clic Izquierdo`.
-  - Zoom mediante rueda del ratón (`0.25x` a `2.0x`) con transformaciones CSS basadas en GPU (`transform: translate3d(...) scale(...)`).
-- **Conectores Bezier Dinámicos**:
-  - Las curvas SVG entre nodos se recalculan en tiempo real dentro del ciclo de renderizado `requestAnimationFrame`, garantizando una tasa de refresco constante de 60 cuadros por segundo sin bloqueo del hilo principal.
-- **Sincronización Transaccional de Posición**:
-  - Las coordenadas `position_x` y `position_y` de cada nodo de tabla se persisten mediante debouncing (800ms) invocando `PUT /api/v1/projects/:projectId/canvas/:canvasId`.
+El Canvas Relacional de DevSculptor es el núcleo visual del modelado de datos pre-código. En el **Sprint 3 (Épica A)** se consolidó como un entorno de ingeniería formal, equiparable a herramientas profesionales de modelado de datos pero integrado de forma nativa con el stack de gobernanza técnica.
+
+### 5.1. Mecánicas de Navegación y Rendimiento a 60 FPS
+- **Arrastre en Tiempo Real sin Lag (Zero Stale Closures)**:
+  - Para evitar la degradación de rendimiento provocada por renders masivos de React durante el arrastre, se implementó un sistema desacoplado:
+    - Las coordenadas instantáneas se rastrean en un ref mutable (`currentPos = useRef(...)`) en [`EntityNode.tsx`](file:///c:/Users/natha/Documents/Repos/DevSculptor/devsculptor-frontend/src/features/canvas/EntityNode.tsx).
+    - La memoria reactiva del store Zustand se actualiza en cada frame vía `setTransientPosition(id, x, y)` sin disparar mutaciones a la base de datos.
+    - Al soltar el cursor (`onMouseUp`), se dispara la persistencia asíncrona hacia el backend (`updateEntityPosition`) protegida con debouncing.
+- **Conectores Bezier Reactivos**:
+  - Los conectores SVG curvilíneos en [`BezierConnectors.tsx`](file:///c:/Users/natha/Documents/Repos/DevSculptor/devsculptor-frontend/src/features/canvas/BezierConnectors.tsx) se recalculan automáticamente con las coordenadas transitorias, manteniendo los cables magnéticos unidos a los nodos a 60 FPS.
+- **Dock de Zoom y Navegación Espacial**:
+  - Controles flotantes en la base del canvas: botones de decremento `[-]`, botón de reseteo rápido al 100% y botón de aumento `[+]` (`0.25x` a `2.0x`), ejecutados con aceleración de hardware GPU (`transform: scale(...)`).
+
+---
+
+### 5.2. Notación Relacional Formal Crow's Foot (Information Engineering)
+DevSculptor abandona los conectores genéricos de flecha simple y adopta la notación estándar de la industria **Crow's Foot (Pata de Gallo)**:
+
+```
+[ Tabla Padre (PK) ] ────||───────────────❯|──── [ Tabla Hija (FK) ]
+                         (Uno)                  (Muchos)
+```
+
+1. **Marcadores SVG Parametrizados**:
+   - **Lado Padre (PK / 1:N)**: Doble barra vertical `||` (Uno y sólo uno) renderizada mediante `<marker id="crows-foot-one">`.
+   - **Lado Hijo (FK / N:1)**: Pata de gallo `❯|` (Muchos) con línea transversal delimitadora mediante `<marker id="crows-foot-many">`.
+2. **Badges Centrales de Cardinalidad**:
+   - En el punto medio de cada curva Bezier se monta una etiqueta interactiva con soporte visual de tres cardinalidades:
+     - `1:N` (Uno a Muchos - Relación canónica por defecto).
+     - `1:1` (Uno a Uno - Clave foránea con restricción de unicidad `UNIQUE`).
+     - `N:M` (Muchos a Muchos - Asociación conceptual para tablas intermedias).
+
+---
+
+### 5.3. Panel de Modelado Desplegable en Acordeones (`CanvasDrawer.tsx`)
+El panel lateral retráctil (*Sliding Drawer*) organiza las herramientas de modelado de forma compacta y accesible:
+- **Barra de Acciones Principales**:
+  - Botón principal de alto contraste: `+ Añadir Tabla al Lienzo`.
+  - Acciones secundarias: `Importar SQL` y `Auditoría 3FN`.
+- **Acordeón 1 — Tablas del Modelo**:
+  - Buscador reactivo en tiempo real (`filterQuery`) que filtra entidades instantáneamente.
+  - Visualización del conteo de columnas por tabla.
+  - **Acción inline de vista previa**: Despliegue de columnas y claves (🔑 PK, 🔗 FK) directamente en la tarjeta sin abrir modales.
+  - **Acción de Edición**: Icono `tune` que abre el modal visual ALTER TABLE.
+  - **Acción de Eliminación Protegida**: Icono `delete` (papelera con hover carmesí) que abre el [`ConfirmModal.tsx`](file:///c:/Users/natha/Documents/Repos/DevSculptor/devsculptor-frontend/src/components/ui/ConfirmModal.tsx) previniendo pérdida de datos y asegurando confirmación antes de la llamada a la API.
+- **Acordeón 2 — Conectores y Relaciones Activas**:
+  - Resumen didáctico de la simbología *Crow's Foot* (`||` y `❯|`).
+  - Listado dinámico de todas las relaciones foráneas activas con sintaxis `origen.col ➔ destino.col` y badge de cardinalidad.
+- **Adaptabilidad Nativa a Temas**:
+  - Basado en `.vision-drawer` y `.vision-drawer-subtle` con variables CSS dinámicas que conmutan fluidamente entre blanco translúcido en modo claro y obsidiana en modo oscuro.
+
+---
+
+### 5.4. Operación Visual ALTER TABLE (`EditEntityModal.tsx`)
+Permite refactorizar tablas existentes sin escribir sentencias DDL manuales:
+- Modificación del identificador de tabla (`table_name`).
+- Agregar, renombrar o eliminar columnas de forma dinámica.
+- Selector de tipos de datos comunes (`UUID`, `VARCHAR(255)`, `TEXT`, `INTEGER`, `BIGINT`, `BOOLEAN`, `TIMESTAMP`, `JSONB`, `NUMERIC(10,2)`).
+- Switches booleanos para `PK (Primary Key)`, `FK (Foreign Key)`, `Nullable` y `Unique`.
+- Cuando se activa `FK`, se despliegan automáticamente los selectores de tabla de destino (`referencesTable`) y cardinalidad (`1:1`, `1:N`, `N:M`).
+
+---
+
+### 5.5. Motor de Ingeniería Inversa SQL (`SqlImportModal.tsx`)
+Permite a desarrolladores y arquitectos importar bases de datos legadas mediante sentencias SQL estándar:
+- **Parser Determinista de DDL**:
+  - Analiza bloques `CREATE TABLE [IF NOT EXISTS] <nombre> (...)`.
+  - Extrae columnas, tipos de datos, constraints `PRIMARY KEY`, `NOT NULL`, `UNIQUE` y referencias `FOREIGN KEY (...) REFERENCES ...`.
+- **Ubicación Automática en Grilla**:
+  - Asigna coordenadas iniciales en cuadrícula para evitar el solapamiento visual en el lienzo.
+- **Persistencia en Cascada**:
+  - Inserta secuencialmente las tablas en el backend asegurando que los triggers de auditoría registren las nuevas entidades.
+
+---
+
+### 5.6. Motor de Auditoría y Verificación Heurística 3FN (`NormalizationCheckerModal.tsx`)
+Auditoría matemática y metodológica en tiempo real basada en la teoría relacional de Edgar F. Codd:
+- **Diagnóstico 1FN (Primera Forma Normal)**:
+  - Verifica atomicidad de atributos, detección de tipos estructurados y existencia obligatoria de clave primaria (PK).
+- **Diagnóstico 2FN (Segunda Forma Normal)**:
+  - Evalúa la ausencia de dependencias funcionales parciales en tablas con claves compuestas.
+- **Diagnóstico 3FN (Tercera Forma Normal)**:
+  - Detección heurística de dependencias transitivas (campos derivados o redundantes como `total_with_tax`, `user_full_name` coexistiendo con `first_name` y `last_name`).
+- **Score Global de Integridad Relacional**:
+  - Cálculo porcentual ponderado (0% a 100%) visible tanto en el modal como en el widget de métricas del Copiloto.
+
+---
+
+### 5.7. Generadores Multi-Motor DDL Puros (`scriptGenerators.ts`)
+Generación de código DDL sintácticamente estricto para 4 motores de bases de datos líderes:
+
+| Dialecto | Soporte de Tipos | Manejo de Claves Primarias & Foráneas | Comentarios & Sintaxis Específica |
+| :--- | :--- | :--- | :--- |
+| **PostgreSQL** | `UUID`, `TIMESTAMPTZ`, `JSONB`, `VARCHAR`, `BOOLEAN` | `id UUID PRIMARY KEY DEFAULT gen_random_uuid()` | `CREATE TABLE IF NOT EXISTS`, compatibilidad con Supabase RLS. |
+| **MySQL** | `CHAR(36)`, `DATETIME`, `JSON`, `TINYINT(1)` | Claves foráneas con cláusula explícita `CONSTRAINT fk_...` | Motor `ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`. |
+| **SQLite** | `TEXT`, `INTEGER`, `REAL`, `BLOB` | Tipado dinámico afinado y FKs integradas | Sintaxis portable para prototipado rápido y testing local. |
+| **Oracle Database** | `RAW(16)`, `VARCHAR2(255)`, `TIMESTAMP`, `NUMBER(1)` | Constraints nombradas de tabla y cláusulas `ENABLE` | Bloques PL/SQL deterministas para ejecución corporativa. |
+
+---
+
+### 5.8. Visor de Auditoría de Canvas (`CanvasAuditView.tsx`)
+Subpestaña integrada en el espacio del modelador que consulta en tiempo real los registros producidos por la función PL/pgSQL `fn_audit_canvas_entities` y el trigger `tg_audit_canvas_entities`:
+- Registro cronológico inmutable de eventos (`INSERT`, `UPDATE`, `DELETE`).
+- Visualización de la diferencia de estado antes (`payload_before`) y después (`payload_after`).
+- Correlación del `user_id` responsable de la mutación.
 
 ---
 
