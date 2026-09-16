@@ -31,7 +31,7 @@ Ejemplo de bloque de acciones:
       "tableName": "audit_logs",
       "columns": [
         { "name": "id", "type": "UUID", "isPk": true },
-        { "name": "entity_id", "type": "UUID", "isFk": false },
+        { "name": "user_id", "type": "UUID", "isFk": true, "referencesTable": "users", "cardinality": "1:N" },
         { "name": "action", "type": "VARCHAR(20)", "nullable": false },
         { "name": "created_at", "type": "TIMESTAMP", "nullable": false }
       ]

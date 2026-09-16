@@ -123,7 +123,9 @@ export abstract class BaseRepository<T extends { id: string }> implements IRepos
   }
 
   async update(id: string, data: Partial<T>, client?: PoolClient): Promise<T | null> {
-    const keys = Object.keys(data).filter((k) => this.insertableColumns.includes(k));
+    const keys = Object.keys(data).filter(
+      (k) => this.insertableColumns.includes(k) && (data as Record<string, unknown>)[k] !== undefined
+    );
     if (keys.length === 0) {
       return this.findById(id, client);
     }

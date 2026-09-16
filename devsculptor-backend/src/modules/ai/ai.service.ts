@@ -38,7 +38,7 @@ export class AiService {
 
     // 4. Obtener decisiones (ADRs)
     const decisionsResult = await pool.query(
-      `SELECT code, title, status, context, decision 
+      `SELECT title, status, context, decision 
        FROM architecture_decisions 
        WHERE project_id = $1 
        ORDER BY created_at ASC`,
@@ -58,13 +58,18 @@ export class AiService {
       columns: Array.isArray(e.columns_json) ? e.columns_json : [],
     }));
 
-    const decisions = decisionsResult.rows.map((d: { code: string; title: string; status: string; context?: string | null; decision?: string | null }) => ({
-      code: d.code,
-      title: d.title,
-      status: d.status,
-      context: d.context || undefined,
-      decision: d.decision || undefined,
-    }));
+    const decisions = decisionsResult.rows.map(
+      (
+        d: { title: string; status: string; context?: string | null; decision?: string | null },
+        index: number
+      ) => ({
+        code: `ADR-${String(index + 1).padStart(3, '0')}`,
+        title: d.title,
+        status: d.status,
+        context: d.context || undefined,
+        decision: d.decision || undefined,
+      })
+    );
 
     return {
       projectName: project.name,

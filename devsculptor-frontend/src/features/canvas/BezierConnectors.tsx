@@ -35,15 +35,47 @@ export const BezierConnectors: React.FC<BezierConnectorsProps> = ({ entities, zo
       if (!Array.isArray(source.columns_json)) return;
 
       source.columns_json.forEach((col, colIdx) => {
-        let targetTable = (col.referencesTable || col.references_table)?.toLowerCase();
+        let targetTable = (
+          col.referencesTable ||
+          col.references_table ||
+          (col as any).references
+        )?.toLowerCase()?.trim();
 
-        // Si no está explícito pero el tipo contiene FK -> users
-        if (!targetTable && col.type && col.type.includes('FK →')) {
-          const match = col.type.match(/FK →\s*([a-zA-Z0-9_]+)/);
-          if (match) targetTable = match[1].toLowerCase();
+        // 1. Si no está explícito pero el tipo contiene FK → users o REFERENCES users
+        if (!targetTable && col.type) {
+          const matchFk = col.type.match(/FK →\s*([a-zA-Z0-9_]+)/i);
+          const matchRef = col.type.match(/REFERENCES\s+([a-zA-Z0-9_]+)/i);
+          if (matchFk) targetTable = matchFk[1].toLowerCase();
+          else if (matchRef) targetTable = matchRef[1].toLowerCase();
         }
 
-        if (targetTable && entityMap.has(targetTable)) {
+        // 2. Inferencia inteligente por convención de nombre de columna (ej. user_id -> users, order_id -> orders)
+        if (!targetTable && col.name && col.name.endsWith('_id') && col.name.toLowerCase() !== 'id') {
+          const baseName = col.name.slice(0, -3).toLowerCase();
+          const pluralName = baseName.endsWith('s') ? baseName : `${baseName}s`;
+          const esPluralName = `${baseName}es`;
+
+          if (entityMap.has(pluralName)) {
+            targetTable = pluralName;
+          } else if (entityMap.has(baseName)) {
+            targetTable = baseName;
+          } else if (entityMap.has(esPluralName)) {
+            targetTable = esPluralName;
+          }
+        }
+
+        // 3. Normalización singular/plural si targetTable difiere ligeramente
+        if (targetTable && !entityMap.has(targetTable)) {
+          if (entityMap.has(`${targetTable}s`)) {
+            targetTable = `${targetTable}s`;
+          } else if (entityMap.has(`${targetTable}es`)) {
+            targetTable = `${targetTable}es`;
+          } else if (targetTable.endsWith('s') && entityMap.has(targetTable.slice(0, -1))) {
+            targetTable = targetTable.slice(0, -1);
+          }
+        }
+
+        if (targetTable && entityMap.has(targetTable) && targetTable !== source.table_name.toLowerCase()) {
           const target = entityMap.get(targetTable)!;
 
           // Coordenadas de salida del puerto izquierdo o derecho

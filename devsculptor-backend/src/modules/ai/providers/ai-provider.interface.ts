@@ -55,8 +55,14 @@ export interface AiSuggestedDecision {
 
 export interface AiChatResult {
   content: string;
+  reply?: string;
   provider: string;
   model: string;
+  actions?: {
+    requirements?: AiSuggestedRequirement[];
+    entities?: AiSuggestedEntity[];
+    decisions?: AiSuggestedDecision[];
+  };
   suggestedRequirements?: AiSuggestedRequirement[];
   suggestedEntities?: AiSuggestedEntity[];
   suggestedDecisions?: AiSuggestedDecision[];

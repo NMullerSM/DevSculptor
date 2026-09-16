@@ -22,7 +22,7 @@ const envSchema = z.object({
   // Configuración de Motor de IA (Agnóstica de Proveedor)
   AI_PROVIDER: z.enum(['gemini', 'openai', 'deepseek', 'mock']).default('gemini'),
   GEMINI_API_KEY: z.string().optional(),
-  GEMINI_MODEL: z.string().default('gemini-2.0-flash'),
+  GEMINI_MODEL: z.string().default('gemini-3.5-flash'),
   OPENAI_API_KEY: z.string().optional(),
   DEEPSEEK_API_KEY: z.string().optional(),
 });

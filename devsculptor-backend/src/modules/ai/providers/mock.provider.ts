@@ -152,8 +152,14 @@ Desde la perspectiva de Gobernanza Técnica Pre-Código:
 
     return {
       content: cleanText,
+      reply: cleanText,
       provider: this.name,
       model: 'devsculptor-heuristic-architect-v1',
+      actions: {
+        requirements: suggestedRequirements,
+        entities: suggestedEntities,
+        decisions: suggestedDecisions,
+      },
       suggestedRequirements,
       suggestedEntities,
       suggestedDecisions,
@@ -187,8 +193,10 @@ Desde la perspectiva de Gobernanza Técnica Pre-Código:
 
     return {
       content: analysis,
+      reply: analysis,
       provider: this.name,
       model: 'devsculptor-schema-auditor-v1',
+      actions: {},
     };
   }
 
@@ -202,26 +210,32 @@ Desde la perspectiva de Gobernanza Técnica Pre-Código:
 
     const text = `A partir de tu planteamiento *"${userPrompt}"*, he derivado los siguientes requisitos formales bajo estándar IEEE-830:`;
 
+    const reqs = [
+      {
+        code: rf1,
+        title: `Gestión de ${userPrompt.slice(0, 30)}`,
+        type: 'RF' as const,
+        priority: 'HIGH' as const,
+        description: `El sistema debe proveer capacidades para procesar y consultar ${userPrompt.toLowerCase()}.`,
+      },
+      {
+        code: rf2,
+        title: 'Respuesta Sub-500ms en Operaciones de Dominio',
+        type: 'RNF' as const,
+        priority: 'MEDIUM' as const,
+        description: 'Las transacciones asociadas deben procesarse en menos de 500ms mediante pool parametrizado.',
+      },
+    ];
+
     return {
       content: text,
+      reply: text,
       provider: this.name,
       model: 'devsculptor-requirements-synthesizer-v1',
-      suggestedRequirements: [
-        {
-          code: rf1,
-          title: `Gestión de ${userPrompt.slice(0, 30)}`,
-          type: 'RF',
-          priority: 'HIGH',
-          description: `El sistema debe proveer capacidades para procesar y consultar ${userPrompt.toLowerCase()}.`,
-        },
-        {
-          code: rf2,
-          title: 'Respuesta Sub-500ms en Operaciones de Dominio',
-          type: 'RNF',
-          priority: 'MEDIUM',
-          description: 'Las transacciones asociadas deben procesarse en menos de 500ms mediante pool parametrizado.',
-        },
-      ],
+      actions: {
+        requirements: reqs,
+      },
+      suggestedRequirements: reqs,
     };
   }
 }

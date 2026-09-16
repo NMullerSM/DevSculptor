@@ -29,8 +29,8 @@ export const createCanvasEntitySchema = z.object({
       'El nombre de la tabla debe contener solo letras, números y guiones bajos, iniciando con letra o guion bajo'
     ),
   columns_json: z.array(columnDefinitionSchema).default([]),
-  position_x: z.number().int().default(0),
-  position_y: z.number().int().default(0),
+  position_x: z.number().transform((v) => Math.round(v)).default(0),
+  position_y: z.number().transform((v) => Math.round(v)).default(0),
 });
 
 export const updateCanvasEntitySchema = z
@@ -42,8 +42,8 @@ export const updateCanvasEntitySchema = z
       .regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/)
       .optional(),
     columns_json: z.array(columnDefinitionSchema).optional(),
-    position_x: z.number().int().optional(),
-    position_y: z.number().int().optional(),
+    position_x: z.number().transform((v) => Math.round(v)).optional(),
+    position_y: z.number().transform((v) => Math.round(v)).optional(),
   })
   .refine(
     (data) => Object.keys(data).length > 0,

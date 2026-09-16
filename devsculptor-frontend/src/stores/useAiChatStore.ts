@@ -76,10 +76,14 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
       const assistantMessage: AiChatMessage = {
         id: `msg-assistant-${Date.now()}`,
         role: 'assistant',
-        content: result.reply,
+        content: result.reply || (result as any).content || 'Sin respuesta del modelo.',
         provider: result.provider,
         model: result.model,
-        actions: result.actions,
+        actions: result.actions || {
+          requirements: (result as any).suggestedRequirements,
+          entities: (result as any).suggestedEntities,
+          decisions: (result as any).suggestedDecisions,
+        },
         timestamp: Date.now(),
       };
 
@@ -100,10 +104,14 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
       const assistantMessage: AiChatMessage = {
         id: `msg-schema-audit-${Date.now()}`,
         role: 'assistant',
-        content: result.reply,
+        content: result.reply || (result as any).content || 'Auditoría completada.',
         provider: result.provider,
         model: result.model,
-        actions: result.actions,
+        actions: result.actions || {
+          requirements: (result as any).suggestedRequirements,
+          entities: (result as any).suggestedEntities,
+          decisions: (result as any).suggestedDecisions,
+        },
         timestamp: Date.now(),
       };
 
@@ -124,10 +132,14 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
       const assistantMessage: AiChatMessage = {
         id: `msg-suggest-reqs-${Date.now()}`,
         role: 'assistant',
-        content: result.reply,
+        content: result.reply || (result as any).content || 'Requisitos sugeridos.',
         provider: result.provider,
         model: result.model,
-        actions: result.actions,
+        actions: result.actions || {
+          requirements: (result as any).suggestedRequirements,
+          entities: (result as any).suggestedEntities,
+          decisions: (result as any).suggestedDecisions,
+        },
         timestamp: Date.now(),
       };
 
@@ -165,12 +177,49 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
     const key = `entity:${entity.tableName}`;
     if (get().injectedKeys[key]) return;
 
-    const offset = Math.floor(Math.random() * 120);
+    const existingEntities = useCanvasStore.getState().entities;
+    const count = existingEntities.length;
+    // Ubicación en cuadrícula limpia para no amontonar las tablas
+    const posX = 40 + (count % 3) * 270;
+    const posY = 40 + Math.floor(count / 3) * 250;
+
+    const normalizedColumns = (entity.columns || []).map((col) => {
+      const colRecord = col as unknown as Record<string, unknown>;
+      let refTable = (colRecord.referencesTable || colRecord.references_table || colRecord.references) as string | undefined;
+      const isPk = Boolean(colRecord.isPk ?? colRecord.is_pk ?? colRecord.isPrimary ?? (col.name.toLowerCase() === 'id'));
+      let isFk = Boolean(colRecord.isFk ?? colRecord.is_fk);
+
+      if (!refTable && col.name && col.name.endsWith('_id') && col.name.toLowerCase() !== 'id') {
+        isFk = true;
+        const base = col.name.slice(0, -3).toLowerCase();
+        const plural = base.endsWith('s') ? base : `${base}s`;
+        refTable = existingEntities.some((e) => e.table_name.toLowerCase() === plural) ? plural : base;
+      }
+
+      const isNullable = col.isNullable !== undefined ? Boolean(col.isNullable) : (colRecord.nullable !== undefined ? Boolean(colRecord.nullable) : !isPk);
+      const isUnique = col.isUnique !== undefined ? Boolean(col.isUnique) : Boolean(colRecord.unique);
+
+      return {
+        name: col.name,
+        type: col.type || 'VARCHAR(255)',
+        isPk,
+        is_pk: isPk,
+        isFk,
+        is_fk: isFk,
+        referencesTable: refTable || undefined,
+        references_table: refTable || undefined,
+        referencesColumn: (colRecord.referencesColumn || colRecord.references_column || (isFk ? 'id' : undefined)) as string | undefined,
+        cardinality: ((colRecord.cardinality as '1:1' | '1:N' | 'N:M') || '1:N'),
+        nullable: isNullable,
+        unique: isUnique,
+      };
+    });
+
     await useCanvasStore.getState().createEntity(projectId, {
       table_name: entity.tableName,
-      columns_json: entity.columns,
-      position_x: 220 + offset,
-      position_y: 120 + offset,
+      columns_json: normalizedColumns,
+      position_x: posX,
+      position_y: posY,
     });
 
     set((state) => ({

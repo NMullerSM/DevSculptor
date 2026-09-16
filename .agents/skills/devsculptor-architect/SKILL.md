@@ -243,6 +243,16 @@ Cada vez que el proyecto requiera un nuevo módulo funcional o entidad, el desar
 | **Variables de Entorno** | Lee y valida todo desde `src/config/env.ts` con Zod en arranque. | Nunca usa `process.env.MI_VAR` disperso por el código sin validar. |
 | **Auditoría de Acciones** | Envuelve mutaciones en `withTransaction` y setea `setSessionUserId`. | Nunca asume que el trigger de auditoría capturará el usuario mágicamente sin contexto. |
 | **Comentarios de Código** | Explica el *por qué* de decisiones no obvias (máquinas de estado, regex). | No llena el código de comentarios obvios que solo repiten la sintaxis. |
+| **Control de Versiones (Git)** | Deja el código compilando y servidores activos para pruebas del usuario. Hace `git commit` **ÚNICAMENTE** si el usuario lo ordena de forma explícita. | **NUNCA ejecuta `git commit`, `git merge` o `git push` de manera automática**. El usuario debe probar y autorizar primero. |
+
+> [!CAUTION]
+> ### Regla Inviolable: Prohibición Absoluta de Git Commits Automáticos
+> **NUNCA ejecutes `git commit`, `git tag`, `git merge` o `git push` por iniciativa propia o de forma automática.**  
+> Tras implementar cualquier cambio o nueva funcionalidad:  
+> 1. Verifica que la compilación sea limpia (`npm run build` con 0 errores).  
+> 2. Deja los servidores (frontend y backend) activos para que el usuario pueda probar y validar interactivamente en su navegador.  
+> 3. Presenta los cambios y espera la revisión manual del usuario.  
+> 4. **Solo cuando el usuario pida explícitamente hacer commit (e.g. *"haz commit"*, *"commitea"*), se procederá a realizar el commit en Git.**
 
 ---
 
