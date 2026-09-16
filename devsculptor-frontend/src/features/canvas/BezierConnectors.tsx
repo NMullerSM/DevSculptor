@@ -38,7 +38,7 @@ export const BezierConnectors: React.FC<BezierConnectorsProps> = ({ entities, zo
         let targetTable = (
           col.referencesTable ||
           col.references_table ||
-          (col as any).references
+          ((col as unknown as Record<string, unknown>).references as string | undefined)
         )?.toLowerCase()?.trim();
 
         // 1. Si no está explícito pero el tipo contiene FK → users o REFERENCES users

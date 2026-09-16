@@ -76,13 +76,13 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
       const assistantMessage: AiChatMessage = {
         id: `msg-assistant-${Date.now()}`,
         role: 'assistant',
-        content: result.reply || (result as any).content || 'Sin respuesta del modelo.',
+        content: result.reply || result.content || 'Sin respuesta del modelo.',
         provider: result.provider,
         model: result.model,
         actions: result.actions || {
-          requirements: (result as any).suggestedRequirements,
-          entities: (result as any).suggestedEntities,
-          decisions: (result as any).suggestedDecisions,
+          requirements: result.suggestedRequirements,
+          entities: result.suggestedEntities,
+          decisions: result.suggestedDecisions,
         },
         timestamp: Date.now(),
       };
@@ -104,13 +104,13 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
       const assistantMessage: AiChatMessage = {
         id: `msg-schema-audit-${Date.now()}`,
         role: 'assistant',
-        content: result.reply || (result as any).content || 'Auditoría completada.',
+        content: result.reply || result.content || 'Auditoría completada.',
         provider: result.provider,
         model: result.model,
         actions: result.actions || {
-          requirements: (result as any).suggestedRequirements,
-          entities: (result as any).suggestedEntities,
-          decisions: (result as any).suggestedDecisions,
+          requirements: result.suggestedRequirements,
+          entities: result.suggestedEntities,
+          decisions: result.suggestedDecisions,
         },
         timestamp: Date.now(),
       };
@@ -132,13 +132,13 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
       const assistantMessage: AiChatMessage = {
         id: `msg-suggest-reqs-${Date.now()}`,
         role: 'assistant',
-        content: result.reply || (result as any).content || 'Requisitos sugeridos.',
+        content: result.reply || result.content || 'Requisitos sugeridos.',
         provider: result.provider,
         model: result.model,
         actions: result.actions || {
-          requirements: (result as any).suggestedRequirements,
-          entities: (result as any).suggestedEntities,
-          decisions: (result as any).suggestedDecisions,
+          requirements: result.suggestedRequirements,
+          entities: result.suggestedEntities,
+          decisions: result.suggestedDecisions,
         },
         timestamp: Date.now(),
       };

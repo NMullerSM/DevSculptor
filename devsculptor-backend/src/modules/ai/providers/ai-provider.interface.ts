@@ -11,7 +11,7 @@ export interface AiProjectContext {
   }>;
   entities: Array<{
     tableName: string;
-    columns: any[];
+    columns: Array<Record<string, unknown>>;
   }>;
   decisions: Array<{
     code: string;

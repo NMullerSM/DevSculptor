@@ -42,9 +42,13 @@ export interface DevSculptorActions {
 
 export interface AiChatResult {
   reply: string;
+  content?: string;
   provider: string;
   model?: string;
   actions?: DevSculptorActions;
+  suggestedRequirements?: AiSuggestedRequirement[];
+  suggestedEntities?: AiSuggestedEntity[];
+  suggestedDecisions?: AiSuggestedDecision[];
 }
 
 export interface AiChatMessage {
