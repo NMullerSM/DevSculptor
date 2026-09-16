@@ -7,6 +7,7 @@ interface EntityNodeProps {
   zoom: number;
   onSelect: (id: string) => void;
   onPositionChange: (id: string, x: number, y: number) => void;
+  onDragMove?: (id: string, x: number, y: number) => void;
   onDelete: (id: string) => void;
   onEdit: (entity: CanvasEntity) => void;
 }
@@ -17,14 +18,17 @@ export const EntityNode: React.FC<EntityNodeProps> = ({
   zoom,
   onSelect,
   onPositionChange,
+  onDragMove,
   onDelete,
   onEdit,
 }) => {
   const [pos, setPos] = useState({ x: entity.position_x, y: entity.position_y });
+  const currentPos = useRef({ x: entity.position_x, y: entity.position_y });
   const isDragging = useRef(false);
   const dragStart = useRef({ mouseX: 0, mouseY: 0, initialX: 0, initialY: 0 });
 
   useEffect(() => {
+    currentPos.current = { x: entity.position_x, y: entity.position_y };
     setPos({ x: entity.position_x, y: entity.position_y });
   }, [entity.position_x, entity.position_y]);
 
@@ -36,8 +40,8 @@ export const EntityNode: React.FC<EntityNodeProps> = ({
     dragStart.current = {
       mouseX: e.clientX,
       mouseY: e.clientY,
-      initialX: pos.x,
-      initialY: pos.y,
+      initialX: currentPos.current.x,
+      initialY: currentPos.current.y,
     };
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
@@ -46,13 +50,16 @@ export const EntityNode: React.FC<EntityNodeProps> = ({
       const dy = (moveEvent.clientY - dragStart.current.mouseY) / zoom;
       const nextX = Math.round(dragStart.current.initialX + dx);
       const nextY = Math.round(dragStart.current.initialY + dy);
+
+      currentPos.current = { x: nextX, y: nextY };
       setPos({ x: nextX, y: nextY });
+      onDragMove?.(entity.id, nextX, nextY);
     };
 
     const handleMouseUp = () => {
       if (isDragging.current) {
         isDragging.current = false;
-        onPositionChange(entity.id, pos.x, pos.y);
+        onPositionChange(entity.id, currentPos.current.x, currentPos.current.y);
       }
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);

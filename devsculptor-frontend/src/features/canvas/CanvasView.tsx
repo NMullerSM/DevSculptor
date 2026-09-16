@@ -38,6 +38,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
     resetZoom,
     selectedEntityId,
     selectEntity,
+    setTransientPosition,
     updatePosition,
     deleteEntity,
     createEntity,
@@ -286,6 +287,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
                 zoom={zoom}
                 isSelected={selectedEntityId === entity.id}
                 onSelect={(id) => selectEntity(id)}
+                onDragMove={(id, x, y) => setTransientPosition(id, x, y)}
                 onPositionChange={(id, x, y) => updatePosition(projectId, id, x, y)}
                 onEdit={(ent) => setEditingEntity(ent)}
                 onDelete={(id) => {

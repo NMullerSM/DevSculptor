@@ -20,6 +20,7 @@ interface CanvasState {
   zoomIn: () => void;
   zoomOut: () => void;
   resetZoom: () => void;
+  setTransientPosition: (entityId: string, x: number, y: number) => void;
   updatePosition: (projectId: string, entityId: string, x: number, y: number) => Promise<void>;
   createEntity: (projectId: string, payload: CreateCanvasEntityPayload) => Promise<CanvasEntity>;
   updateEntity: (projectId: string, entityId: string, payload: UpdateCanvasEntityPayload) => Promise<CanvasEntity>;
@@ -58,6 +59,14 @@ export const useCanvasStore = create<CanvasState>((set) => ({
   zoomOut: () => set((state) => ({ zoom: Math.max(0.4, state.zoom - 0.1) })),
 
   resetZoom: () => set({ zoom: 1 }),
+
+  setTransientPosition: (entityId: string, x: number, y: number) => {
+    set((state) => ({
+      entities: state.entities.map((e) =>
+        e.id === entityId ? { ...e, position_x: x, position_y: y } : e
+      ),
+    }));
+  },
 
   updatePosition: async (projectId: string, entityId: string, x: number, y: number) => {
     // 1. Actualización optimista instantánea para 60 FPS

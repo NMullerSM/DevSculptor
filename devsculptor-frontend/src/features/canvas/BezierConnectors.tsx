@@ -9,9 +9,14 @@ interface BezierConnectorsProps {
 interface ConnectorLine {
   id: string;
   path: string;
+  startX: number;
+  startY: number;
+  endX: number;
+  endY: number;
+  isTargetOnRight: boolean;
   midX: number;
   midY: number;
-  cardinality: string;
+  cardinality: '1:1' | '1:N' | 'N:M';
   sourceTable: string;
   targetTable: string;
 }
@@ -65,9 +70,14 @@ export const BezierConnectors: React.FC<BezierConnectorsProps> = ({ entities, zo
           result.push({
             id: `${source.id}-${col.name}-${target.id}`,
             path: pathD,
+            startX,
+            startY,
+            endX,
+            endY,
+            isTargetOnRight,
             midX,
             midY,
-            cardinality: col.cardinality || '1:N',
+            cardinality: (col.cardinality as '1:1' | '1:N' | 'N:M') || '1:N',
             sourceTable: source.table_name,
             targetTable: target.table_name,
           });
@@ -87,49 +97,96 @@ export const BezierConnectors: React.FC<BezierConnectorsProps> = ({ entities, zo
       }}
     >
       <defs>
-        <filter id="neon-glow" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#38bdf8" floodOpacity="0.8" />
+        <filter id="neon-glow" x="-30%" y="-30%" width="160%" height="160%">
+          <feDropShadow dx="0" dy="0" stdDeviation="3.5" floodColor="#38bdf8" floodOpacity="0.85" />
         </filter>
       </defs>
 
-      {lines.map((line) => (
-        <g key={line.id} className="connector-group">
-          {/* Sombra y trazo de curva Bézier */}
-          <path
-            d={line.path}
-            className="bezier-connector"
-            style={{ filter: 'url(#neon-glow)' }}
-          />
+      {lines.map((line) => {
+        const { startX, startY, endX, endY, isTargetOnRight, cardinality } = line;
 
-          {/* Badge de Cardinalidad Flotante en el Punto Medio */}
-          <g transform={`translate(${line.midX}, ${line.midY})`}>
-            {/* Fondo del badge */}
-            <rect
-              x="-18"
-              y="-10"
-              width="36"
-              height="20"
-              rx="10"
-              fill="#080c14"
-              stroke="#38bdf8"
-              strokeWidth="1.2"
-              className="shadow-lg"
+        // Determinar símbolos para cada extremo según la notación Crow's Foot (Pata de Gallo)
+        const isSourceMany = cardinality === '1:N' || cardinality === 'N:M';
+        const isTargetMany = cardinality === 'N:M';
+
+        // Desplazamiento horizontal según la dirección del conector
+        const sDir = isTargetOnRight ? 1 : -1;
+        const tDir = isTargetOnRight ? -1 : 1;
+
+        return (
+          <g key={line.id} className="connector-group">
+            {/* Trazo Curva Bézier */}
+            <path
+              d={line.path}
+              className="bezier-connector"
+              style={{ filter: 'url(#neon-glow)' }}
             />
-            {/* Texto de la cardinalidad (1:1, 1:N, N:M) */}
-            <text
-              x="0"
-              y="3.5"
-              textAnchor="middle"
-              fill="#38bdf8"
-              fontSize="9.5"
-              fontFamily="monospace"
-              fontWeight="bold"
-            >
-              {line.cardinality}
-            </text>
+
+            {/* Símbolo en el Extremo de Origen (Source / Clave Foránea) */}
+            {isSourceMany ? (
+              // Pata de Gallo (Crow's foot: 3 puntas divergentes hacia la tabla + barra perpendicular)
+              <g stroke="#38bdf8" strokeWidth="1.5" fill="none" style={{ filter: 'url(#neon-glow)' }}>
+                {/* Punta superior */}
+                <line x1={startX} y1={startY - 7} x2={startX + 12 * sDir} y2={startY} />
+                {/* Punta inferior */}
+                <line x1={startX} y1={startY + 7} x2={startX + 12 * sDir} y2={startY} />
+                {/* Barra vertical de obligatoriedad */}
+                <line x1={startX + 6 * sDir} y1={startY - 6} x2={startX + 6 * sDir} y2={startY + 6} />
+              </g>
+            ) : (
+              // Notación Uno (Dos barras verticales ||)
+              <g stroke="#38bdf8" strokeWidth="1.5" fill="none" style={{ filter: 'url(#neon-glow)' }}>
+                <line x1={startX + 5 * sDir} y1={startY - 7} x2={startX + 5 * sDir} y2={startY + 7} />
+                <line x1={startX + 10 * sDir} y1={startY - 7} x2={startX + 10 * sDir} y2={startY + 7} />
+              </g>
+            )}
+
+            {/* Símbolo en el Extremo de Destino (Target / Tabla Referenciada PK) */}
+            {isTargetMany ? (
+              // Pata de Gallo en destino (para relaciones N:M)
+              <g stroke="#38bdf8" strokeWidth="1.5" fill="none" style={{ filter: 'url(#neon-glow)' }}>
+                <line x1={endX} y1={endY - 7} x2={endX + 12 * tDir} y2={endY} />
+                <line x1={endX} y1={endY + 7} x2={endX + 12 * tDir} y2={endY} />
+                <line x1={endX + 6 * tDir} y1={endY - 6} x2={endX + 6 * tDir} y2={endY + 6} />
+              </g>
+            ) : (
+              // Notación Uno (Dos barras verticales || para el lado 1)
+              <g stroke="#38bdf8" strokeWidth="1.5" fill="none" style={{ filter: 'url(#neon-glow)' }}>
+                <line x1={endX + 5 * tDir} y1={endY - 7} x2={endX + 5 * tDir} y2={endY + 7} />
+                <line x1={endX + 10 * tDir} y1={endY - 7} x2={endX + 10 * tDir} y2={endY + 7} />
+              </g>
+            )}
+
+            {/* Badge de Cardinalidad Flotante en el Punto Medio */}
+            <g transform={`translate(${line.midX}, ${line.midY})`}>
+              {/* Fondo del badge */}
+              <rect
+                x="-19"
+                y="-11"
+                width="38"
+                height="22"
+                rx="11"
+                fill="#080c14"
+                stroke="#38bdf8"
+                strokeWidth="1.3"
+                className="shadow-xl"
+              />
+              {/* Texto de la cardinalidad (1:1, 1:N, N:M) */}
+              <text
+                x="0"
+                y="4"
+                textAnchor="middle"
+                fill="#38bdf8"
+                fontSize="10"
+                fontFamily="monospace"
+                fontWeight="bold"
+              >
+                {line.cardinality}
+              </text>
+            </g>
           </g>
-        </g>
-      ))}
+        );
+      })}
     </svg>
   );
 };
