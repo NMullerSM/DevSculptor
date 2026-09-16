@@ -246,21 +246,21 @@ export const SqlImportModal: React.FC<SqlImportModalProps> = ({
               setParsedPreview([]);
             }}
             rows={10}
-            className="w-full text-xs font-mono bg-[var(--glass-input)] border border-[var(--border-glass-subtle)] rounded-lg p-3 text-primary focus:outline-none focus:border-cyan-500/50 resize-none custom-scrollbar leading-relaxed"
+            className="w-full text-xs font-mono bg-[var(--glass-input)] border border-glass-subtle rounded-lg p-3 text-primary focus:outline-none focus:border-cyan-500/50 resize-none custom-scrollbar leading-relaxed"
             placeholder="CREATE TABLE ..."
           />
         </div>
 
         {/* Previsualización de Tablas Detectadas */}
         {parsedPreview.length > 0 && (
-          <div className="p-3 rounded-lg bg-[var(--glass-card)] border border-[var(--border-glass-subtle)] space-y-2">
+          <div className="p-3 rounded-lg bg-[var(--glass-card)] border border-glass-subtle space-y-2">
             <div className="text-xs font-mono font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
               <span className="material-symbols-outlined text-sm">task_alt</span>
               <span>{parsedPreview.length} tablas detectadas y listas para importar:</span>
             </div>
             <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
               {parsedPreview.map((pt, i) => (
-                <div key={i} className="p-2 rounded bg-[var(--glass-input)] border border-[var(--border-glass-subtle)] text-[11px] font-mono">
+                <div key={i} className="p-2 rounded bg-[var(--glass-input)] border border-glass-subtle text-[11px] font-mono">
                   <div className="text-primary font-semibold flex items-center gap-1">
                     <span className="material-symbols-outlined text-xs text-cyan-600 dark:text-cyan-400">table_chart</span>
                     <span>{pt.tableName}</span>
@@ -275,7 +275,7 @@ export const SqlImportModal: React.FC<SqlImportModalProps> = ({
         )}
 
         {/* Acciones */}
-        <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/[0.08]">
+        <div className="flex items-center justify-end gap-2 pt-2 border-t border-glass-subtle">
           <VisionButton variant="secondary" onClick={onClose} disabled={isImporting}>
             Cancelar
           </VisionButton>

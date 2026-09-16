@@ -75,7 +75,7 @@ export const DecisionsView: React.FC<DecisionsViewProps> = ({
   return (
     <div className="flex-1 flex flex-col h-full p-4 gap-3 select-none">
       {/* Encabezado */}
-      <div className="flex items-center justify-between pb-2 border-b border-[var(--border-glass-subtle)] shrink-0">
+      <div className="flex items-center justify-between pb-2 border-b border-glass-subtle shrink-0">
         <div>
           <h2 className="text-xs font-semibold text-primary">
             Registro de Decisiones de Arquitectura (ADRs)
@@ -131,12 +131,12 @@ export const DecisionsView: React.FC<DecisionsViewProps> = ({
             return (
               <div
                 key={adr.id}
-                className="vision-card p-4 space-y-3 hover:border-indigo-500/30 transition-all border-[var(--border-glass-subtle)]"
+                className="vision-card p-4 space-y-3 hover:border-indigo-500/30 transition-all border-glass-subtle"
               >
                 {/* Cabecera del Acta */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-xs text-primary bg-black/5 dark:bg-white/[0.08] px-2 py-0.5 rounded-[4px] border border-[var(--border-glass-subtle)]">
+                    <span className="font-mono font-bold text-xs text-primary bg-black/5 dark:bg-white/[0.08] px-2 py-0.5 rounded-[4px] border border-glass-subtle">
                       {adr.code}
                     </span>
                     <h3 className="font-semibold text-xs text-primary tracking-tight">
@@ -201,7 +201,7 @@ export const DecisionsView: React.FC<DecisionsViewProps> = ({
                 )}
 
                 {/* Transición de Máquina de Estados */}
-                <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between text-xs">
+                <div className="pt-2 border-t border-glass-subtle flex items-center justify-between text-xs">
                   {isProposed ? (
                     <div className="flex items-center gap-2">
                       <span className="text-[10.5px] font-mono text-amber-300">

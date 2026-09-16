@@ -100,7 +100,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
   return (
     <div className="flex-1 flex flex-col h-full relative overflow-hidden select-none">
       {/* Barra Superior de Subpestañas */}
-      <div className="h-10 px-3 border-b border-white/[0.06] flex items-center justify-between bg-black/20 shrink-0 z-20">
+      <div className="h-10 px-3 border-b border-glass-subtle flex items-center justify-between bg-black/5 dark:bg-black/20 shrink-0 z-20">
         <div className="flex items-center gap-1 overflow-x-auto">
           {subtabs.map((tab) => (
             <button
@@ -119,7 +119,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
         <div className="flex items-center gap-2">
           {/* Selector de Dialecto Multi-Motor cuando está en SQL */}
           {activeSubTab === 'sql' && (
-            <div className="flex items-center gap-1 bg-[var(--glass-card)] border border-[var(--border-glass-subtle)] rounded-lg p-0.5 font-mono text-[10.5px]">
+            <div className="flex items-center gap-1 bg-[var(--glass-card)] border border-glass-subtle rounded-lg p-0.5 font-mono text-[10.5px]">
               <span className="text-muted px-1 text-[10px]">Motor:</span>
               {(['postgres', 'mysql', 'sqlite', 'oracle'] as SqlDialect[]).map((d) => (
                 <button
@@ -139,7 +139,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
 
           {activeSubTab === 'erd' && (
             <div className="flex items-center gap-2">
-              <span className="text-[10.5px] font-mono text-muted bg-[var(--glass-card)] px-2 py-0.5 rounded border border-[var(--border-glass-subtle)]">
+              <span className="text-[10.5px] font-mono text-muted bg-[var(--glass-card)] px-2 py-0.5 rounded border border-glass-subtle">
                 {entities.length} {entities.length === 1 ? 'tabla' : 'tablas'}
               </span>
               {!isDrawerOpen && (

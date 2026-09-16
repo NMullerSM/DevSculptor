@@ -218,7 +218,7 @@ export const EditEntityModal: React.FC<EditEntityModalProps> = ({
             {columns.map((col, idx) => (
               <div
                 key={idx}
-                className="p-2.5 rounded-lg bg-[var(--glass-card)] border border-[var(--border-glass-subtle)] flex flex-col gap-2 transition-all hover:border-indigo-500/30"
+                className="p-2.5 rounded-lg bg-[var(--glass-card)] border border-glass-subtle flex flex-col gap-2 transition-all hover:border-indigo-500/30"
               >
                 <div className="flex items-center gap-2">
                   <div className="flex-1">
@@ -227,7 +227,7 @@ export const EditEntityModal: React.FC<EditEntityModalProps> = ({
                       value={col.name}
                       onChange={(e) => handleColumnChange(idx, 'name', e.target.value)}
                       placeholder="nombre_columna"
-                      className="w-full text-xs font-mono bg-[var(--glass-input)] border border-[var(--border-glass-subtle)] rounded px-2 py-1 text-primary focus:outline-none focus:border-cyan-500/50"
+                      className="w-full text-xs font-mono bg-[var(--glass-input)] border border-glass-subtle rounded px-2 py-1 text-primary focus:outline-none focus:border-cyan-500/50"
                     />
                   </div>
 
@@ -235,7 +235,7 @@ export const EditEntityModal: React.FC<EditEntityModalProps> = ({
                     <select
                       value={col.type}
                       onChange={(e) => handleColumnChange(idx, 'type', e.target.value)}
-                      className="w-full text-xs font-mono bg-[var(--glass-input)] border border-[var(--border-glass-subtle)] rounded px-2 py-1 text-cyan-600 dark:text-cyan-300 focus:outline-none focus:border-cyan-500/50"
+                      className="w-full text-xs font-mono bg-[var(--glass-input)] border border-glass-subtle rounded px-2 py-1 text-cyan-600 dark:text-cyan-300 focus:outline-none focus:border-cyan-500/50"
                     >
                       {COMMON_DATA_TYPES.map((dt) => (
                         <option key={dt} value={dt} className="bg-slate-900 text-white dark:bg-slate-900">
@@ -298,7 +298,7 @@ export const EditEntityModal: React.FC<EditEntityModalProps> = ({
                     <select
                       value={col.referencesTable || ''}
                       onChange={(e) => handleColumnChange(idx, 'referencesTable', e.target.value)}
-                      className="text-[10.5px] font-mono bg-[var(--glass-input)] border border-[var(--border-glass-subtle)] rounded px-1.5 py-0.5 text-primary focus:outline-none"
+                      className="text-[10.5px] font-mono bg-[var(--glass-input)] border border-glass-subtle rounded px-1.5 py-0.5 text-primary focus:outline-none"
                     >
                       <option value="">Selecciona tabla...</option>
                       {otherTables.map((t) => (
@@ -312,7 +312,7 @@ export const EditEntityModal: React.FC<EditEntityModalProps> = ({
                     <select
                       value={col.cardinality || '1:N'}
                       onChange={(e) => handleColumnChange(idx, 'cardinality', e.target.value)}
-                      className="text-[10.5px] font-mono bg-[var(--glass-input)] border border-[var(--border-glass-subtle)] rounded px-1.5 py-0.5 text-emerald-600 dark:text-emerald-400 focus:outline-none"
+                      className="text-[10.5px] font-mono bg-[var(--glass-input)] border border-glass-subtle rounded px-1.5 py-0.5 text-emerald-600 dark:text-emerald-400 focus:outline-none"
                     >
                       <option value="1:1" className="bg-slate-900 text-white dark:bg-slate-900">1:1 (Uno a Uno)</option>
                       <option value="1:N" className="bg-slate-900 text-white dark:bg-slate-900">1:N (Uno a Muchos)</option>
@@ -326,7 +326,7 @@ export const EditEntityModal: React.FC<EditEntityModalProps> = ({
         </div>
 
         {/* Acciones */}
-        <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--border-glass-subtle)]">
+        <div className="flex items-center justify-end gap-2 pt-3 border-t border-glass-subtle">
           <VisionButton type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>
             Cancelar
           </VisionButton>

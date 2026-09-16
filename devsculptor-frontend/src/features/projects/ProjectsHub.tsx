@@ -69,7 +69,7 @@ export const ProjectsHub: React.FC<ProjectsHubProps> = ({ onOpenProject }) => {
         </div>
       ) : filteredProjects.length === 0 ? (
         <div className="vision-window p-12 text-center flex flex-col items-center justify-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/[0.04] border border-[var(--border-glass-subtle)] flex items-center justify-center text-muted">
+          <div className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/[0.04] border border-glass-subtle flex items-center justify-center text-muted">
             <span className="material-symbols-outlined text-2xl">folder_open</span>
           </div>
           <div>
@@ -120,7 +120,7 @@ export const ProjectsHub: React.FC<ProjectsHubProps> = ({ onOpenProject }) => {
                 </div>
               </div>
 
-              <div className="pt-4 mt-4 border-t border-white/[0.06] space-y-2.5">
+              <div className="pt-4 mt-4 border-t border-glass-subtle space-y-2.5">
                 <div className="flex items-center justify-between">
                   <VisionButton
                     variant="default"

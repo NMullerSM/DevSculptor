@@ -13,6 +13,7 @@ interface ThemeState {
   currentWallpaperUrl: string;
 
   toggleTheme: () => void;
+  setTheme: (theme: 'dark' | 'light') => void;
   nextWallpaper: () => void;
   initTheme: () => void;
 }
@@ -43,18 +44,22 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
     });
   },
 
-  toggleTheme: () => {
-    const nextTheme = get().theme === 'dark' ? 'light' : 'dark';
+  setTheme: (newTheme: 'dark' | 'light') => {
     const html = document.documentElement;
-    if (nextTheme === 'light') {
+    if (newTheme === 'light') {
       html.classList.remove('dark');
       html.classList.add('light');
     } else {
       html.classList.remove('light');
       html.classList.add('dark');
     }
-    localStorage.setItem('ds_theme', nextTheme);
-    set({ theme: nextTheme });
+    localStorage.setItem('ds_theme', newTheme);
+    set({ theme: newTheme });
+  },
+
+  toggleTheme: () => {
+    const nextTheme = get().theme === 'dark' ? 'light' : 'dark';
+    get().setTheme(nextTheme);
   },
 
   nextWallpaper: () => {

@@ -52,7 +52,7 @@ export const VisionModal: React.FC<VisionModalProps> = ({
       }}
     >
       <div className={`vision-window ${maxWidthClass} w-full p-5 flex flex-col gap-4 shadow-2xl`}>
-        <div className="flex items-center justify-between pb-2 border-b border-[var(--border-glass-subtle)]">
+        <div className="flex items-center justify-between pb-2 border-b border-glass-subtle">
           <div className="flex flex-col gap-0.5 min-w-0 pr-2">
             <div className="flex items-center gap-2">
               {icon && (

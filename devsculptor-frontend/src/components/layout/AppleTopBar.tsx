@@ -34,10 +34,10 @@ export const AppleTopBar: React.FC<AppleTopBarProps> = ({
           <span className="font-semibold text-xs tracking-tight text-primary">DevSculptor</span>
         </div>
 
-        <div className="h-3 w-px bg-[var(--border-glass-subtle)] mx-0.5" />
+        <div className="h-3 w-px bg-[var(--border-glass-subtle-color)] mx-0.5" />
 
         {/* Switch: Estudio vs Hub */}
-        <div className="flex items-center gap-1 bg-black/5 dark:bg-white/[0.04] p-0.5 rounded-[7px] border border-[var(--border-glass-subtle)]">
+        <div className="flex items-center gap-1 bg-black/5 dark:bg-white/[0.04] p-0.5 rounded-[7px] border border-glass-subtle">
           <button
             onClick={() => onNavigateScreen('studio')}
             className={`vision-btn !py-1 !px-2.5 text-[11px] ${
@@ -77,7 +77,7 @@ export const AppleTopBar: React.FC<AppleTopBarProps> = ({
           <span className="text-emerald-400 font-medium">PostgreSQL pg.Pool</span>
         </div>
 
-        <div className="h-3 w-px bg-white/10 mx-0.5" />
+        <div className="h-3 w-px bg-[var(--border-glass-subtle-color)] mx-0.5" />
 
         <ThemeToggle />
 

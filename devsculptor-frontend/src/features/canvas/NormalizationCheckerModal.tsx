@@ -147,7 +147,7 @@ export const NormalizationCheckerModal: React.FC<NormalizationCheckerModalProps>
           </div>
 
           <div className="flex items-center gap-1.5 text-xs font-mono">
-            <span className="px-2 py-1 rounded bg-[var(--glass-card)] border border-[var(--border-glass-subtle)] text-cyan-600 dark:text-cyan-300">
+            <span className="px-2 py-1 rounded bg-[var(--glass-card)] border border-glass-subtle text-cyan-600 dark:text-cyan-300">
               Mecánica: Activa
             </span>
             <span className="px-2 py-1 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-300">
@@ -166,7 +166,7 @@ export const NormalizationCheckerModal: React.FC<NormalizationCheckerModalProps>
             diagnostics.map((d, i) => (
               <div
                 key={i}
-                className="p-3 rounded-lg bg-[var(--glass-card)] border border-[var(--border-glass-subtle)] space-y-2"
+                className="p-3 rounded-lg bg-[var(--glass-card)] border border-glass-subtle space-y-2"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -240,7 +240,7 @@ export const NormalizationCheckerModal: React.FC<NormalizationCheckerModalProps>
         </div>
 
         {/* Acciones */}
-        <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/[0.08]">
+        <div className="flex items-center justify-end gap-2 pt-2 border-t border-glass-subtle">
           <VisionButton variant="secondary" onClick={onClose}>
             Cerrar
           </VisionButton>

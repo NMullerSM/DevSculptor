@@ -68,7 +68,7 @@ export const RequirementsView: React.FC<RequirementsViewProps> = ({
   return (
     <div className="flex-1 flex flex-col h-full p-4 gap-3 select-none">
       {/* Encabezado */}
-      <div className="flex items-center justify-between pb-2 border-b border-[var(--border-glass-subtle)] shrink-0">
+      <div className="flex items-center justify-between pb-2 border-b border-glass-subtle shrink-0">
         <div>
           <h2 className="text-xs font-semibold text-primary">Matriz de Requisitos (IEEE-830)</h2>
           <p className="text-[10.5px] text-secondary font-mono">
@@ -124,7 +124,7 @@ export const RequirementsView: React.FC<RequirementsViewProps> = ({
             >
               <div className="space-y-1.5 flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-mono font-bold text-xs text-primary bg-black/5 dark:bg-white/[0.06] px-2 py-0.5 rounded-[4px] border border-[var(--border-glass-subtle)]">
+                  <span className="font-mono font-bold text-xs text-primary bg-black/5 dark:bg-white/[0.06] px-2 py-0.5 rounded-[4px] border border-glass-subtle">
                     {req.code}
                   </span>
                   <VisionPill variant={req.type === 'RF' ? 'amber' : 'cyan'}>

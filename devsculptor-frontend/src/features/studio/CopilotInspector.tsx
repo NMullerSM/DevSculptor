@@ -18,7 +18,7 @@ export const CopilotInspector: React.FC<CopilotInspectorProps> = ({ onQuickActio
   return (
     <aside className="vision-window w-[260px] shrink-0 flex flex-col p-3 gap-3 select-none">
       {/* Encabezado */}
-      <div className="flex items-center justify-between pb-1 border-b border-[var(--border-glass-subtle)]">
+      <div className="flex items-center justify-between pb-1 border-b border-glass-subtle">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(56,189,248,0.8)] animate-pulse" />
           <span className="font-semibold text-xs text-primary">Copiloto</span>

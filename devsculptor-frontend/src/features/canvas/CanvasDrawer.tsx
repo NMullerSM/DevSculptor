@@ -91,7 +91,7 @@ export const CanvasDrawer: React.FC<CanvasDrawerProps> = ({
         }`}
       >
         {/* Cabecera del Drawer */}
-        <div className="p-3 border-b border-[var(--border-glass-subtle)] flex items-center justify-between shrink-0">
+        <div className="p-3 border-b border-glass-subtle flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-cyan-500 dark:text-cyan-400 text-base">architecture</span>
             <h3 className="text-xs font-semibold text-[var(--text-primary)] tracking-wide">Panel de Modelado</h3>
@@ -102,7 +102,7 @@ export const CanvasDrawer: React.FC<CanvasDrawerProps> = ({
         </div>
 
         {/* Barra de Creación y Utilidades Principales */}
-        <div className="p-3 border-b border-[var(--border-glass-subtle)] bg-[var(--glass-card)] flex flex-col gap-2 shrink-0">
+        <div className="p-3 border-b border-glass-subtle bg-[var(--glass-card)] flex flex-col gap-2 shrink-0">
           {/* Botón Principal: Añadir Tabla */}
           <button
             onClick={onAddTable}
@@ -160,7 +160,7 @@ export const CanvasDrawer: React.FC<CanvasDrawerProps> = ({
             </button>
 
             {isTablesOpen && (
-              <div className="p-2 pt-0 border-t border-[var(--border-glass-subtle)] space-y-2">
+              <div className="p-2 pt-0 border-t border-glass-subtle space-y-2">
                 {/* Buscador de tablas adaptativo */}
                 <div className="relative pt-2">
                   <span className="material-symbols-outlined absolute left-2.5 top-1/2 text-[var(--text-muted)] text-[13px] pointer-events-none">
@@ -171,7 +171,7 @@ export const CanvasDrawer: React.FC<CanvasDrawerProps> = ({
                     value={filterQuery}
                     onChange={(e) => setFilterQuery(e.target.value)}
                     placeholder="Buscar tabla..."
-                    className="w-full text-[11px] font-mono bg-[var(--glass-input)] border border-[var(--border-glass-subtle)] rounded-md pl-8 pr-2 py-1 text-[var(--text-primary)] placeholder:text-[var(--text-dim)] focus:outline-none focus:border-cyan-500/50"
+                    className="w-full text-[11px] font-mono bg-[var(--glass-input)] border border-glass-subtle rounded-md pl-8 pr-2 py-1 text-[var(--text-primary)] placeholder:text-[var(--text-dim)] focus:outline-none focus:border-cyan-500/50"
                   />
                 </div>
 
@@ -189,7 +189,7 @@ export const CanvasDrawer: React.FC<CanvasDrawerProps> = ({
                       return (
                         <div
                           key={entity.id}
-                          className="rounded-lg bg-[var(--glass-card)] border border-[var(--border-glass-subtle)] hover:border-cyan-500/40 transition-all overflow-hidden"
+                          className="rounded-lg bg-[var(--glass-card)] border border-glass-subtle hover:border-cyan-500/40 transition-all overflow-hidden"
                         >
                           <div
                             onClick={() => onSelectEntity(entity.id)}
@@ -252,7 +252,7 @@ export const CanvasDrawer: React.FC<CanvasDrawerProps> = ({
 
                           {/* Vista Previa Desplegable de Columnas */}
                           {isExpanded && (
-                            <div className="p-2 pt-1 border-t border-[var(--border-glass-subtle)] bg-[var(--glass-code)] space-y-1">
+                            <div className="p-2 pt-1 border-t border-glass-subtle bg-[var(--glass-code)] space-y-1">
                               {cols.map((col, idx) => (
                                 <div
                                   key={idx}
@@ -303,9 +303,9 @@ export const CanvasDrawer: React.FC<CanvasDrawerProps> = ({
             </button>
 
             {isRelationsOpen && (
-              <div className="p-2.5 pt-1 border-t border-[var(--border-glass-subtle)] space-y-2">
+              <div className="p-2.5 pt-1 border-t border-glass-subtle space-y-2">
                 {/* Leyenda Crow's Foot */}
-                <div className="p-2 rounded-lg bg-[var(--glass-card)] border border-[var(--border-glass-subtle)] space-y-1.5 text-[10px] font-mono">
+                <div className="p-2 rounded-lg bg-[var(--glass-card)] border border-glass-subtle space-y-1.5 text-[10px] font-mono">
                   <div className="text-cyan-600 dark:text-cyan-300 font-semibold flex items-center gap-1">
                     <span className="material-symbols-outlined text-xs">info</span>
                     <span>Simbología Crow's Foot (IE)</span>
@@ -330,7 +330,7 @@ export const CanvasDrawer: React.FC<CanvasDrawerProps> = ({
                     {activeRelations.map((rel) => (
                       <div
                         key={rel.id}
-                        className="p-1.5 rounded bg-[var(--glass-card)] border border-[var(--border-glass-subtle)] text-[10px] font-mono flex items-center justify-between"
+                        className="p-1.5 rounded bg-[var(--glass-card)] border border-glass-subtle text-[10px] font-mono flex items-center justify-between"
                       >
                         <div className="truncate text-[var(--text-primary)]">
                           <span className="text-cyan-600 dark:text-cyan-300">{rel.sourceTable}</span>
@@ -356,7 +356,7 @@ export const CanvasDrawer: React.FC<CanvasDrawerProps> = ({
         </div>
 
         {/* Footer del Drawer */}
-        <div className="p-2.5 border-t border-[var(--border-glass-subtle)] bg-[var(--glass-card)] flex items-center justify-between text-[10px] font-mono text-[var(--text-muted)] shrink-0">
+        <div className="p-2.5 border-t border-glass-subtle bg-[var(--glass-card)] flex items-center justify-between text-[10px] font-mono text-[var(--text-muted)] shrink-0">
           <span>DevSculptor ERD</span>
           <span className="text-emerald-500 dark:text-emerald-400 flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />

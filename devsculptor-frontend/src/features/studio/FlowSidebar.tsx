@@ -57,7 +57,7 @@ export const FlowSidebar: React.FC<FlowSidebarProps> = ({
   return (
     <aside className="vision-window w-[250px] shrink-0 flex flex-col p-3 gap-3 select-none">
       {/* Encabezado */}
-      <div className="flex items-center justify-between pb-1.5 border-b border-[var(--border-glass-subtle)]">
+      <div className="flex items-center justify-between pb-1.5 border-b border-glass-subtle">
         <span className="text-[10px] font-mono uppercase tracking-wider text-muted font-semibold">
           Flujo de Trabajo
         </span>
@@ -96,7 +96,7 @@ export const FlowSidebar: React.FC<FlowSidebarProps> = ({
       </div>
 
       {/* Paso 5: Botón Inferior Anclado de Exportación OKF */}
-      <div className="pt-2 border-t border-[var(--border-glass-subtle)]">
+      <div className="pt-2 border-t border-glass-subtle">
         <VisionButton
           variant="primary"
           icon="folder_zip"

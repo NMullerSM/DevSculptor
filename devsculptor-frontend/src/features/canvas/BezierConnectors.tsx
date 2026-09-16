@@ -166,17 +166,15 @@ export const BezierConnectors: React.FC<BezierConnectorsProps> = ({ entities, zo
                 width="38"
                 height="22"
                 rx="11"
-                fill="#080c14"
-                stroke="#38bdf8"
+                className="fill-white dark:fill-[#080c14] stroke-[#0284c7] dark:stroke-[#38bdf8] shadow-xl"
                 strokeWidth="1.3"
-                className="shadow-xl"
               />
               {/* Texto de la cardinalidad (1:1, 1:N, N:M) */}
               <text
                 x="0"
                 y="4"
                 textAnchor="middle"
-                fill="#38bdf8"
+                className="fill-[#0284c7] dark:fill-[#38bdf8]"
                 fontSize="10"
                 fontFamily="monospace"
                 fontWeight="bold"

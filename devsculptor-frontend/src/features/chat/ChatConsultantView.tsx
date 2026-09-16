@@ -110,7 +110,7 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
   return (
     <div className="flex-1 flex flex-col h-full p-4 gap-3 select-none">
       {/* Encabezado */}
-      <div className="flex items-center justify-between pb-2 border-b border-[var(--border-glass-subtle)] shrink-0">
+      <div className="flex items-center justify-between pb-2 border-b border-glass-subtle shrink-0">
         <div>
           <h2 className="text-xs font-semibold text-primary">Conversación con el Arquitecto de Software</h2>
           <p className="text-[10.5px] text-secondary font-mono">
@@ -127,7 +127,7 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
             return (
               <div
                 key={m.id}
-                className="vision-card p-3.5 mr-8 md:mr-16 text-xs text-primary border-[var(--border-glass-subtle)] space-y-2"
+                className="vision-card p-3.5 mr-8 md:mr-16 text-xs text-primary border-glass-subtle space-y-2"
               >
                 <div className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400" />
@@ -138,7 +138,7 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
                 <p className="leading-relaxed text-[11.5px]">{m.content}</p>
 
                 {m.specs && m.specs.length > 0 && (
-                  <div className="mt-2 pt-2 border-t border-[var(--border-glass-subtle)] space-y-1 font-mono text-[11px]">
+                  <div className="mt-2 pt-2 border-t border-glass-subtle space-y-1 font-mono text-[11px]">
                     {m.specs.map((spec, i) => (
                       <div key={i} className="flex items-start gap-2">
                         <span className={`font-semibold ${spec.color}`}>{spec.code}</span>
