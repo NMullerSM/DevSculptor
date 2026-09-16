@@ -7,6 +7,7 @@ import { DecisionsView } from '@/features/decisions/DecisionsView';
 import { CanvasView } from '@/features/canvas/CanvasView';
 import { OkfExportModal } from '@/features/export/OkfExportModal';
 import { useProjectStore } from '@/stores/useProjectStore';
+import { useAiChatStore } from '@/stores/useAiChatStore';
 
 export const StudioWorkspace: React.FC = () => {
   const { activeProject } = useProjectStore();
@@ -62,7 +63,12 @@ export const StudioWorkspace: React.FC = () => {
       {/* 3. Panel Derecho: Copiloto & Inspector de Contexto (260px) */}
       <CopilotInspector
         onQuickAction={(actionText) => {
-          if (actionText.includes('RF')) {
+          if (actionText.includes('Auditoría IA') || actionText.includes('3FN')) {
+            setActiveStep('view-chat');
+            if (activeProject) {
+              useAiChatStore.getState().analyzeSchema(activeProject.id);
+            }
+          } else if (actionText.includes('RF')) {
             setActiveStep('view-reqs');
           } else if (actionText.includes('RLS') || actionText.includes('DDL')) {
             setActiveStep('view-canvas');

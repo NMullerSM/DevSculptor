@@ -85,6 +85,14 @@ export const CopilotInspector: React.FC<CopilotInspectorProps> = ({ onQuickActio
         </div>
 
         <button
+          onClick={() => onQuickAction?.('Auditoría IA 3FN & ADRs')}
+          className="vision-card p-2 w-full text-left text-[10.5px] text-primary hover:border-indigo-400/50 flex items-center gap-2 transition-all cursor-pointer bg-indigo-500/10 border-indigo-500/30"
+        >
+          <span className="material-symbols-outlined text-sm text-indigo-400">auto_awesome</span>
+          <span className="font-semibold text-indigo-600 dark:text-indigo-400">Auditoría IA (3FN & ADRs)</span>
+        </button>
+
+        <button
           onClick={() => onQuickAction?.('Validar RF con Esquema DDL')}
           className="vision-card p-2 w-full text-left text-[10.5px] text-primary hover:border-indigo-400/50 flex items-center gap-2 transition-all cursor-pointer"
         >

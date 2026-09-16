@@ -15,6 +15,7 @@ import requirementsRoutes from './modules/requirements/requirements.routes';
 import { canvasRouter, auditLogsRouter } from './modules/canvas/canvas.routes';
 import decisionsRoutes from './modules/decisions/decisions.routes';
 import metricsRoutes from './modules/metrics/metrics.routes';
+import aiRoutes from './modules/ai/ai.routes';
 
 export function createApp(): Express {
   const app = express();
@@ -72,6 +73,7 @@ export function createApp(): Express {
   app.use('/api/v1/projects/:projectId/audit-logs', auditLogsRouter);
   app.use('/api/v1/projects/:projectId/decisions', decisionsRoutes);
   app.use('/api/v1/projects/:projectId/metrics', metricsRoutes);
+  app.use('/api/v1/projects/:projectId/ai', aiRoutes);
 
   // 10. Manejador de rutas no encontradas (404)
   app.use(notFoundHandler);

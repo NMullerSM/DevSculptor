@@ -1,9 +1,9 @@
-# DevSculptor — Informe Consolidado de Avance de Proyecto por Sprints (Hasta Mitad de Sprint 3)
+# DevSculptor — Informe Consolidado de Avance de Proyecto por Sprints (Sprint 1, 2 y 3 Completados - 100%)
 
 **Proyecto:** DevSculptor — Technical Governance & AI-Assisted Documentation  
 **Asignatura / Portafolio:** Taller de Integración de Software (PTY4479)  
 **Autor:** Nathaniel Muller San Martin  
-**Estado de Avance:** Sprint 1 (100%), Sprint 2 (100%), Sprint 3 — Épica A (100% - Mitad de Sprint 3)  
+**Estado de Avance:** Sprint 1 (100%), Sprint 2 (100%), Sprint 3 (100% — Épicas A y B Culminadas)  
 **Fecha de Emisión:** Septiembre 2026  
 **Rama Activa:** `develop`  
 **Repositorios / Directorios:** [`devsculptor-backend/`](file:///c:/Users/natha/Documents/Repos/DevSculptor/devsculptor-backend) | [`devsculptor-frontend/`](file:///c:/Users/natha/Documents/Repos/DevSculptor/devsculptor-frontend)
@@ -15,9 +15,9 @@
 1. [Resumen Ejecutivo y Estado General del Proyecto](#1-resumen-ejecutivo-y-estado-general-del-proyecto)
 2. [Sprint 1: Backend Core, Persistencia Relacional y Procedimientos Almacenados (100%)](#2-sprint-1-backend-core-persistencia-relacional-y-procedimientos-almacenados-100)
 3. [Sprint 2: Frontend Base, Sistema de Diseño visionOS y Flujo Tripartito (100%)](#3-sprint-2-frontend-base-sistema-de-diseño-visionos-y-flujo-tripartito-100)
-4. [Sprint 3: Canvas Avanzado, Multi-Motor DDL y Motor de IA (50% — Épica A Completada)](#4-sprint-3-canvas-avanzado-multi-motor-ddl-y-motor-de-ia-50--épica-a-completada)
-   - 4.1. [Épica A: Canvas Avanzado, Modelado Relacional y DDL Multi-Dialecto (Completada)](#41-épica-a-canvas-avanzado-modelado-relacional-y-ddl-multi-dialecto-completada)
-   - 4.2. [Épica B: Motor de Consultoría IA y Copiloto de Arquitectura (Siguiente Fase)](#42-épica-b-motor-de-consultoría-ia-y-copiloto-de-arquitectura-siguiente-fase)
+4. [Sprint 3: Canvas Avanzado, Multi-Motor DDL y Motor de IA (100% — Épicas A y B Completadas)](#4-sprint-3-canvas-avanzado-multi-motor-ddl-y-motor-de-ia-100--épicas-a-y-b-completadas)
+   - 4.1. [Épica A: Canvas Avanzado, Modelado Relacional y DDL Multi-Dialecto (100%)](#41-épica-a-canvas-avanzado-modelado-relacional-y-ddl-multi-dialecto-100)
+   - 4.2. [Épica B: Motor de Consultoría IA y Copiloto de Arquitectura en Tiempo Real (100%)](#42-épica-b-motor-de-consultoría-ia-y-copiloto-de-arquitectura-en-tiempo-real-100)
 5. [Sprint 4 & Sprint 5: Roadmap Futuro y Cierre](#5-sprint-4--sprint-5-roadmap-futuro-y-cierre)
 6. [Matriz de Cumplimiento de la Definición de Terminado (DoD)](#6-matriz-de-cumplimiento-de-la-definición-de-terminado-dod)
 
@@ -25,23 +25,23 @@
 
 ## 1. Resumen Ejecutivo y Estado General del Proyecto
 
-**DevSculptor** es una plataforma de ingeniería de software orientada a la **gobernanza técnica pre-código y mitigación del *"vibe coding"***. Permite a arquitectos y desarrolladores capturar formalmente requisitos (IEEE-830), registrar decisiones técnicas inmutables (ADRs), modelar bases de datos relacionales interactivas bajo la teoría de 3FN y generar especificaciones deterministas (Open Knowledge Format - OKF) para inyectar en agentes de IA como Cursor o Claude.
+**DevSculptor** es una plataforma de ingeniería de software orientada a la **gobernanza técnica pre-código y mitigación del *"vibe coding"***. Permite a arquitectos y desarrolladores capturar formalmente requisitos (IEEE-830), registrar decisiones técnicas inmutables (ADRs), modelar bases de datos relacionales interactivas bajo la teoría de 3FN, interactuar con un Copiloto de Arquitectura conectado al contexto real del proyecto y generar especificaciones deterministas (Open Knowledge Format - OKF) para inyectar en agentes de IA como Cursor o Claude.
 
-### Métricas Globales de Completitud (Al 50% de Sprint 3):
+### Métricas Globales de Completitud (Culminación de Sprint 3):
 - **Sprint 1 (Backend Core & DB):** 100% ✅ (Completado y blindado).
 - **Sprint 2 (Frontend Base & Integración):** 100% ✅ (Completado e integrado).
-- **Sprint 3 — Épica A (Canvas Avanzado & DDL):** 100% ✅ (Completado: 50% del Sprint 3).
-- **Sprint 3 — Épica B (Motor IA Gemini):** 0% ⏳ (Planificado para ejecución inmediata).
-- **Avance Ponderado Global:** ~**70% del ciclo total de desarrollo**.
+- **Sprint 3 — Épica A (Canvas Avanzado & DDL):** 100% ✅ (Completado).
+- **Sprint 3 — Épica B (Motor IA Gemini & Copiloto):** 100% ✅ (Completado con Strategy Pattern, Mock Fallback y 1-Click Injection).
+- **Avance Ponderado Global:** ~**85% del ciclo total de desarrollo**.
 
 ```
 PROGRESO GENERAL DE SPRINTS
 ┌────────────────────────┬────────────────────────┬────────────────────────┬────────────────────────┐
-│   SPRINT 1 (100%)      │   SPRINT 2 (100%)      │   SPRINT 3 (50%)       │   SPRINT 4 & 5 (0%)    │
+│   SPRINT 1 (100%)      │   SPRINT 2 (100%)      │   SPRINT 3 (100%)      │   SPRINT 4 & 5 (0%)    │
 │  - Monolito Modular    │  - React 18 + Vite     │  - Épica A: Canvas DDL │  - OKF Dinámico        │
-│  - Supabase PG + RLS   │  - visionOS Glass      │    (COMPLETADA)        │  - Pruebas E2E         │
-│  - Triggers & SP       │  - Studio Tripartito   │  - Épica B: Gemini AI  │  - Hardening Final     │
-│  - Zod + Pino + Envel. │  - Axios + Zustand     │    (PENDIENTE)         │  - Deploy Producción   │
+│  - Supabase PG + RLS   │  - visionOS Glass      │  - Épica B: Motor IA   │  - Pruebas E2E         │
+│  - Triggers & SP       │  - Studio Tripartito   │    (Gemini Oficial +   │  - Hardening Final     │
+│  - Zod + Pino + Envel. │  - Axios + Zustand     │     Mock Heurístico)   │  - Deploy Producción   │
 └────────────────────────┴────────────────────────┴────────────────────────┴────────────────────────┘
 ```
 
@@ -68,11 +68,6 @@ PROGRESO GENERAL DE SPRINTS
 - **Trigger de Auditoría (`tg_audit_projects`)**: Ejecutado ante mutaciones en tablas críticas, serializando en `audit_logs` el estado previo (`payload_before`) y posterior (`payload_after`) junto con el `user_id` responsable.
 - **Stored Procedure de Madurez (`sp_calculate_project_maturity`)**: Procedimiento almacenado que calcula el *Índice de Madurez Arquitectónica* (0 a 100%) ponderando la proporción de requisitos documentados, actas ADRs aceptadas y normalización de entidades.
 
-### 2.4. Pilares de Calidad
-- Única Fuente de Verdad (SSOT) en Schemas Zod (`validateRequest`).
-- Envelope estándar de respuesta HTTP (`sendSuccess`, `sendCreated`, `sendError`).
-- Logging estructurado de alto rendimiento con Pino y correlación de solicitudes vía UUID v4 (`X-Request-Id`).
-
 ---
 
 ## 3. Sprint 2: Frontend Base, Sistema de Diseño visionOS y Flujo Tripartito (100%)
@@ -85,102 +80,73 @@ PROGRESO GENERAL DE SPRINTS
   - Paleta dual de tokens CSS: Modo Oscuro (*Crystal Obsidian*) y Modo Claro (*Snow Spatial Glass*).
 
 ### 3.2. Pantallas y Componentes Principales
-1. **Pantalla 0 — Portal de Acceso (`AuthPortal.tsx`)**: Iniciar sesión y registro con validación reactiva, feedback visual y redirección desacoplada ante eventos `auth:unauthorized` (HTTP 401).
-2. **Pantalla 1 — Hub de Proyectos (`ProjectsHub.tsx`)**: Grid responsivo con buscador en vivo, creación de proyectos (`CreateProjectModal`), edición de metadatos (`EditProjectModal`) y eliminación segura con modal de confirmación (`ConfirmModal`).
-3. **Pantalla 2 — Estudio de Gobernanza Tripartito (`StudioWorkspace.tsx`)**:
-   - **Barra Superior Apple Glass (`AppleTopBar.tsx`)**: Identidad, conmutador de pantallas (Estudio vs Hub), indicador de telemetría, selector de tema Sol/Luna y perfil.
-   - **Panel Izquierdo (`FlowSidebar.tsx`)**: Pipeline guiado en 5 pasos con badges de conteo reactivos y botón inferior anclado de exportación OKF.
-   - **Panel Central (Workspace Studio)**: Conmutación fluida entre 4 vistas:
-     - *Vista Chat (`ChatConsultantView.tsx`)*: Consultoría inicial.
-     - *Vista Requisitos (`RequirementsView.tsx`)*: Matriz formal IEEE-830.
-     - *Vista ADRs (`DecisionsView.tsx`)*: Catálogo de decisiones con control de transición de estados.
-     - *Vista Canvas (`CanvasView.tsx`)*: Lienzo ERD inicial y salidas multi-lenguaje (SQL, TypeScript, JSON Schema, Python).
-   - **Panel Derecho (`CopilotInspector.tsx`)**: Widget de telemetría en tiempo real conectado al Stored Procedure (`maturityScore`, normalización 3FN, políticas RLS, acciones heurísticas de calidad).
-4. **Modal de Compilación OKF (`OkfExportModal.tsx`)**: Generador de paquetes ZIP cliente con estructura determinista (`/documentation/`, `/database/`, `/skills/`).
+1. **Portal de Acceso (`AuthPortal.tsx`)**: Iniciar sesión y registro con validación reactiva y manejo de desautorización 401.
+2. **Hub de Proyectos (`ProjectsHub.tsx`)**: Grid responsivo con buscador en vivo, creación, edición y eliminación de proyectos.
+3. **Estudio de Gobernanza Tripartito (`StudioWorkspace.tsx`)**:
+   - Barra Superior Apple Glass (`AppleTopBar.tsx`).
+   - Panel Izquierdo (`FlowSidebar.tsx`) con pipeline en 5 pasos.
+   - Panel Central con 4 vistas (Chat, Requisitos, Decisiones, Canvas).
+   - Panel Derecho (`CopilotInspector.tsx`) con telemetría en tiempo real.
+4. **Modal de Compilación OKF (`OkfExportModal.tsx`)**: Generador de paquetes ZIP cliente.
 
 ---
 
-## 4. Sprint 3: Canvas Avanzado, Multi-Motor DDL y Motor de IA (50% — Épica A Completada)
+## 4. Sprint 3: Canvas Avanzado, Multi-Motor DDL y Motor de IA (100% — Épicas A y B Completadas)
 
-El **Sprint 3** se estructuró formalmente en dos grandes épicas de ingeniería:
-- **Épica A (Semanas 5-6):** Canvas Avanzado, Modelado Relacional y Generación DDL Multi-Dialecto. *(100% Completada)*.
-- **Épica B (Semanas 6-7):** Motor de Consultoría IA (Gemini) y Copiloto de Arquitectura en Tiempo Real. *(Próxima a iniciar)*.
+### 4.1. Épica A: Canvas Avanzado, Modelado Relacional y DDL Multi-Dialecto (100%)
 
----
-
-### 4.1. Épica A: Canvas Avanzado, Modelado Relacional y DDL Multi-Dialecto (Completada)
-
-Se culminó con éxito la totalidad de los requerimientos de modelado relacional y generación multi-motor:
-
-#### 1. Generador Multi-Motor DDL Puro (`scriptGenerators.ts`)
-Arquitectura de generadores puros sin dependencias externas, produciendo sentencias DDL estrictas para 4 motores líderes:
-- **PostgreSQL**: `id UUID PRIMARY KEY DEFAULT gen_random_uuid()`, `TIMESTAMPTZ`, `JSONB`, constraints y políticas RLS.
-- **MySQL**: `ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`, `CHAR(36)`, `DATETIME`, foreign keys con cláusulas `CONSTRAINT`.
-- **SQLite**: Tipado portable (`TEXT`, `INTEGER`, `REAL`, `BLOB`), claves foráneas integradas.
-- **Oracle Database**: Tipos corporativos (`RAW(16)`, `VARCHAR2(255)`, `NUMBER(1)`), bloques PL/SQL y constraints con cláusula `ENABLE`.
-- Documentado formalmente en [`Sprint3_MultiDialect_DDL_Requirement.md`](file:///c:/Users/natha/Documents/Repos/DevSculptor/Documentation/Desicitions/Backend/Sprint3_MultiDialect_DDL_Requirement.md).
-
-#### 2. Operación Visual ALTER TABLE (`EditEntityModal.tsx`)
-Modal de edición interactiva que permite a los arquitectos:
-- Renombrar tablas en caliente.
-- Agregar, tipar, modificar o eliminar columnas.
-- Configurar flags booleanos para `PK`, `FK`, `Nullable` y `Unique`.
-- Asignar relaciones foráneas dinámicas eligiendo la tabla destino y su cardinalidad (`1:1`, `1:N`, `N:M`).
-
-#### 3. Motor de Ingeniería Inversa SQL DDL (`SqlImportModal.tsx`)
-Capacidad de importar esquemas existentes mediante sentencias SQL `CREATE TABLE`:
-- Parser determinista que extrae nombres de tablas, columnas, tipos de datos, PKs y claves foráneas.
-- Ubicación automática en grilla (*auto-layout*) para prevenir colisiones en el lienzo.
-- Inserción secuencial en el backend garantizando el disparo de los triggers de auditoría.
-
-#### 4. Motor de Auditoría y Verificación Heurística 3FN (`NormalizationCheckerModal.tsx`)
-Auditoría matemática y metodológica en tiempo real basada en las reglas de Codd:
-- **1FN**: Atomicidad de columnas y existencia de clave primaria (PK).
-- **2FN**: Ausencia de dependencias funcionales parciales sobre claves compuestas.
-- **3FN**: Detección de dependencias transitivas y campos calculados redundantes.
-- Cálculo de score global de normalización porcentual (0% a 100%).
-
-#### 5. Rendimiento a 60 FPS y Notación Crow's Foot (Information Engineering)
-- **Zero Stale Closures**: Coordenadas instantáneas gestionadas mediante `useRef` mutable y memoria reactiva en Zustand vía `setTransientPosition`, eliminando lag en el arrastre.
-- **Simbología Crow's Foot**: Sustitución de flechas simples por marcadores SVG estándar: doble barra vertical `||` (Uno y sólo uno) en el lado de la PK, y pata de gallo `❯|` (Muchos) en el lado de la FK, con badge interactivo de cardinalidad.
-
-#### 6. Panel de Modelado Desplegable en Acordeones (`CanvasDrawer.tsx`)
-- Despeje visual de la barra superior (*Top Bar*), reubicando la acción de creación al interior del panel.
-- Organización en acordeones plegables hacia abajo:
-  - **Barra de Creación:** Botón principal `+ Añadir Tabla al Lienzo` y accesos rápidos a Importación SQL y Auditoría 3FN.
-  - **Acordeón 1 (Tablas):** Buscador reactivo, vista previa inline de columnas (🔑 PK, 🔗 FK), botón ALTER TABLE (`tune`) y **botón de eliminación rápida protegida con [`ConfirmModal.tsx`](file:///c:/Users/natha/Documents/Repos/DevSculptor/devsculptor-frontend/src/components/ui/ConfirmModal.tsx)**.
-  - **Acordeón 2 (Conectores y Relaciones):** Leyenda didáctica Crow's Foot y listado en vivo de todas las relaciones del modelo.
-
-#### 7. Adaptabilidad de Alto Contraste en Modo Claro (Snow Spatial Glass)
-- Resolución del problema de bajo contraste tipográfico en modo claro:
-  - Tokens CSS afinados para `html.light`: `--text-primary: #090d16` (carbón profundo de máxima nitidez), `--text-secondary: #1e293b` (pizarra profunda) y `--text-muted: #334155` (gris oscuro legible).
-  - Utilidades tipográficas semánticas expuestas en `tailwind.config.js` (`text-primary`, `text-secondary`, `text-muted`, `text-dim`).
-  - Variantes de píldoras (`.vision-pill`) con colores profundos en modo claro para máxima legibilidad.
-  - Estilización adaptativa de `.vision-drawer` y `.vision-drawer-subtle`.
-
-#### 8. Resolución del Gotcha PostgreSQL 22P02 en Persistencia
-- Corrección estructural permanente en [`BaseRepository.ts`](file:///c:/Users/natha/Documents/Repos/DevSculptor/devsculptor-backend/src/shared/base/BaseRepository.ts) mediante el método `serializeJsonFields`, garantizando que todos los arrays u objetos destinados a columnas JSONB (`columns_json`, `*_json`, `*_payload`) se conviertan a cadenas JSON literales antes de pasarse a `pool.query()`, evitando que `pg` los convierta a arrays nativos de PostgreSQL.
+1. **Generador Multi-Motor DDL Puro (`scriptGenerators.ts`)**: Producción determinista de sentencias DDL estrictas para 4 motores líderes: PostgreSQL, MySQL, SQLite y Oracle Database.
+2. **Operación Visual ALTER TABLE (`EditEntityModal.tsx`)**: Edición en caliente de tablas, tipos de datos, constraints y cardinalidades foráneas (`1:1`, `1:N`, `N:M`).
+3. **Motor de Ingeniería Inversa SQL DDL (`SqlImportModal.tsx`)**: Importación de esquemas relacionales a partir de sentencias `CREATE TABLE` con auto-layout determinista.
+4. **Auditoría Heurística de Normalización 3FN (`NormalizationCheckerModal.tsx`)**: Comprobación matemática en tiempo real de 1FN, 2FN y 3FN.
+5. **Rendimiento a 60 FPS y Simbología Crow's Foot**: Desplazamiento reactivo sin lag y conectores con notación estándar de Ingeniería de Información (IE).
+6. **Panel Desplegable en Acordeones (`CanvasDrawer.tsx`)**: Búsqueda reactiva, edición ALTER TABLE y eliminación protegida de tablas.
+7. **Adaptabilidad de Alto Contraste en Modo Claro**: Solución de contraste con paleta de textos oscuros (`#090d16`, `#1e293b`).
+8. **Resolución de Gotcha PostgreSQL 22P02**: Serialización homogénea de JSONB en `BaseRepository.ts`.
 
 ---
 
-### 4.2. Épica B: Motor de Consultoría IA y Copiloto de Arquitectura (Siguiente Fase)
+### 4.2. Épica B: Motor de Consultoría IA y Copiloto de Arquitectura en Tiempo Real (100%)
 
-Corresponde al 50% restante del Sprint 3:
+Se completó integralmente la segunda mitad del Sprint 3, dotando al sistema de capacidades de consultoría técnica inteligente y automatización:
 
-| Tarea / Entregable | Alcance Técnico | Estado |
-| :--- | :--- | :---: |
-| **Módulo Backend `ai`** | Creación de `src/modules/ai/` (Controller, Service, DTOs, Routes) consumiendo la API de Google Gemini (`@google/genai`). | ⏳ Pendiente |
-| **Prompt Engineering Arquitectónico** | System prompts especializados en gobernanza técnica, extracción de requisitos IEEE-830 y modelado relacional 3FN. | ⏳ Pendiente |
-| **Conexión en Tiempo Real de `ChatConsultantView`** | Sustituir respuestas simuladas por streaming o llamadas reactivas al endpoint `/api/v1/projects/:projectId/ai/chat`. | ⏳ Pendiente |
-| **Generación Asistida de Entidades y ADRs** | Acciones en el chat que inyecten automáticamente requisitos al store de requirements y tablas al canvas store. | ⏳ Pendiente |
+#### 1. Arquitectura Agnóstica de Proveedor (Strategy / Adapter Pattern)
+- Contrato estándar `IAiProvider` (`src/modules/ai/providers/ai-provider.interface.ts`).
+- **Proveedor Google Gemini Oficial (`GeminiProvider`)**: Integración con el SDK unificado `@google/genai`, soportando modelos dinámicos configurables mediante la variable de entorno `GEMINI_MODEL` (por defecto `gemini-2.0-flash`).
+- **Proveedor OpenAI / DeepSeek (`OpenAiProvider`)**: Adaptador extensible para modelos compatibles.
+- **Simulador Heurístico Local de Alta Fidelidad (`MockAiProvider`)**: Motor offline que evalúa las tablas y requisitos reales de la base de datos sin requerir API keys externas, permitiendo desarrollo continuo sin consumo de cuotas ni interrupciones.
+- **Factoría Singleton (`AiProviderFactory`)**: Instanciación inteligente del proveedor según la variable `AI_PROVIDER` y presencia de credenciales.
+
+#### 2. Blindaje de Seguridad y Aislamiento de Claves (Zero Frontend Exposure)
+- **Principio Zero-Trust**: Ninguna clave de API reside en el frontend ni en repositorios Git. Las credenciales se gestionan exclusivamente en el backend `.env` y se validan mediante Zod en `src/config/env.ts`.
+- **Aislamiento Horizontal (Pilar 7)**: El servicio `AiService` valida estrictamente la pertenencia del proyecto al `user_id` del JWT antes de consultar la base de datos o ensamblar el contexto.
+
+#### 3. Ensamblado de Contexto Vivo en Base de Datos
+- En cada interacción, el backend extrae en vivo los requisitos IEEE-830, el modelo relacional del canvas y las actas ADRs de PostgreSQL y los inyecta en el System Prompt, garantizando recomendaciones precisas y no alucinadas.
+
+#### 4. Bloques de Acción Estructurados (`devsculptor-actions`)
+- El motor IA emite recomendaciones técnicas acompañadas de bloques normalizados ````json:devsculptor-actions```` conteniendo especificaciones formales de:
+  - Requisitos funcionales y no funcionales (`[RF-xx]`, `[RNF-xx]`).
+  - Entidades relacionales con tipos de columnas y flags (`PK`, `FK`, `Unique`).
+  - Actas de decisión técnica (`[ADR-xxx]`).
+
+#### 5. Experiencia Frontend 1-Click e Integración con Stores
+- **`useAiChatStore.ts`**: Store centralizado para el chat, estados de carga y orquestación de inyecciones.
+- **Inyección 1-Click**:
+  - `injectRequirement`: Inserción directa en `requirementsService`.
+  - `injectEntity`: Creación y renderizado automático en `useCanvasStore`.
+  - `injectDecision`: Registro formal en `decisionsService`.
+  - `injectAllActions`: Inyección por lotes con retroalimentación visual inmediata.
+- **Sincronización de Métricas en Vivo**: Cada inyección recalcula automáticamente las métricas del proyecto en `useProjectStore.fetchMetrics(projectId)`, actualizando el Índice de Madurez en el inspector lateral.
+- **Acción Rápida en Copiloto (`CopilotInspector.tsx`)**: Botón *"Auditoría IA (3FN & ADRs)"* que traslada al usuario al chat y ejecuta la auditoría del esquema relacional en un solo paso.
 
 ---
 
 ## 5. Sprint 4 & Sprint 5: Roadmap Futuro y Cierre
 
-### Sprint 4: Compilación OKF Dinámica, Pruebas E2E y Carga
+### Sprint 4: Compilación OKF Dinámica, Pruebas E2E y Rendimiento
 - **Compilador OKF en Vivo**: Generación determinista del árbol de carpetas con los requisitos reales en Markdown, los ADRs en formato estándar Nygard, y el archivo DDL unificado del modelo.
-- **Suite de Pruebas E2E**: Pruebas automatizadas de flujo completo (Crear proyecto ➔ Diseñar en Canvas ➔ Auditar 3FN ➔ Exportar ZIP).
+- **Suite de Pruebas E2E**: Pruebas automatizadas de flujo completo (Crear proyecto ➔ Diseñar en Canvas ➔ Auditar 3FN ➔ Consultar Copiloto IA ➔ Inyectar Acción ➔ Exportar ZIP).
 - **Pruebas de Concurrencia**: Validación de carga sobre el pool de PostgreSQL y endpoints críticos.
 
 ### Sprint 5: Hardening de Seguridad, Despliegue y Entrega Portafolio PTY4479
@@ -194,11 +160,13 @@ Corresponde al 50% restante del Sprint 3:
 
 | Criterio de Aceptación (DoD) | Estado | Evidencia Técnica |
 | :--- | :---: | :--- |
-| **Cero Errores de Compilación TypeScript** | ✅ CUMPLIDO | `npm run build` compila con 0 errores en frontend y backend. |
-| **Cero `console.log` / `console.error`** | ✅ CUMPLIDO | Todo registro backend utiliza el logger Pino singleton estructurado. |
-| **Seguridad RLS y Tenencia Horizontal** | ✅ CUMPLIDO | Todas las consultas filtran por `user_id` del token JWT verificado. |
+| **Cero Errores de Compilación TypeScript** | ✅ CUMPLIDO | `npm run build` compila con 0 errores en frontend (Vite) y backend (`tsc && tsc-alias`). |
+| **Arquitectura de IA Provider-Agnostic** | ✅ CUMPLIDO | Patrón Strategy/Adapter implementado (`IAiProvider`, `GeminiProvider`, `MockAiProvider`, `OpenAiProvider`). |
+| **Protección de Credenciales de IA** | ✅ CUMPLIDO | API keys aisladas al 100% en backend `.env`; cero exposición en cliente o git. |
+| **Resiliencia y Modo Offline Heurístico** | ✅ CUMPLIDO | `MockAiProvider` analiza contexto real de base de datos sin lanzar errores si no hay API key. |
+| **Inyección 1-Click de Artefactos IA** | ✅ CUMPLIDO | Inserción directa de requisitos, entidades y ADRs con actualización de métricas en tiempo real. |
+| **Seguridad RLS y Tenencia Horizontal** | ✅ CUMPLIDO | Todas las consultas filtran por `user_id` del token JWT verificado (Pilar 7). |
 | **Validación Zod como SSOT** | ✅ CUMPLIDO | DTOs de entrada validados en middleware antes de los controladores. |
-| **Protección contra Pérdida de Datos** | ✅ CUMPLIDO | Eliminación de tablas y proyectos requiere confirmación explícita vía `ConfirmModal`. |
 | **Rendimiento Visual a 60 FPS** | ✅ CUMPLIDO | Arrastre y Bezier calculados mediante `useRef` mutable y GPU transforms. |
 | **Contraste WCAG 2.1 AA Dual Theme** | ✅ CUMPLIDO | Textos legibles y oscuros (`#090d16`) en modo claro y brillantes en modo oscuro. |
-| **Trazabilidad Git** | ✅ CUMPLIDO | Commits atómicos registrados en la rama `develop` siguiendo convención semántica. |
+| **Trazabilidad Git en `develop`** | ✅ CUMPLIDO | Commits atómicos registrados exclusivamente en la rama `develop` sin tocar `main`. |

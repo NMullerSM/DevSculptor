@@ -19,6 +19,12 @@ const envSchema = z.object({
   CORS_ORIGINS: z.string().default('http://localhost:3000,http://localhost:5173'),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().default(900000),
   RATE_LIMIT_MAX: z.coerce.number().default(100),
+  // Configuración de Motor de IA (Agnóstica de Proveedor)
+  AI_PROVIDER: z.enum(['gemini', 'openai', 'deepseek', 'mock']).default('gemini'),
+  GEMINI_API_KEY: z.string().optional(),
+  GEMINI_MODEL: z.string().default('gemini-2.0-flash'),
+  OPENAI_API_KEY: z.string().optional(),
+  DEEPSEEK_API_KEY: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -10,10 +10,17 @@
     "migrate": "tsx src/database/migrate.ts",
     "seed": "tsx src/database/seeds/run-seed.ts"
   },
-  "keywords": ["devsculptor", "backend", "express", "postgresql", "typescript"],
+  "keywords": [
+    "devsculptor",
+    "backend",
+    "express",
+    "postgresql",
+    "typescript"
+  ],
   "author": "Nathaniel Muller San Martin",
   "license": "MIT",
   "dependencies": {
+    "@google/genai": "^2.22.0",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
