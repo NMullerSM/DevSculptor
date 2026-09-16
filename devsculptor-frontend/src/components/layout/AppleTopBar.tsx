@@ -65,9 +65,25 @@ export const AppleTopBar: React.FC<AppleTopBarProps> = ({
         <span className="font-semibold text-xs text-primary">
           {activeProject ? activeProject.name : 'Sin proyecto seleccionado'}
         </span>
-        <VisionPill variant="indigo" className="text-[8.5px]">
-          Fase Pre-Código
-        </VisionPill>
+        {activeProject && (
+          <>
+            {!activeProject.architecture_style ||
+            activeProject.architecture_style === 'Por Definir / En Evaluación' ? (
+              <span className="text-[9.5px] font-mono text-amber-500 dark:text-amber-300 bg-amber-400/10 px-2 py-0.5 rounded-[4px] border border-amber-400/20 inline-flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                <span>Arq. En Evaluación</span>
+              </span>
+            ) : (
+              <span className="text-[9.5px] font-mono text-cyan-600 dark:text-cyan-300 bg-cyan-400/10 px-2 py-0.5 rounded-[4px] border border-cyan-400/20 inline-flex items-center gap-1">
+                <span className="material-symbols-outlined text-[11px]">architecture</span>
+                <span>{activeProject.architecture_style}</span>
+              </span>
+            )}
+            <VisionPill variant="indigo" className="text-[8.5px]">
+              Pre-Código
+            </VisionPill>
+          </>
+        )}
       </div>
 
       {/* Derecha: Persistencia, ThemeToggle y Perfil */}

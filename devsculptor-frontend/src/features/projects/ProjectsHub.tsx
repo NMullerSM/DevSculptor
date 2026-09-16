@@ -26,7 +26,9 @@ export const ProjectsHub: React.FC<ProjectsHubProps> = ({ onOpenProject }) => {
     (p) =>
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      p.architecture_style.toLowerCase().includes(searchQuery.toLowerCase())
+      (p.organization && p.organization.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (p.lead_architect && p.lead_architect.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (p.architecture_style && p.architecture_style.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
@@ -89,36 +91,66 @@ export const ProjectsHub: React.FC<ProjectsHubProps> = ({ onOpenProject }) => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {filteredProjects.map((project) => (
-            <div
-              key={project.id}
-              className="vision-window p-4 flex flex-col justify-between hover:border-indigo-500/40 transition-all cursor-pointer group"
-              onClick={() => onOpenProject(project)}
-            >
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <VisionPill variant="indigo" dot>
-                    ACTIVO
-                  </VisionPill>
-                  <span className="text-[10px] font-mono text-muted">
-                    {new Date(project.created_at).toLocaleDateString()}
-                  </span>
+          {filteredProjects.map((project) => {
+            const isPendingArch =
+              !project.architecture_style ||
+              project.architecture_style === 'Por Definir / En Evaluación';
+
+            return (
+              <div
+                key={project.id}
+                className="vision-window p-4 flex flex-col justify-between hover:border-indigo-500/40 transition-all cursor-pointer group"
+                onClick={() => onOpenProject(project)}
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <VisionPill variant="indigo" dot>
+                      ACTIVO
+                    </VisionPill>
+                    <span className="text-[10px] font-mono text-muted">
+                      {new Date(project.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+
+                  <h3 className="font-bold text-sm text-primary group-hover:text-indigo-500 dark:group-hover:text-indigo-300 transition-colors">
+                    {project.name}
+                  </h3>
+
+                  {(project.organization || project.lead_architect) && (
+                    <div className="flex flex-wrap items-center gap-2 text-[10.5px] font-mono text-muted">
+                      {project.organization && (
+                        <span className="flex items-center gap-1">
+                          <span className="material-symbols-outlined text-xs text-indigo-400">domain</span>
+                          <span>{project.organization}</span>
+                        </span>
+                      )}
+                      {project.organization && project.lead_architect && <span>•</span>}
+                      {project.lead_architect && (
+                        <span className="flex items-center gap-1">
+                          <span className="material-symbols-outlined text-xs text-cyan-400">badge</span>
+                          <span>{project.lead_architect}</span>
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  <p className="text-xs text-secondary leading-relaxed line-clamp-2">
+                    {project.description || 'Sin descripción técnica registrada.'}
+                  </p>
+
+                  <div className="pt-1">
+                    {isPendingArch ? (
+                      <span className="text-[10.5px] font-mono text-amber-500 dark:text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-[4px] border border-amber-400/20 inline-flex items-center gap-1">
+                        <span className="material-symbols-outlined text-xs">pending</span>
+                        <span>Arquitectura: En Evaluación</span>
+                      </span>
+                    ) : (
+                      <span className="text-[10.5px] font-mono text-cyan-600 dark:text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded-[4px] border border-cyan-400/20">
+                        {project.architecture_style}
+                      </span>
+                    )}
+                  </div>
                 </div>
-
-                <h3 className="font-bold text-sm text-primary group-hover:text-indigo-500 dark:group-hover:text-indigo-300 transition-colors">
-                  {project.name}
-                </h3>
-
-                <p className="text-xs text-secondary leading-relaxed line-clamp-2">
-                  {project.description || 'Sin descripción técnica registrada.'}
-                </p>
-
-                <div className="pt-1">
-                  <span className="text-[10.5px] font-mono text-cyan-600 dark:text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded-[4px] border border-cyan-400/20">
-                    {project.architecture_style}
-                  </span>
-                </div>
-              </div>
 
               <div className="pt-4 mt-4 border-t border-glass-subtle space-y-2.5">
                 <div className="flex items-center justify-between">
@@ -153,8 +185,9 @@ export const ProjectsHub: React.FC<ProjectsHubProps> = ({ onOpenProject }) => {
                 </div>
               </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
+      </div>
       )}
 
       {/* Modal Nuevo Proyecto */}

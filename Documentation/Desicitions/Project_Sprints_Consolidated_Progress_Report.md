@@ -3,7 +3,7 @@
 **Proyecto:** DevSculptor — Technical Governance & AI-Assisted Documentation  
 **Asignatura / Portafolio:** Taller de Integración de Software (PTY4479)  
 **Autor:** Nathaniel Muller San Martin  
-**Estado de Avance:** Sprint 1 (100%), Sprint 2 (100%), Sprint 3 (100% — Épicas A y B Culminadas)  
+**Estado de Avance:** Sprint 1 (100%), Sprint 2 (100%), Sprint 3 (100% — Épicas A, B y C Culminadas)  
 **Fecha de Emisión:** Septiembre 2026  
 **Rama Activa:** `develop`  
 **Repositorios / Directorios:** [`devsculptor-backend/`](file:///c:/Users/natha/Documents/Repos/DevSculptor/devsculptor-backend) | [`devsculptor-frontend/`](file:///c:/Users/natha/Documents/Repos/DevSculptor/devsculptor-frontend)
@@ -15,9 +15,10 @@
 1. [Resumen Ejecutivo y Estado General del Proyecto](#1-resumen-ejecutivo-y-estado-general-del-proyecto)
 2. [Sprint 1: Backend Core, Persistencia Relacional y Procedimientos Almacenados (100%)](#2-sprint-1-backend-core-persistencia-relacional-y-procedimientos-almacenados-100)
 3. [Sprint 2: Frontend Base, Sistema de Diseño visionOS y Flujo Tripartito (100%)](#3-sprint-2-frontend-base-sistema-de-diseño-visionos-y-flujo-tripartito-100)
-4. [Sprint 3: Canvas Avanzado, Multi-Motor DDL y Motor de IA (100% — Épicas A y B Completadas)](#4-sprint-3-canvas-avanzado-multi-motor-ddl-y-motor-de-ia-100--épicas-a-y-b-completadas)
+4. [Sprint 3: Canvas Avanzado, Multi-Motor DDL, Motor de IA y Gobernanza ADR (100% — Épicas A, B y C)](#4-sprint-3-canvas-avanzado-multi-motor-ddl-y-motor-de-ia-100--épicas-a-y-b-completadas)
    - 4.1. [Épica A: Canvas Avanzado, Modelado Relacional y DDL Multi-Dialecto (100%)](#41-épica-a-canvas-avanzado-modelado-relacional-y-ddl-multi-dialecto-100)
    - 4.2. [Épica B: Motor de Consultoría IA y Copiloto de Arquitectura en Tiempo Real (100%)](#42-épica-b-motor-de-consultoría-ia-y-copiloto-de-arquitectura-en-tiempo-real-100)
+   - 4.3. [Épica C: Gobernanza Arquitectónica Progresiva, Selección Canónica en ADRs y Protocolo Human-in-the-Loop (100%)](#43-épica-c-gobernanza-arquitectónica-progresiva-selección-canónica-en-adrs-y-protocolo-human-in-the-loop-100)
 5. [Sprint 4 & Sprint 5: Roadmap Futuro y Cierre](#5-sprint-4--sprint-5-roadmap-futuro-y-cierre)
 6. [Matriz de Cumplimiento de la Definición de Terminado (DoD)](#6-matriz-de-cumplimiento-de-la-definición-de-terminado-dod)
 
@@ -139,6 +140,28 @@ Se completó integralmente la segunda mitad del Sprint 3, dotando al sistema de 
   - `injectAllActions`: Inyección por lotes con retroalimentación visual inmediata.
 - **Sincronización de Métricas en Vivo**: Cada inyección recalcula automáticamente las métricas del proyecto en `useProjectStore.fetchMetrics(projectId)`, actualizando el Índice de Madurez en el inspector lateral.
 - **Acción Rápida en Copiloto (`CopilotInspector.tsx`)**: Botón *"Auditoría IA (3FN & ADRs)"* que traslada al usuario al chat y ejecuta la auditoría del esquema relacional en un solo paso.
+
+---
+
+### 4.3. Épica C: Gobernanza Arquitectónica Progresiva, Selección Canónica en ADRs y Protocolo Human-in-the-Loop (100%)
+
+Completada para asegurar que el sistema preserve el control y juicio técnico humano frente a las decisiones automatizadas de IA:
+
+#### 1. Desacoplamiento de la Elección de Arquitectura Inicial
+- **Modal de Creación (`CreateProjectModal.tsx`)**: Eliminación del selector de arquitectura forzado al crear el proyecto. Reemplazado por metadatos institucionales: *Organización / Empresa* y *Arquitecto Líder / Responsable*. El estilo se inicializa en `'Por Definir / En Evaluación'`.
+- **Persistencia en Base de Datos**: Migración DDL `004_project_governance_metadata.sql` en Supabase PostgreSQL agregando las columnas `organization` y `lead_architect` a la tabla `projects`.
+- **Portafolio de Proyectos (`ProjectsHub.tsx`)**: Búsqueda multi-criterio y pills de estado en las tarjetas (`En Evaluación (ADR Pendiente)`).
+
+#### 2. Selección de Arquitectura Canónica Guiada en ADRs (`ArchitectureStyleModal.tsx`)
+- Panel y banner interactivo de gobernanza en `DecisionsView.tsx`.
+- Modal de evaluación técnica de los 4 estilos canónicos (*Monolito Modular*, *Microservicios*, *Clean Architecture / Hexagonal*, *Event-Driven*), comparando ventajas, compromisos y generando la propuesta `ADR-001` en estado `PROPOSED`.
+
+#### 3. Protocolo Estricto de Verificación Human-in-the-Loop (`AdrStatusVerifyModal.tsx`)
+- Bloqueo de cambios de estado triviales o accidentales.
+- Prohibición explícita de modificaciones de estado ejecutadas de forma autónoma por la IA (`ai.prompts.ts`).
+- Certificación obligatoria mediante checkbox del arquitecto humano antes de confirmar transiciones.
+- Sincronización automática opcional del estilo arquitectónico del proyecto al ratificar el acta ADR correspondiente.
+- Flexibilización en `decisions.service.ts` para permitir la reapertura (`PROPOSED`) o revocación (`REJECTED`) justificada con trazabilidad Pino Logger.
 
 ---
 

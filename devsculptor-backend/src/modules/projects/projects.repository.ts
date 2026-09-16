@@ -7,13 +7,22 @@ export interface Project {
   name: string;
   description: string | null;
   architecture_style: string | null;
+  organization: string | null;
+  lead_architect: string | null;
   created_at: Date;
   updated_at: Date;
 }
 
 export class ProjectsRepository extends BaseRepository<Project> {
   constructor() {
-    super('projects', ['user_id', 'name', 'description', 'architecture_style']);
+    super('projects', [
+      'user_id',
+      'name',
+      'description',
+      'architecture_style',
+      'organization',
+      'lead_architect',
+    ]);
   }
 
   async findAllByUserId(

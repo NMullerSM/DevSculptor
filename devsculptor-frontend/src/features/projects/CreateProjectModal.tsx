@@ -3,7 +3,6 @@ import { VisionModal } from '@/components/ui/VisionModal';
 import { VisionInput } from '@/components/ui/VisionInput';
 import { VisionButton } from '@/components/ui/VisionButton';
 import { useProjectStore } from '@/stores/useProjectStore';
-import { ArchitectureStyle } from '@/types/project.types';
 
 interface CreateProjectModalProps {
   isOpen: boolean;
@@ -11,23 +10,15 @@ interface CreateProjectModalProps {
   onCreated?: () => void;
 }
 
-const ARCHITECTURE_STYLES: ArchitectureStyle[] = [
-  'Monolito Modular Layered MVC',
-  'Microservicios Desacoplados',
-  'Event-Driven Architecture',
-  'Clean Architecture / Hexagonal',
-];
-
 export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
   isOpen,
   onClose,
   onCreated,
 }) => {
   const [name, setName] = useState('');
+  const [organization, setOrganization] = useState('');
+  const [leadArchitect, setLeadArchitect] = useState('');
   const [description, setDescription] = useState('');
-  const [architectureStyle, setArchitectureStyle] = useState<ArchitectureStyle>(
-    'Monolito Modular Layered MVC'
-  );
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -45,10 +36,14 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     try {
       await createProject({
         name: name.trim(),
+        organization: organization.trim() || undefined,
+        lead_architect: leadArchitect.trim() || undefined,
         description: description.trim() || undefined,
-        architecture_style: architectureStyle,
+        architecture_style: 'Por Definir / En Evaluación',
       });
       setName('');
+      setOrganization('');
+      setLeadArchitect('');
       setDescription('');
       setIsSubmitting(false);
       onClose();
@@ -65,7 +60,7 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
       onClose={onClose}
       title="Inicializar Nuevo Proyecto de Software"
       icon="create_new_folder"
-      maxWidth="sm"
+      maxWidth="md"
     >
       <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
         {error && (
@@ -74,50 +69,61 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
           </div>
         )}
 
+        {/* Banner informativo de Gobernanza Desacoplada */}
+        <div className="p-2.5 rounded-[6px] bg-indigo-500/10 border border-indigo-500/20 text-secondary flex items-start gap-2 text-[11px]">
+          <span className="material-symbols-outlined text-indigo-400 text-sm mt-0.5 shrink-0">info</span>
+          <div>
+            <span className="font-semibold text-primary block text-[11.5px]">
+              Gobernanza Progresiva Pre-Código
+            </span>
+            <span>
+              La arquitectura del sistema ya no se impone al inicio. Podrás evaluarla objetivamente con la IA y ratificarla formalmente mediante <strong>Actas de Decisión (ADRs)</strong> durante el flujo de trabajo.
+            </span>
+          </div>
+        </div>
+
         <VisionInput
           label="Nombre del Proyecto *"
           required
-          placeholder="Ej. DevSculptor Core MVP"
+          placeholder="Ej. Sistema de Pagos Core"
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
 
-        <div>
-          <label className="block text-[10px] font-mono uppercase tracking-wider text-muted font-medium mb-1">
-            Estilo Arquitectónico Canónico
-          </label>
-          <select
-            value={architectureStyle}
-            onChange={(e) => setArchitectureStyle(e.target.value as ArchitectureStyle)}
-            className="vision-input text-xs"
-          >
-            {ARCHITECTURE_STYLES.map((style) => (
-              <option key={style} value={style} className="bg-slate-900 text-white">
-                {style}
-              </option>
-            ))}
-          </select>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <VisionInput
+            label="Organización / Empresa (Opcional)"
+            placeholder="Ej. Acme Corp / DevSculptor Labs"
+            value={organization}
+            onChange={(e) => setOrganization(e.target.value)}
+          />
+          <VisionInput
+            label="Arquitecto Líder / Responsable (Opcional)"
+            placeholder="Ej. Nathaniel Muller"
+            value={leadArchitect}
+            onChange={(e) => setLeadArchitect(e.target.value)}
+          />
         </div>
 
         <div>
           <label className="block text-[10px] font-mono uppercase tracking-wider text-muted font-medium mb-1">
-            Descripción y Alcance (Opcional)
+            Descripción y Alcance del Software (Opcional)
           </label>
           <textarea
             rows={3}
-            placeholder="Describe brevemente el propósito del sistema..."
+            placeholder="Describe brevemente el propósito del sistema, usuarios previstos o restricciones de negocio..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             className="vision-input text-xs"
           />
         </div>
 
-        <div className="flex justify-end gap-2 pt-2 border-t border-white/[0.08]">
+        <div className="flex justify-end gap-2 pt-2 border-t border-glass-subtle">
           <VisionButton type="button" onClick={onClose} disabled={isSubmitting}>
             Cancelar
           </VisionButton>
           <VisionButton type="submit" variant="primary" disabled={isSubmitting}>
-            {isSubmitting ? 'Creando...' : 'Crear y Abrir'}
+            {isSubmitting ? 'Creando...' : 'Crear y Abrir Estudio'}
           </VisionButton>
         </div>
       </form>

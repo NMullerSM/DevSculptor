@@ -30,5 +30,5 @@ export interface UpdateDecisionPayload {
 }
 
 export interface ChangeDecisionStatusPayload {
-  status: 'ACCEPTED' | 'REJECTED';
+  status: DecisionStatus;
 }

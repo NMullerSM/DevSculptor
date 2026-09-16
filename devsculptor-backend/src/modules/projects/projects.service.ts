@@ -19,7 +19,9 @@ export class ProjectsService {
       user_id: userId,
       name: dto.name.trim(),
       description: dto.description?.trim() || null,
-      architecture_style: dto.architecture_style?.trim() || null,
+      architecture_style: dto.architecture_style?.trim() || 'Por Definir / En Evaluación',
+      organization: dto.organization?.trim() || null,
+      lead_architect: dto.lead_architect?.trim() || null,
     });
   }
 
@@ -52,6 +54,9 @@ export class ProjectsService {
       description: dto.description !== undefined ? dto.description.trim() || null : undefined,
       architecture_style:
         dto.architecture_style !== undefined ? dto.architecture_style.trim() || null : undefined,
+      organization: dto.organization !== undefined ? dto.organization.trim() || null : undefined,
+      lead_architect:
+        dto.lead_architect !== undefined ? dto.lead_architect.trim() || null : undefined,
     });
 
     if (!updated) {

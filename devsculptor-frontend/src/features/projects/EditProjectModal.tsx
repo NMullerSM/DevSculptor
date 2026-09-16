@@ -13,6 +13,7 @@ interface EditProjectModalProps {
 }
 
 const ARCHITECTURE_STYLES: ArchitectureStyle[] = [
+  'Por Definir / En Evaluación',
   'Monolito Modular Layered MVC',
   'Microservicios Desacoplados',
   'Event-Driven Architecture',
@@ -26,9 +27,11 @@ export const EditProjectModal: React.FC<EditProjectModalProps> = ({
   onUpdated,
 }) => {
   const [name, setName] = useState('');
+  const [organization, setOrganization] = useState('');
+  const [leadArchitect, setLeadArchitect] = useState('');
   const [description, setDescription] = useState('');
   const [architectureStyle, setArchitectureStyle] = useState<ArchitectureStyle>(
-    'Monolito Modular Layered MVC'
+    'Por Definir / En Evaluación'
   );
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -38,9 +41,11 @@ export const EditProjectModal: React.FC<EditProjectModalProps> = ({
   useEffect(() => {
     if (project) {
       setName(project.name);
+      setOrganization(project.organization || '');
+      setLeadArchitect(project.lead_architect || '');
       setDescription(project.description || '');
       setArchitectureStyle(
-        (project.architecture_style as ArchitectureStyle) || 'Monolito Modular Layered MVC'
+        (project.architecture_style as ArchitectureStyle) || 'Por Definir / En Evaluación'
       );
       setError(null);
     }
@@ -60,6 +65,8 @@ export const EditProjectModal: React.FC<EditProjectModalProps> = ({
     try {
       await updateProject(project.id, {
         name: name.trim(),
+        organization: organization.trim() || undefined,
+        lead_architect: leadArchitect.trim() || undefined,
         description: description.trim() || undefined,
         architecture_style: architectureStyle,
       });
@@ -78,7 +85,7 @@ export const EditProjectModal: React.FC<EditProjectModalProps> = ({
       onClose={onClose}
       title="Editar Metadatos de Proyecto"
       icon="tune"
-      maxWidth="sm"
+      maxWidth="md"
     >
       <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
         {error && (
@@ -95,6 +102,21 @@ export const EditProjectModal: React.FC<EditProjectModalProps> = ({
           onChange={(e) => setName(e.target.value)}
         />
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <VisionInput
+            label="Organización / Empresa (Opcional)"
+            placeholder="Ej. Acme Corp / DevSculptor Labs"
+            value={organization}
+            onChange={(e) => setOrganization(e.target.value)}
+          />
+          <VisionInput
+            label="Arquitecto Líder / Responsable (Opcional)"
+            placeholder="Ej. Nathaniel Muller"
+            value={leadArchitect}
+            onChange={(e) => setLeadArchitect(e.target.value)}
+          />
+        </div>
+
         <div>
           <label className="block text-[10px] font-mono uppercase tracking-wider text-muted font-medium mb-1">
             Estilo Arquitectónico Canónico
@@ -110,6 +132,9 @@ export const EditProjectModal: React.FC<EditProjectModalProps> = ({
               </option>
             ))}
           </select>
+          <p className="text-[10px] text-muted font-mono mt-1">
+            Nota: Este valor también puede sincronizarse automáticamente ratificando un acta ADR de arquitectura.
+          </p>
         </div>
 
         <div>
@@ -125,7 +150,7 @@ export const EditProjectModal: React.FC<EditProjectModalProps> = ({
           />
         </div>
 
-        <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/[0.06]">
+        <div className="flex items-center justify-end gap-2 pt-2 border-t border-glass-subtle">
           <VisionButton type="button" onClick={onClose} disabled={isSubmitting}>
             Cancelar
           </VisionButton>

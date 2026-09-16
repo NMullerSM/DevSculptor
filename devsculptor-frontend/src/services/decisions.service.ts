@@ -51,7 +51,7 @@ export const decisionsService = {
   async changeStatus(
     projectId: string,
     decisionId: string,
-    status: 'ACCEPTED' | 'REJECTED'
+    status: DecisionStatus
   ): Promise<Decision> {
     const res = await apiRequest<Decision>(
       'patch',

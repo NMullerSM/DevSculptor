@@ -4,6 +4,8 @@ export const createProjectSchema = z.object({
   name: z.string().min(1, 'El nombre del proyecto es requerido').max(255),
   description: z.string().optional(),
   architecture_style: z.string().max(100).optional(),
+  organization: z.string().max(255).optional(),
+  lead_architect: z.string().max(255).optional(),
 });
 
 export const updateProjectSchema = z
@@ -11,6 +13,8 @@ export const updateProjectSchema = z
     name: z.string().min(1, 'El nombre no puede estar vacío').max(255).optional(),
     description: z.string().optional(),
     architecture_style: z.string().max(100).optional(),
+    organization: z.string().max(255).optional(),
+    lead_architect: z.string().max(255).optional(),
   })
   .refine(
     (data) => Object.keys(data).length > 0,

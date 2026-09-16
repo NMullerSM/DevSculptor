@@ -9,6 +9,7 @@ import { ProjectsService } from '../projects/projects.service';
 import { PaginationParams, PaginatedResult } from '../../shared/types/pagination';
 import { NotFoundError } from '../../shared/exceptions/NotFoundError';
 import { ValidationError } from '../../shared/exceptions/ValidationError';
+import { logger } from '../../config/logger';
 
 export class DecisionsService {
   constructor(
@@ -84,14 +85,14 @@ export class DecisionsService {
   ): Promise<ArchitectureDecision> {
     const existing = await this.findById(userId, projectId, decisionId);
 
-    // Validación de máquina de estados para ADRs
-    if (existing.status !== dto.status) {
-      if (existing.status !== 'PROPOSED') {
-        throw new ValidationError(
-          `Transición de estado inválida: no es posible cambiar de '${existing.status}' a '${dto.status}'. Las decisiones en estado final no pueden reabrirse.`
-        );
-      }
+    if (existing.status === dto.status) {
+      return existing;
     }
+
+    logger.info(
+      { userId, projectId, decisionId, from: existing.status, to: dto.status },
+      'Transición de estado de gobernanza ADR ratificada por arquitecto humano'
+    );
 
     const updated = await this.decisionsRepository.update(decisionId, {
       status: dto.status,
