@@ -23,13 +23,19 @@ export function createApp(): Express {
   // 1. Headers de seguridad con Helmet
   app.use(helmet());
 
-  // 2. Control de CORS con whitelist desde variables de entorno
+  // 2. Control de CORS con whitelist desde variables de entorno y soporte localhost en desarrollo
   const allowedOrigins = env.CORS_ORIGINS.split(',').map((o) => o.trim());
   app.use(
     cors({
       origin: (origin, callback) => {
         // Permitir solicitudes sin origin (como Postman o curl) o si está en la whitelist
-        if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+        if (
+          !origin ||
+          allowedOrigins.includes(origin) ||
+          allowedOrigins.includes('*') ||
+          (env.NODE_ENV === 'development' &&
+            /^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|100\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+)(:\d+)?$/.test(origin))
+        ) {
           callback(null, true);
         } else {
           callback(new Error('Bloqueado por política CORS'));

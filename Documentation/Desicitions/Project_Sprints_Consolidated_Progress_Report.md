@@ -223,21 +223,70 @@ Solución de fondo al problema de persistencia en eliminación de proyectos y re
 
 ---
 
-## 5. Sprint 4 & Sprint 5: Roadmap Futuro y Cierre
+## 5. Sprint 4: Arquitectura OKF Vault, Compilación Dinámica y Freshness Engine (Etapa A — 100%)
 
-### Sprint 4: Compilación OKF Dinámica, Pruebas E2E y Rendimiento
-- **Compilador OKF en Vivo**: Generación determinista del árbol de carpetas con los requisitos reales en Markdown, los ADRs en formato estándar Nygard, y el archivo DDL unificado del modelo.
-- **Suite de Pruebas E2E**: Pruebas automatizadas de flujo completo (Crear proyecto ➔ Diseñar en Canvas ➔ Auditar 3FN ➔ Consultar Copiloto IA ➔ Inyectar Acción ➔ Exportar ZIP).
-- **Pruebas de Concurrencia**: Validación de carga sobre el pool de PostgreSQL y endpoints críticos.
+El Sprint 4 materializa la síntesis final del sistema pre-código mediante la consolidación del estándar **Open Knowledge Framework (OKF)**, permitiendo exportar el conocimiento arquitectónico como código (Doc-as-Code) de forma estructurada, versionada y verificable criptográficamente:
 
-### Sprint 5: Hardening de Seguridad, Despliegue y Entrega Portafolio PTY4479
-- **Auditoría de Seguridad**: Rate limiting estricto, sanitización XSS, revisión de cabeceras CSP.
-- **CI/CD Pipeline**: Empaquetado en Docker de backend y frontend, despliegue en plataforma Cloud.
-- **Consolidación Documental PTY4479**: Manual de usuario, informe de arquitectura final y video demostrativo de gobernanza técnica.
+### 5.1. Épica A: Bóveda de Almacenamiento Supabase y Persistencia RLS (`005_okf_vault_and_storage.sql`)
+1. **Bucket de Almacenamiento Seguro (`okf-vault`)**:
+   - Creación y aprovisionamiento del bucket privado en Supabase Storage.
+   - Políticas RLS a nivel de objeto que aseguran el aislamiento estricto por usuario autenticado (`auth.uid()`).
+2. **Modelo de Metadatos Documentales (`okf_documents`)**:
+   - Tabla relacional vinculada a `projects` que indexa la jerarquía de rutas relativas, categorías (`architecture`, `requirements`, `database`, `governance`), formatos (`md`, `sql`, `json`) y versiones.
+   - Inclusión de la columna `content_sha256` para auditoría y verificación de integridad.
+   - Políticas RLS transversales que garantizan acceso exclusivo al propietario del proyecto.
+
+### 5.2. Épica B: Compilador Determinista de Documentos OKF (`okfDocumentProcessor.ts`)
+1. **Generación Determinista del Árbol de Conocimiento**:
+   - `README.md`: Resumen ejecutivo del proyecto, stack tecnológico y guía de inicio.
+   - `architecture/system-overview.md`: Visión del sistema, estilo arquitectónico seleccionado y diagrama C4 en Mermaid.
+   - `architecture/adrs/ADR-XXX-[slug].md`: Actas de decisión arquitectónica bajo formato estándar Nygard con metadatos YAML Frontmatter.
+   - `requirements/srs-specification.md`: Especificación de Requerimientos de Software bajo estándar IEEE 830 (RF y RNF).
+   - `requirements/matrix.md`: Matriz de trazabilidad y dependencias cruzadas.
+   - `database/schema-[dialect].sql`: DDL multi-motor (PostgreSQL, MySQL, SQLite, Oracle) compilado y normalizado en 3FN.
+   - `database/data-dictionary.md`: Diccionario de datos formal con descripción técnica de cada atributo.
+   - `database/erd-entities.json`: Representación JSON estructurada para herramientas de modelado externas.
+   - `governance/compliance-audit.md`: Auditoría de gobernanza técnica ISO/IEC 25010 y certificaciones Human-in-the-Loop.
+2. **Inyección de Frontmatter YAML y Hash SHA-256**:
+   - Cada artefacto Markdown incluye encabezados YAML con metadatos de versión, etiquetas semánticas y fecha de generación.
+   - Generación de firma criptográfica SHA-256 por cada documento para detectar cualquier discrepancia o modificación no autorizada.
+
+### 5.3. Épica C: Motor de Frescura en Tiempo Real (`okfVaultService.ts`)
+1. **Agregación Reactiva en Memoria**:
+   - Monitoreo continuo de los cambios en los diagramas de Canvas, el catálogo de requerimientos y las actas ADR.
+2. **Evaluación de Estados de Sincronización**:
+   - `FRESH`: Los documentos compilados reflejan con exactitud matemática el estado del modelo visual.
+   - `DRIFT_DETECTED`: Se detectaron cambios en entidades o requerimientos posteriores al último snapshot.
+   - `STALE`: La bóveda requiere una primera compilación o re-indexación.
+3. **Empaquetado Dinámico ZIP**:
+   - Compilación y empaquetado del archivo comprimido directamente en el cliente para descarga instantánea.
+
+### 5.4. Épica D: Explorador Jerárquico en Árbol y Exportaciones Granulares
+1. **Modal de Bóveda Avanzado (`OkfExportModal.tsx`)**:
+   - Explorador jerárquico de carpetas y archivos con insignias de categoría y tamaño.
+   - Panel de previsualización en vivo con fuente monoespaciada y resaltado de sintaxis.
+   - Selector reactivo de dialectos SQL con actualización inmediata del DDL mostrado.
+2. **Botones de Descarga Directa Granular**:
+   - `CanvasView.tsx`: Botón directo para descargar el script DDL SQL del dialecto seleccionado.
+   - `RequirementsView.tsx`: Botón directo para exportar el documento de Requerimientos SRS (.md).
+   - `DecisionsView.tsx`: Botón directo para exportar el índice consolidado de ADRs (.md).
+   - `VisionModal.tsx`: Escalado de modales con tamaños `2xl`, `3xl` y `4xl` para lectura técnica cómoda.
+
+### 5.5. Épica E: Conectividad y Resiliencia de Red en Desarrollo (`app.ts`)
+1. **Soporte de Red Local y Redes Seguras**:
+   - Actualización de la política CORS en `devsculptor-backend/src/app.ts` para aceptar orígenes de red privada (`192.168.0.0/16`, `10.0.0.0/8`, `172.16.0.0/12`) y redes privadas Tailscale (`100.64.0.0/10`) durante el modo de desarrollo, facilitando pruebas en múltiples dispositivos sin restricciones.
 
 ---
 
-## 6. Matriz de Cumplimiento de la Definición de Terminado (DoD)
+## 6. Sprint 5: Hardening de Seguridad, Despliegue y Entrega Portafolio PTY4479 (Roadmap)
+
+- **Auditoría de Seguridad Final**: Rate limiting granular, políticas CSP estrictas y sanitización contra inyecciones.
+- **Contenerización y CI/CD**: Empaquetado Docker multicapa para backend y frontend con despliegue Cloud automatizado.
+- **Consolidación Documental PTY4479**: Manual de usuario final, informe de arquitectura de software para titulación y video demostrativo de gobernanza técnica pre-código.
+
+---
+
+## 7. Matriz de Cumplimiento de la Definición de Terminado (DoD)
 
 | Criterio de Aceptación (DoD) | Estado | Evidencia Técnica |
 | :--- | :---: | :--- |
@@ -250,4 +299,8 @@ Solución de fondo al problema de persistencia en eliminación de proyectos y re
 | **Validación Zod como SSOT** | ✅ CUMPLIDO | DTOs de entrada validados en middleware antes de los controladores. |
 | **Rendimiento Visual a 60 FPS** | ✅ CUMPLIDO | Arrastre y Bezier calculados mediante `useRef` mutable y GPU transforms. |
 | **Contraste WCAG 2.1 AA Dual Theme** | ✅ CUMPLIDO | Textos legibles y oscuros (`#090d16`) en modo claro y brillantes en modo oscuro. |
-| **Trazabilidad Git en `develop`** | ✅ CUMPLIDO | Commits atómicos registrados exclusivamente en la rama `develop` sin tocar `main`. |
+| **Bóveda de Documentación OKF** | ✅ CUMPLIDO | Compilación de 9 artefactos normalizados con YAML frontmatter y SHA-256 state hashing. |
+| **Detección de Desviación (Drift)** | ✅ CUMPLIDO | `okfVaultService` clasifica el estado en `FRESH`, `DRIFT_DETECTED` y `STALE`. |
+| **Exportaciones Granulares Multi-Dialecto** | ✅ CUMPLIDO | Descarga directa de DDL (Postgres, MySQL, SQLite, Oracle), SRS e índice ADR. |
+| **Trazabilidad Git en `develop` y `main`** | ✅ CUMPLIDO | Commits atómicos bilingües con convención Conventional Commits y sincronización controlada. |
+
