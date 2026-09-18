@@ -88,6 +88,22 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
     }
   };
 
+  const handleDownloadCode = () => {
+    const code = getCodeContent();
+    if (!code) return;
+    const ext = activeSubTab === 'sql' ? 'sql' : activeSubTab === 'ts' ? 'ts' : activeSubTab === 'json' ? 'json' : 'py';
+    const filename = activeSubTab === 'sql' ? `schema_ddl_${sqlDialect}.sql` : `schema_export.${ext}`;
+    const blob = new Blob([code], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const subtabs: { id: CanvasSubTab; label: string; icon: string }[] = [
     { id: 'erd', label: 'Lienzo ERD', icon: 'schema' },
     { id: 'sql', label: 'DDL Multi-Motor', icon: 'database' },
@@ -199,15 +215,26 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
           )}
 
           {activeSubTab !== 'erd' && activeSubTab !== 'audit' && (
-            <VisionButton
-              size="sm"
-              icon={copyFeedback ? 'done' : 'content_copy'}
-              onClick={handleCopyCode}
-              className={copyFeedback ? 'text-emerald-400' : ''}
-            >
-              <span className="hidden xs:inline">{copyFeedback ? 'Copiado' : 'Copiar Código'}</span>
-              <span className="xs:hidden">{copyFeedback ? 'Listo' : 'Copiar'}</span>
-            </VisionButton>
+            <div className="flex items-center gap-1.5">
+              <VisionButton
+                size="sm"
+                icon={copyFeedback ? 'done' : 'content_copy'}
+                onClick={handleCopyCode}
+                className={copyFeedback ? 'text-emerald-400' : ''}
+              >
+                <span className="hidden xs:inline">{copyFeedback ? 'Copiado' : 'Copiar Código'}</span>
+                <span className="xs:hidden">{copyFeedback ? 'Listo' : 'Copiar'}</span>
+              </VisionButton>
+              <VisionButton
+                size="sm"
+                variant="secondary"
+                icon="download"
+                onClick={handleDownloadCode}
+                title="Descargar archivo directamente a tu equipo"
+              >
+                <span className="hidden xs:inline">Descargar</span>
+              </VisionButton>
+            </div>
           )}
         </div>
       </div>

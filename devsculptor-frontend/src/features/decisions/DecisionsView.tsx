@@ -9,6 +9,7 @@ import { AdrStatusVerifyModal } from './AdrStatusVerifyModal';
 import { ArchitectureStyleModal } from './ArchitectureStyleModal';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { useProjectStore } from '@/stores/useProjectStore';
+import { okfVaultService } from '@/features/export/okfVaultService';
 
 interface DecisionsViewProps {
   projectId: string;
@@ -32,7 +33,24 @@ export const DecisionsView: React.FC<DecisionsViewProps> = ({
   const [targetStatus, setTargetStatus] = useState<DecisionStatus | null>(null);
 
   const [actionError, setActionError] = useState<string | null>(null);
+  const [isExportingAdrs, setIsExportingAdrs] = useState(false);
   const { activeProject, updateProject, fetchMetrics } = useProjectStore();
+
+  const handleExportAdrs = async () => {
+    setIsExportingAdrs(true);
+    setActionError(null);
+    try {
+      const docs = await okfVaultService.compileVault(projectId);
+      const indexDoc = docs.find((d) => d.path.includes('ADR_INDEX.md'));
+      if (indexDoc) {
+        okfVaultService.downloadSingleDocument(indexDoc);
+      }
+    } catch (err: unknown) {
+      setActionError(err instanceof Error ? err.message : 'Error al exportar catálogo de ADRs');
+    } finally {
+      setIsExportingAdrs(false);
+    }
+  };
 
   const isArchitecturePending =
     !activeProject?.architecture_style ||
@@ -115,6 +133,17 @@ export const DecisionsView: React.FC<DecisionsViewProps> = ({
           </p>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <VisionButton
+            variant="secondary"
+            icon="download"
+            size="sm"
+            onClick={handleExportAdrs}
+            disabled={isExportingAdrs || decisions.length === 0}
+            title="Descargar catálogo de actas de arquitectura en Markdown"
+          >
+            <span className="hidden xs:inline">{isExportingAdrs ? 'Exportando...' : 'Exportar ADRs (.md)'}</span>
+            <span className="xs:hidden">ADRs</span>
+          </VisionButton>
           <VisionButton
             variant="default"
             icon="architecture"

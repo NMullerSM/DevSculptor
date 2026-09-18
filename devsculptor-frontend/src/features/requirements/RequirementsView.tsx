@@ -6,6 +6,7 @@ import { VisionPill } from '@/components/ui/VisionPill';
 import { CreateRequirementModal } from './CreateRequirementModal';
 import { EditRequirementModal } from './EditRequirementModal';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { okfVaultService } from '@/features/export/okfVaultService';
 
 interface RequirementsViewProps {
   projectId: string;
@@ -24,6 +25,23 @@ export const RequirementsView: React.FC<RequirementsViewProps> = ({
   const [editingReq, setEditingReq] = useState<Requirement | null>(null);
   const [deletingReq, setDeletingReq] = useState<Requirement | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [isExportingSrs, setIsExportingSrs] = useState(false);
+
+  const handleExportSrs = async () => {
+    setIsExportingSrs(true);
+    setActionError(null);
+    try {
+      const docs = await okfVaultService.compileVault(projectId);
+      const srs = docs.find((d) => d.header.document_type === 'REQUIREMENT_SRS');
+      if (srs) {
+        okfVaultService.downloadSingleDocument(srs);
+      }
+    } catch (err: unknown) {
+      setActionError(err instanceof Error ? err.message : 'Error al exportar SRS');
+    } finally {
+      setIsExportingSrs(false);
+    }
+  };
 
   const loadRequirements = async () => {
     setIsLoading(true);
@@ -75,16 +93,28 @@ export const RequirementsView: React.FC<RequirementsViewProps> = ({
             Parametrizados bajo formato formal y validados con Zod.
           </p>
         </div>
-        <VisionButton
-          variant="primary"
-          icon="add"
-          size="sm"
-          onClick={() => setIsCreateOpen(true)}
-          className="shrink-0"
-        >
-          <span className="hidden xs:inline">Nuevo Requisito</span>
-          <span className="xs:hidden">Nuevo</span>
-        </VisionButton>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <VisionButton
+            variant="secondary"
+            icon="download"
+            size="sm"
+            onClick={handleExportSrs}
+            disabled={isExportingSrs || requirements.length === 0}
+            title="Descargar especificación de requisitos en Markdown (IEEE-830)"
+          >
+            <span className="hidden xs:inline">{isExportingSrs ? 'Exportando...' : 'Exportar SRS (.md)'}</span>
+            <span className="xs:hidden">SRS</span>
+          </VisionButton>
+          <VisionButton
+            variant="primary"
+            icon="add"
+            size="sm"
+            onClick={() => setIsCreateOpen(true)}
+          >
+            <span className="hidden xs:inline">Nuevo Requisito</span>
+            <span className="xs:hidden">Nuevo</span>
+          </VisionButton>
+        </div>
       </div>
 
       {/* Barra de Filtros y Búsqueda */}

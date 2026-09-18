@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import JSZip from 'jszip';
+import React, { useState, useEffect, useMemo } from 'react';
 import confetti from 'canvas-confetti';
 import { VisionModal } from '@/components/ui/VisionModal';
 import { VisionButton } from '@/components/ui/VisionButton';
+import { VisionPill } from '@/components/ui/VisionPill';
 import { useProjectStore } from '@/stores/useProjectStore';
-import { useCanvasStore } from '@/stores/useCanvasStore';
-import { generatePostgreSqlDdl } from '@/features/canvas/scriptGenerators';
+import { SqlDialect } from '@/features/canvas/scriptGenerators';
+import { okfVaultService, VaultSummary } from './okfVaultService';
+import { ProcessedOkfDocument } from './okfDocumentProcessor';
 
 interface OkfExportModalProps {
   isOpen: boolean;
@@ -14,106 +15,126 @@ interface OkfExportModalProps {
 
 export const OkfExportModal: React.FC<OkfExportModalProps> = ({ isOpen, onClose }) => {
   const { activeProject } = useProjectStore();
-  const { entities } = useCanvasStore();
 
+  const [dialect, setDialect] = useState<SqlDialect>('postgres');
   const [includeDocs, setIncludeDocs] = useState(true);
   const [includeDb, setIncludeDb] = useState(true);
   const [includeSkills, setIncludeSkills] = useState(true);
+  const [includeContext, setIncludeContext] = useState(true);
+
+  const [documents, setDocuments] = useState<ProcessedOkfDocument[]>([]);
+  const [selectedDoc, setSelectedDoc] = useState<ProcessedOkfDocument | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
-  const handleExport = async () => {
-    setIsExporting(true);
-    setProgress(20);
-
-    const zip = new JSZip();
-    const projName = activeProject?.name ? activeProject.name.replace(/\s+/g, '_') : 'Project';
-
-    // 1. /documentation/
-    if (includeDocs) {
-      const docFolder = zip.folder('documentation');
-      if (docFolder) {
-        docFolder.file(
-          'SRS_Requisitos_IEEE830.md',
-          `# ${activeProject?.name || 'Proyecto'} — Requisitos de Ingeniería (IEEE-830)\n\n` +
-          `**Estilo Arquitectónico:** ${activeProject?.architecture_style || 'Monolito Modular'}\n\n` +
-          `## 1. Requisitos Funcionales (RF)\n` +
-          `- RF-01: Autenticación con JWT Bearer y contraseñas cifradas con bcrypt.\n` +
-          `- RF-02: Aislamiento horizontal estricto por user_id.\n` +
-          `- RF-03: Auditoría atómica de cambios en base de datos mediante trigger.\n\n` +
-          `## 2. Requisitos No Funcionales (RNF)\n` +
-          `- RNF-01: Latencia de respuesta API inferior a 500ms.\n` +
-          `- RNF-02: Row Level Security (RLS) activo y search_path inmutable.\n`
-        );
-
-        docFolder.file(
-          'ADR_Catalogo_Decisiones.md',
-          `# ${activeProject?.name || 'Proyecto'} — Actas de Decisión de Arquitectura (ADRs)\n\n` +
-          `## ADR-01: Monolito Modular MVC vs Microservicios\n` +
-          `* **Estado:** ACCEPTED\n` +
-          `* **Contexto:** Mitigar la sobrecarga de red y mantener alta cohesión.\n` +
-          `* **Decisión:** Arquitectura monolítica en capas (Controllers -> Services -> Repositories).\n\n` +
-          `## ADR-02: Persistencia Nativa pg.Pool vs ORMs\n` +
-          `* **Estado:** ACCEPTED\n` +
-          `* **Contexto:** Necesidad de Triggers PL/pgSQL avanzados y Stored Procedures.\n` +
-          `* **Decisión:** Cliente nativo PostgreSQL con BaseRepository genérico.\n`
-        );
-      }
-    }
-
-    setProgress(50);
-
-    // 2. /database/
-    if (includeDb) {
-      const dbFolder = zip.folder('database');
-      if (dbFolder) {
-        const ddlContent = generatePostgreSqlDdl(entities);
-        dbFolder.file('schema_ddl.sql', ddlContent);
-        dbFolder.file(
-          'triggers_and_procedures.sql',
-          `-- Triggers de Auditoría y Stored Procedures\n` +
-          `-- fn_audit_canvas_entities y sp_calculate_project_metrics\n`
-        );
-      }
-    }
-
-    setProgress(75);
-
-    // 3. /skills/
-    if (includeSkills) {
-      const skillsFolder = zip.folder('skills');
-      if (skillsFolder) {
-        skillsFolder.file(
-          'devsculptor-architect.md',
-          `# Manual Metodológico DevSculptor Architect\n\n` +
-          `Directrices de ingeniería: Cero vibe-coding, TypeScript estricto, Envelope uniforme y trazabilidad X-Request-Id.\n`
-        );
-      }
-    }
-
-    setProgress(90);
-
-    // Generar archivo ZIP en memoria
+  // Cargar y compilar documentos de la bóveda
+  const loadVaultDocuments = async () => {
+    if (!activeProject) return;
+    setIsLoading(true);
+    setExportError(null);
     try {
-      const content = await zip.generateAsync({ type: 'blob' });
+      const docs = await okfVaultService.compileVault(activeProject.id, dialect);
+      setDocuments(docs);
+      if (docs.length > 0) {
+        setSelectedDoc((prev) => {
+          if (!prev) return docs[0];
+          const match = docs.find((d) => d.path === prev.path);
+          return match || docs[0];
+        });
+      }
+    } catch (err: unknown) {
+      setExportError(err instanceof Error ? err.message : 'Error al compilar la bóveda OKF');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen && activeProject) {
+      loadVaultDocuments();
+    }
+  }, [isOpen, activeProject?.id, dialect]);
+
+  // Resumen de la bóveda
+  const summary: VaultSummary = useMemo(() => {
+    return okfVaultService.calculateSummary(documents);
+  }, [documents]);
+
+  // Documentos filtrados por las categorías seleccionadas
+  const filteredDocuments = useMemo(() => {
+    return documents.filter((doc) => {
+      if (doc.category === 'documentation' && !includeDocs) return false;
+      if (doc.category === 'database' && !includeDb) return false;
+      if (doc.category === 'skills' && !includeSkills) return false;
+      if (doc.category === 'context' && !includeContext) return false;
+      return true;
+    });
+  }, [documents, includeDocs, includeDb, includeSkills, includeContext]);
+
+  // Agrupación por carpetas para la vista de árbol
+  const groupedTree = useMemo(() => {
+    const groups: Record<string, ProcessedOkfDocument[]> = {};
+    documents.forEach((doc) => {
+      const parts = doc.path.split('/');
+      const folder = parts.length > 1 ? `/${parts.slice(0, -1).join('/')}` : '/root';
+      if (!groups[folder]) groups[folder] = [];
+      groups[folder].push(doc);
+    });
+    return groups;
+  }, [documents]);
+
+  // Copiar contenido al portapapeles
+  const handleCopyContent = async () => {
+    if (!selectedDoc) return;
+    try {
+      await navigator.clipboard.writeText(selectedDoc.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Ignorar fallo de portapapeles
+    }
+  };
+
+  // Descargar archivo individual (RF11)
+  const handleDownloadSingle = () => {
+    if (!selectedDoc) return;
+    okfVaultService.downloadSingleDocument(selectedDoc);
+  };
+
+  // Sincronizar y ratificar snapshot de Freshness
+  const handleRatifyVault = () => {
+    if (!activeProject) return;
+    okfVaultService.saveVaultSnapshot(activeProject.id, documents);
+    loadVaultDocuments();
+  };
+
+  // Descarga del paquete ZIP
+  const handleExportZip = async () => {
+    if (!activeProject || filteredDocuments.length === 0) return;
+    setIsExporting(true);
+    setProgress(15);
+    setExportError(null);
+
+    const projSlug = activeProject.name.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+    const filename = `DevSculptor_${projSlug}_OKF_Bundle.zip`;
+
+    try {
+      const blob = await okfVaultService.generateZipBundle(
+        filteredDocuments,
+        activeProject.name,
+        (pct) => setProgress(pct)
+      );
+
       setProgress(100);
+      okfVaultService.downloadBlob(blob, filename);
 
-      // Disparar descarga en navegador
-      const url = URL.createObjectURL(content);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `DevSculptor_${projName}_OKF_Bundle.zip`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      // Micro-animación de éxito confetti
       try {
         confetti({
-          particleCount: 60,
-          spread: 70,
+          particleCount: 50,
+          spread: 60,
           origin: { y: 0.6 },
         });
       } catch {
@@ -126,81 +147,279 @@ export const OkfExportModal: React.FC<OkfExportModalProps> = ({ isOpen, onClose 
         onClose();
       }, 700);
     } catch (err: unknown) {
-      setExportError(err instanceof Error ? err.message : 'Error al compilar el archivo ZIP');
+      setExportError(err instanceof Error ? err.message : 'Error al comprimir el paquete ZIP');
       setIsExporting(false);
     }
   };
+
+  const projName = activeProject?.name || 'Proyecto';
 
   return (
     <VisionModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Compilar y Exportar Paquete OKF (Prompt Bundle)"
+      title="Bóveda Documental OKF y Exportador de Prompt Bundles"
       icon="folder_zip"
-      maxWidth="md"
+      maxWidth="3xl"
     >
-      <div className="space-y-3.5 text-xs">
-        {exportError && (
-          <div className="p-2.5 rounded-[6px] bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[11px]">
-            {exportError}
+      <div className="flex flex-col gap-3 text-xs">
+        {/* Banner Superior de Freshness y Métricas de Bóveda */}
+        <div className="vision-card p-3 flex flex-wrap items-center justify-between gap-2 border-indigo-500/20 bg-indigo-500/[0.04]">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-indigo-400 text-lg">verified</span>
+            <div>
+              <div className="font-semibold text-primary flex items-center gap-1.5">
+                <span>Bóveda OKF: {projName}</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-secondary font-mono">
+                  {summary.totalDocuments} archivos
+                </span>
+              </div>
+              <div className="text-[10.5px] text-muted flex items-center gap-2 font-mono">
+                <span>
+                  Freshness Score:{' '}
+                  <strong
+                    className={
+                      summary.freshnessScore >= 90
+                        ? 'text-emerald-400'
+                        : summary.freshnessScore >= 60
+                        ? 'text-amber-400'
+                        : 'text-rose-400'
+                    }
+                  >
+                    {summary.freshnessScore}% Al Día
+                  </strong>
+                </span>
+                {summary.staleDocuments > 0 && (
+                  <span className="text-amber-300">
+                    ({summary.staleDocuments} desactualizados por mutaciones en BD)
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
-        )}
-        <p className="text-secondary text-[11.5px] leading-relaxed">
-          Selecciona los artefactos técnicos que conformarán el **Prompt Bundle** para alimentar agentes de IA externos (Cursor, Claude, NotebookLM) sin alucinaciones ni saturación de contexto:
-        </p>
 
-        <div className="space-y-2 font-mono">
-          <label className="vision-card p-3 flex items-center gap-3 cursor-pointer hover:border-indigo-400/30 transition-all">
-            <input
-              type="checkbox"
-              checked={includeDocs}
-              onChange={(e) => setIncludeDocs(e.target.checked)}
-              className="rounded accent-indigo-500"
-            />
-            <div>
-              <div className="font-semibold text-primary">/documentation/</div>
-              <div className="text-[10px] text-muted font-sans">
-                Requisitos IEEE-830, Actas ADRs y especificación técnica OpenAPI
-              </div>
+          <div className="flex items-center gap-2">
+            {summary.staleDocuments > 0 && (
+              <VisionButton
+                type="button"
+                size="sm"
+                variant="secondary"
+                icon="sync"
+                onClick={handleRatifyVault}
+                title="Ratificar cambios y marcar documentos como vigentes"
+              >
+                Ratificar Bóveda
+              </VisionButton>
+            )}
+            {/* Selector de Dialecto DDL */}
+            <div className="flex items-center gap-1 bg-white/[0.04] p-1 rounded-[6px] border border-white/10 font-mono text-[10.5px]">
+              <span className="text-muted px-1">Motor:</span>
+              {(['postgres', 'mysql', 'sqlite', 'oracle'] as SqlDialect[]).map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => setDialect(d)}
+                  className={`px-1.5 py-0.5 rounded transition-all uppercase ${
+                    dialect === d
+                      ? 'bg-indigo-500 text-white font-semibold shadow-sm'
+                      : 'text-muted hover:text-primary hover:bg-white/[0.06]'
+                  }`}
+                >
+                  {d === 'postgres' ? 'PG' : d}
+                </button>
+              ))}
             </div>
-          </label>
-
-          <label className="vision-card p-3 flex items-center gap-3 cursor-pointer hover:border-indigo-400/30 transition-all">
-            <input
-              type="checkbox"
-              checked={includeDb}
-              onChange={(e) => setIncludeDb(e.target.checked)}
-              className="rounded accent-indigo-500"
-            />
-            <div>
-              <div className="font-semibold text-primary">/database/</div>
-              <div className="text-[10px] text-muted font-sans">
-                PostgreSQL DDL (3FN), Triggers de auditoría y políticas RLS
-              </div>
-            </div>
-          </label>
-
-          <label className="vision-card p-3 flex items-center gap-3 cursor-pointer hover:border-indigo-400/30 transition-all">
-            <input
-              type="checkbox"
-              checked={includeSkills}
-              onChange={(e) => setIncludeSkills(e.target.checked)}
-              className="rounded accent-indigo-500"
-            />
-            <div>
-              <div className="font-semibold text-primary">/skills/</div>
-              <div className="text-[10px] text-muted font-sans">
-                Manual de ingeniería devsculptor-architect y directrices de arquitectura
-              </div>
-            </div>
-          </label>
+          </div>
         </div>
 
-        {/* Barra de Progreso */}
+        {/* Mensaje de Error si existiese */}
+        {exportError && (
+          <div className="p-2.5 rounded-[6px] bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[11px] flex items-center gap-2">
+            <span className="material-symbols-outlined text-sm">error</span>
+            <span>{exportError}</span>
+          </div>
+        )}
+
+        {/* Panel Principal Dividido: Explorador de Árbol + Previsualizador */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 min-h-[360px] max-h-[460px] overflow-hidden">
+          {/* Columna Izquierda: Árbol de Carpetas (5 cols) */}
+          <div className="md:col-span-5 vision-card p-2.5 flex flex-col gap-2 overflow-y-auto custom-scrollbar border-white/10">
+            <div className="flex items-center justify-between pb-1.5 border-b border-white/[0.08] text-[11px] font-semibold text-secondary">
+              <span>Estructura Canónica OKF</span>
+              <span className="text-[10px] text-muted font-mono">{filteredDocuments.length} seleccionados</span>
+            </div>
+
+            {/* Checkboxes de Categoría Rápida */}
+            <div className="grid grid-cols-2 gap-1.5 pb-2 border-b border-white/[0.06] text-[10px] font-mono">
+              <label className="flex items-center gap-1.5 cursor-pointer text-muted hover:text-primary">
+                <input
+                  type="checkbox"
+                  checked={includeDocs}
+                  onChange={(e) => setIncludeDocs(e.target.checked)}
+                  className="rounded accent-indigo-500"
+                />
+                <span>/documentation</span>
+              </label>
+              <label className="flex items-center gap-1.5 cursor-pointer text-muted hover:text-primary">
+                <input
+                  type="checkbox"
+                  checked={includeDb}
+                  onChange={(e) => setIncludeDb(e.target.checked)}
+                  className="rounded accent-indigo-500"
+                />
+                <span>/database</span>
+              </label>
+              <label className="flex items-center gap-1.5 cursor-pointer text-muted hover:text-primary">
+                <input
+                  type="checkbox"
+                  checked={includeSkills}
+                  onChange={(e) => setIncludeSkills(e.target.checked)}
+                  className="rounded accent-indigo-500"
+                />
+                <span>/skills</span>
+              </label>
+              <label className="flex items-center gap-1.5 cursor-pointer text-muted hover:text-primary">
+                <input
+                  type="checkbox"
+                  checked={includeContext}
+                  onChange={(e) => setIncludeContext(e.target.checked)}
+                  className="rounded accent-indigo-500"
+                />
+                <span>/context</span>
+              </label>
+            </div>
+
+            {/* Lista del Árbol */}
+            {isLoading ? (
+              <div className="flex-1 flex items-center justify-center text-muted font-mono text-[11px]">
+                Compilando bóveda determinista...
+              </div>
+            ) : (
+              <div className="space-y-2 text-[11px] font-mono">
+                {Object.entries(groupedTree).map(([folder, docs]) => {
+                  const visibleDocs = docs.filter((d) => filteredDocuments.some((fd) => fd.path === d.path));
+                  if (visibleDocs.length === 0) return null;
+
+                  return (
+                    <div key={folder} className="space-y-1">
+                      <div className="text-indigo-400 font-semibold flex items-center gap-1 text-[10.5px]">
+                        <span className="material-symbols-outlined text-xs">folder</span>
+                        <span>{folder}</span>
+                      </div>
+                      <div className="pl-3 space-y-0.5 border-l border-white/10">
+                        {visibleDocs.map((doc) => {
+                          const isSelected = selectedDoc?.path === doc.path;
+                          return (
+                            <button
+                              key={doc.path}
+                              type="button"
+                              onClick={() => setSelectedDoc(doc)}
+                              className={`w-full text-left px-2 py-1 rounded-[4px] flex items-center justify-between gap-1.5 transition-all ${
+                                isSelected
+                                  ? 'bg-indigo-500/20 border border-indigo-500/40 text-white font-medium'
+                                  : 'text-muted hover:text-primary hover:bg-white/[0.04]'
+                              }`}
+                            >
+                              <div className="flex items-center gap-1.5 truncate">
+                                <span className="material-symbols-outlined text-[12px] opacity-70">
+                                  description
+                                </span>
+                                <span className="truncate">{doc.filename}</span>
+                              </div>
+                              <span
+                                className={`text-[9px] px-1 py-0.2 rounded font-sans shrink-0 uppercase ${
+                                  doc.freshnessStatus === 'FRESH'
+                                    ? 'bg-emerald-500/10 text-emerald-400'
+                                    : 'bg-amber-500/10 text-amber-400'
+                                }`}
+                              >
+                                {doc.freshnessStatus}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Columna Derecha: Previsualizador de Documento y Metadatos (7 cols) */}
+          <div className="md:col-span-7 vision-card p-3 flex flex-col gap-2 overflow-hidden border-white/10 bg-black/20">
+            {selectedDoc ? (
+              <>
+                {/* Cabecera del Documento Seleccionado */}
+                <div className="flex items-center justify-between pb-2 border-b border-white/[0.08] shrink-0">
+                  <div className="min-w-0 pr-2">
+                    <div className="font-semibold text-primary text-[12px] truncate">
+                      {selectedDoc.header.title}
+                    </div>
+                    <div className="text-[10px] text-muted font-mono truncate">
+                      {selectedDoc.path}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <VisionButton
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      icon={copied ? 'check' : 'content_copy'}
+                      onClick={handleCopyContent}
+                      title="Copiar contenido"
+                    >
+                      {copied ? 'Copiado' : 'Copiar'}
+                    </VisionButton>
+                    <VisionButton
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      icon="download"
+                      onClick={handleDownloadSingle}
+                      title="Descargar sólo este archivo"
+                    >
+                      Descargar
+                    </VisionButton>
+                  </div>
+                </div>
+
+                {/* Etiquetas Semánticas y Freshness */}
+                <div className="flex flex-wrap items-center gap-1 shrink-0">
+                  <VisionPill
+                    variant={selectedDoc.freshnessStatus === 'FRESH' ? 'emerald' : 'amber'}
+                  >
+                    {selectedDoc.freshnessStatus}
+                  </VisionPill>
+                  {selectedDoc.header.tags.map((t) => (
+                    <span
+                      key={t}
+                      className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.05] text-muted font-mono"
+                    >
+                      #{t}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Visor de Contenido Monospace */}
+                <div className="flex-1 min-h-0 bg-black/40 rounded-[6px] p-2.5 overflow-y-auto custom-scrollbar font-mono text-[10.5px] leading-relaxed text-secondary select-text border border-white/[0.04]">
+                  <pre className="whitespace-pre-wrap break-all">{selectedDoc.content}</pre>
+                </div>
+              </>
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-muted font-mono text-center p-4">
+                Selecciona un archivo del árbol para previsualizar su contenido determinista y encabezado YAML.
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Barra de Progreso de Empaquetado */}
         {isExporting && (
           <div className="space-y-1 pt-1 fade-in">
             <div className="text-[10px] font-mono text-indigo-400 flex items-center justify-between">
-              <span>Empaquetando artefactos deterministas en ZIP...</span>
+              <span>Empaquetando artefactos en ZIP con JSZip...</span>
               <span>{progress}%</span>
             </div>
             <div className="w-full h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
@@ -212,19 +431,26 @@ export const OkfExportModal: React.FC<OkfExportModalProps> = ({ isOpen, onClose 
           </div>
         )}
 
-        <div className="flex justify-end gap-2 pt-2 border-t border-white/[0.08]">
-          <VisionButton type="button" onClick={onClose} disabled={isExporting}>
-            Cancelar
-          </VisionButton>
-          <VisionButton
-            type="button"
-            variant="primary"
-            icon="download"
-            onClick={handleExport}
-            disabled={isExporting || (!includeDocs && !includeDb && !includeSkills)}
-          >
-            {isExporting ? 'Compilando...' : 'Descargar Paquete ZIP'}
-          </VisionButton>
+        {/* Barra de Acciones Inferior */}
+        <div className="flex items-center justify-between pt-2 border-t border-white/[0.08]">
+          <div className="text-[10.5px] text-muted font-mono">
+            {filteredDocuments.length} artefactos listos para transferir a Cursor / Claude
+          </div>
+
+          <div className="flex items-center gap-2">
+            <VisionButton type="button" onClick={onClose} disabled={isExporting}>
+              Cerrar
+            </VisionButton>
+            <VisionButton
+              type="button"
+              variant="primary"
+              icon="download_for_offline"
+              onClick={handleExportZip}
+              disabled={isExporting || filteredDocuments.length === 0}
+            >
+              {isExporting ? 'Empaquetando...' : 'Descargar Paquete ZIP'}
+            </VisionButton>
+          </div>
         </div>
       </div>
     </VisionModal>
