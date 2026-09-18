@@ -44,8 +44,8 @@ export const AuthPortal: React.FC = () => {
   };
 
   return (
-    <div className="h-screen w-screen flex items-center justify-center p-4 z-20 relative">
-      <div className="vision-window max-w-sm w-full p-6 flex flex-col gap-5 shadow-2xl relative">
+    <div className="h-screen h-dvh w-screen flex items-center justify-center p-3 sm:p-4 z-20 relative overflow-y-auto">
+      <div className="vision-window max-w-sm w-full p-4 sm:p-6 flex flex-col gap-4 sm:gap-5 shadow-2xl relative my-auto">
         {/* Selector Sol/Luna en esquina */}
         <div className="absolute top-4 right-4">
           <ThemeToggle />

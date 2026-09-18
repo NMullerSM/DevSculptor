@@ -32,30 +32,31 @@ export const ProjectsHub: React.FC<ProjectsHubProps> = ({ onOpenProject }) => {
   );
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col gap-4 max-w-6xl mx-auto w-full p-2 z-10 fade-in overflow-y-auto">
+    <div className="flex-1 min-h-0 flex flex-col gap-3 sm:gap-4 max-w-6xl mx-auto w-full p-1 sm:p-2 z-10 fade-in overflow-y-auto custom-scrollbar">
       {/* Encabezado del Hub */}
-      <div className="vision-window p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="vision-window p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-lg font-bold text-primary tracking-tight">
+          <h1 className="text-base sm:text-lg font-bold text-primary tracking-tight">
             Portafolio de Arquitectura de Software
           </h1>
-          <p className="text-xs text-secondary mt-0.5 font-mono">
+          <p className="text-[11px] sm:text-xs text-secondary mt-0.5 font-mono">
             Espacio de gobernanza técnica, trazabilidad y modelado relacional multi-inquilino.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full md:w-auto">
           <input
             type="text"
             placeholder="Buscar proyectos..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="vision-input !py-1.5 text-xs w-48 md:w-64"
+            className="vision-input !py-1.5 text-xs w-full sm:w-56 md:w-64"
           />
           <VisionButton
             variant="primary"
             icon="add"
             onClick={() => setIsCreateOpen(true)}
+            className="justify-center shrink-0"
           >
             Nuevo Proyecto
           </VisionButton>
@@ -64,13 +65,13 @@ export const ProjectsHub: React.FC<ProjectsHubProps> = ({ onOpenProject }) => {
 
       {/* Grid de Proyectos */}
       {isLoading && projects.length === 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="vision-window p-5 h-48 animate-pulse bg-white/[0.02]" />
           ))}
         </div>
       ) : filteredProjects.length === 0 ? (
-        <div className="vision-window p-12 text-center flex flex-col items-center justify-center gap-3">
+        <div className="vision-window p-8 sm:p-12 text-center flex flex-col items-center justify-center gap-3">
           <div className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/[0.04] border border-glass-subtle flex items-center justify-center text-muted">
             <span className="material-symbols-outlined text-2xl">folder_open</span>
           </div>
@@ -90,7 +91,7 @@ export const ProjectsHub: React.FC<ProjectsHubProps> = ({ onOpenProject }) => {
           </VisionButton>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {filteredProjects.map((project) => {
             const isPendingArch =
               !project.architecture_style ||
@@ -212,12 +213,15 @@ export const ProjectsHub: React.FC<ProjectsHubProps> = ({ onOpenProject }) => {
         onConfirm={async () => {
           if (deletingProject) {
             await deleteProject(deletingProject.id);
+            await fetchProjects();
           }
         }}
-        title="Eliminar Proyecto"
-        description={`¿Estás seguro de eliminar el proyecto "${deletingProject?.name}"? Esta acción eliminará en cascada todos sus requisitos, tablas del canvas y decisiones asociadas de forma irreversible.`}
+        title="Eliminar Proyecto y Artefactos"
+        description={`¿Estás seguro de eliminar el proyecto "${deletingProject?.name}"? Esta acción purgará de forma atómica en cascada todos sus requisitos IEEE-830, entidades relacionales del Canvas y actas de decisión ADR asociadas.`}
         confirmText="Eliminar Proyecto"
         variant="danger"
+        requireConfirmationTicket={true}
+        confirmationTicketText="Confirmo que deseo eliminar este proyecto y todos sus artefactos asociados de forma irreversible."
       />
     </div>
   );

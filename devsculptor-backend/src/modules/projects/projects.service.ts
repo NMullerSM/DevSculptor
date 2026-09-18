@@ -3,6 +3,8 @@ import { CreateProjectDto, UpdateProjectDto } from './projects.dto';
 import { PaginationParams, PaginatedResult } from '../../shared/types/pagination';
 import { ConflictError } from '../../shared/exceptions/ConflictError';
 import { NotFoundError } from '../../shared/exceptions/NotFoundError';
+import { getPool } from '../../config/database';
+import { logger } from '../../config/logger';
 
 export class ProjectsService {
   constructor(
@@ -69,6 +71,28 @@ export class ProjectsService {
   async delete(userId: string, projectId: string): Promise<void> {
     // Validar existencia y propiedad
     await this.findById(userId, projectId);
-    await this.projectsRepository.delete(projectId);
+
+    const pool = getPool();
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      // 1. Eliminar entidades del canvas mientras el proyecto todavía existe
+      // (así cualquier trigger de auditoría inserta con project_id existente sin violar FK)
+      await client.query('DELETE FROM canvas_entities WHERE project_id = $1', [projectId]);
+      // 2. Limpiar logs de auditoría huérfanos del proyecto
+      await client.query('DELETE FROM audit_logs WHERE project_id = $1', [projectId]);
+      // 3. Eliminar requisitos y decisiones
+      await client.query('DELETE FROM requirements WHERE project_id = $1', [projectId]);
+      await client.query('DELETE FROM architecture_decisions WHERE project_id = $1', [projectId]);
+      // 4. Eliminar el proyecto raíz
+      await client.query('DELETE FROM projects WHERE id = $1', [projectId]);
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      logger.error({ err, projectId, userId }, 'Fallo al eliminar proyecto en cascada');
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 }

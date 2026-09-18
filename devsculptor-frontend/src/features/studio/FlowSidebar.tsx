@@ -10,6 +10,8 @@ interface FlowSidebarProps {
   onOpenExportModal: () => void;
   reqsCount?: number;
   adrsCount?: number;
+  onClose?: () => void;
+  className?: string;
 }
 
 export const FlowSidebar: React.FC<FlowSidebarProps> = ({
@@ -18,6 +20,8 @@ export const FlowSidebar: React.FC<FlowSidebarProps> = ({
   onOpenExportModal,
   reqsCount = 0,
   adrsCount = 0,
+  onClose,
+  className = '',
 }) => {
   const steps = [
     {
@@ -54,16 +58,36 @@ export const FlowSidebar: React.FC<FlowSidebarProps> = ({
     },
   ];
 
+  const handleStepClick = (stepId: StudioStep) => {
+    onSelectStep(stepId);
+    if (onClose) {
+      onClose();
+    }
+  };
+
   return (
-    <aside className="vision-window w-[250px] shrink-0 flex flex-col p-3 gap-3 select-none">
+    <aside className={`vision-window flex flex-col p-3 gap-3 select-none ${className}`}>
       {/* Encabezado */}
       <div className="flex items-center justify-between pb-1.5 border-b border-glass-subtle">
-        <span className="text-[10px] font-mono uppercase tracking-wider text-muted font-semibold">
-          Flujo de Trabajo
-        </span>
-        <VisionPill variant="indigo" className="text-[8.5px]">
-          5 PASOS
-        </VisionPill>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-muted font-semibold">
+            Flujo de Trabajo
+          </span>
+          <VisionPill variant="indigo" className="text-[8.5px]">
+            5 PASOS
+          </VisionPill>
+        </div>
+
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="vision-btn vision-btn-icon !p-1 text-muted hover:text-primary"
+            title="Cerrar panel de flujo"
+            aria-label="Cerrar panel de flujo"
+          >
+            <span className="material-symbols-outlined text-sm">close</span>
+          </button>
+        )}
       </div>
 
       {/* Lista de Pasos */}
@@ -73,9 +97,9 @@ export const FlowSidebar: React.FC<FlowSidebarProps> = ({
           return (
             <button
               key={step.id}
-              onClick={() => onSelectStep(step.id)}
+              onClick={() => handleStepClick(step.id)}
               className={`w-full vision-card p-2.5 text-left flex items-center gap-2.5 transition-all ${
-                isSelected ? 'selected' : ''
+                isSelected ? 'selected ring-1 ring-indigo-500/50' : ''
               }`}
             >
               <span className={`material-symbols-outlined text-[17px] ${step.iconColor}`}>
@@ -100,7 +124,10 @@ export const FlowSidebar: React.FC<FlowSidebarProps> = ({
         <VisionButton
           variant="primary"
           icon="folder_zip"
-          onClick={onOpenExportModal}
+          onClick={() => {
+            onOpenExportModal();
+            if (onClose) onClose();
+          }}
           className="w-full !py-2 justify-center shadow-lg font-semibold"
         >
           Compilar & Exportar OKF

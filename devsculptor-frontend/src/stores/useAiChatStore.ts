@@ -157,11 +157,17 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
     const key = `req:${req.code}`;
     if (get().injectedKeys[key]) return;
 
+    const safePriority =
+      (req.priority as string) === 'CRITICAL'
+        ? 'HIGH'
+        : (['HIGH', 'MEDIUM', 'LOW'].includes(req.priority) ? req.priority : 'MEDIUM');
+    const safeType = req.type === 'RNF' ? 'RNF' : 'RF';
+
     await requirementsService.create(projectId, {
       code: req.code,
       title: req.title,
-      type: req.type,
-      priority: req.priority,
+      type: safeType,
+      priority: safePriority,
       description: req.description || '',
     });
 
@@ -193,11 +199,22 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
         isFk = true;
         const base = col.name.slice(0, -3).toLowerCase();
         const plural = base.endsWith('s') ? base : `${base}s`;
-        refTable = existingEntities.some((e) => e.table_name.toLowerCase() === plural) ? plural : base;
+        // En estándares relacionales SQL, las tablas se nombran en plural (users, products).
+        // 'user' además es palabra reservada en PostgreSQL.
+        refTable = existingEntities.some((e) => e.table_name.toLowerCase() === base)
+          ? base
+          : (base === 'user' ? 'users' : plural);
       }
 
-      const isNullable = col.isNullable !== undefined ? Boolean(col.isNullable) : (colRecord.nullable !== undefined ? Boolean(colRecord.nullable) : !isPk);
-      const isUnique = col.isUnique !== undefined ? Boolean(col.isUnique) : Boolean(colRecord.unique);
+      const isNullable =
+        col.isNullable !== undefined
+          ? Boolean(col.isNullable)
+          : (colRecord.nullable !== undefined ? Boolean(colRecord.nullable) : !isPk);
+
+      const isUnique =
+        col.isUnique !== undefined
+          ? Boolean(col.isUnique)
+          : Boolean(colRecord.unique || colRecord.cardinality === '1:1');
 
       return {
         name: col.name,

@@ -19,9 +19,17 @@ export function generatePostgreSqlDdl(entities: CanvasEntity[]): string {
   entities.forEach((entity) => {
     ddl += `CREATE TABLE IF NOT EXISTS ${entity.table_name} (\n`;
     const cols = Array.isArray(entity.columns_json) ? entity.columns_json : [];
+    const hasCreatedAt = cols.some((c) => c.name.toLowerCase() === 'created_at');
+    const hasUpdatedAt = cols.some((c) => c.name.toLowerCase() === 'updated_at');
+
     const lines = cols.map((c) => {
       let line = `  ${c.name} ${c.type}`;
-      if (c.isPk || c.is_pk) line += ' PRIMARY KEY';
+      if (c.isPk || c.is_pk) {
+        line += ' PRIMARY KEY';
+        if (c.type.toUpperCase() === 'UUID') {
+          line += ' DEFAULT gen_random_uuid()';
+        }
+      }
       if (c.unique) line += ' UNIQUE';
       if (c.nullable === false && !(c.isPk || c.is_pk)) line += ' NOT NULL';
 
@@ -37,9 +45,13 @@ export function generatePostgreSqlDdl(entities: CanvasEntity[]): string {
       return line;
     });
 
-    // Default audit columns
-    lines.push(`  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP`);
-    lines.push(`  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP`);
+    // Default audit columns (only if not already provided)
+    if (!hasCreatedAt) {
+      lines.push(`  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP`);
+    }
+    if (!hasUpdatedAt) {
+      lines.push(`  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP`);
+    }
 
     ddl += lines.join(',\n');
     ddl += `\n);\n\n`;
@@ -86,6 +98,9 @@ export function generateMySqlDdl(entities: CanvasEntity[]): string {
   entities.forEach((entity) => {
     ddl += `CREATE TABLE IF NOT EXISTS \`${entity.table_name}\` (\n`;
     const cols = Array.isArray(entity.columns_json) ? entity.columns_json : [];
+    const hasCreatedAt = cols.some((c) => c.name.toLowerCase() === 'created_at');
+    const hasUpdatedAt = cols.some((c) => c.name.toLowerCase() === 'updated_at');
+
     const lines = cols.map((c) => {
       let line = `  \`${c.name}\` ${mapMySqlType(c.type)}`;
       if (c.isPk || c.is_pk) line += ' PRIMARY KEY';
@@ -103,8 +118,12 @@ export function generateMySqlDdl(entities: CanvasEntity[]): string {
       return line;
     });
 
-    lines.push(`  \`created_at\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`);
-    lines.push(`  \`updated_at\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`);
+    if (!hasCreatedAt) {
+      lines.push(`  \`created_at\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`);
+    }
+    if (!hasUpdatedAt) {
+      lines.push(`  \`updated_at\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`);
+    }
 
     ddl += lines.join(',\n');
     ddl += `\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;\n\n`;
@@ -140,6 +159,9 @@ export function generateSqliteDdl(entities: CanvasEntity[]): string {
   entities.forEach((entity) => {
     ddl += `CREATE TABLE IF NOT EXISTS "${entity.table_name}" (\n`;
     const cols = Array.isArray(entity.columns_json) ? entity.columns_json : [];
+    const hasCreatedAt = cols.some((c) => c.name.toLowerCase() === 'created_at');
+    const hasUpdatedAt = cols.some((c) => c.name.toLowerCase() === 'updated_at');
+
     const lines = cols.map((c) => {
       let line = `  "${c.name}" ${mapSqliteType(c.type)}`;
       if (c.isPk || c.is_pk) line += ' PRIMARY KEY';
@@ -157,8 +179,12 @@ export function generateSqliteDdl(entities: CanvasEntity[]): string {
       }
     });
 
-    lines.push(`  "created_at" TEXT NOT NULL DEFAULT (datetime('now'))`);
-    lines.push(`  "updated_at" TEXT NOT NULL DEFAULT (datetime('now'))`);
+    if (!hasCreatedAt) {
+      lines.push(`  "created_at" TEXT NOT NULL DEFAULT (datetime('now'))`);
+    }
+    if (!hasUpdatedAt) {
+      lines.push(`  "updated_at" TEXT NOT NULL DEFAULT (datetime('now'))`);
+    }
 
     ddl += lines.join(',\n');
     ddl += `\n);\n\n`;
@@ -195,6 +221,9 @@ export function generateOracleDdl(entities: CanvasEntity[]): string {
     const tableNameUpper = entity.table_name.toUpperCase();
     ddl += `CREATE TABLE ${tableNameUpper} (\n`;
     const cols = Array.isArray(entity.columns_json) ? entity.columns_json : [];
+    const hasCreatedAt = cols.some((c) => c.name.toLowerCase() === 'created_at');
+    const hasUpdatedAt = cols.some((c) => c.name.toLowerCase() === 'updated_at');
+
     const lines = cols.map((c) => {
       const colNameUpper = c.name.toUpperCase();
       let line = `  ${colNameUpper} ${mapOracleType(c.type)}`;
@@ -213,8 +242,12 @@ export function generateOracleDdl(entities: CanvasEntity[]): string {
       return line;
     });
 
-    lines.push(`  CREATED_AT TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL`);
-    lines.push(`  UPDATED_AT TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL`);
+    if (!hasCreatedAt) {
+      lines.push(`  CREATED_AT TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL`);
+    }
+    if (!hasUpdatedAt) {
+      lines.push(`  UPDATED_AT TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL`);
+    }
 
     ddl += lines.join(',\n');
     ddl += `\n);\n/\n\n`;

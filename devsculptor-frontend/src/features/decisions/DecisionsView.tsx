@@ -103,18 +103,18 @@ export const DecisionsView: React.FC<DecisionsViewProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full p-4 gap-3 select-none">
+    <div className="flex-1 flex flex-col h-full p-2.5 sm:p-4 gap-2.5 sm:gap-3 select-none">
       {/* Encabezado */}
-      <div className="flex items-center justify-between pb-2 border-b border-glass-subtle shrink-0">
-        <div>
-          <h2 className="text-xs font-semibold text-primary">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 border-b border-glass-subtle shrink-0 gap-2">
+        <div className="min-w-0">
+          <h2 className="text-xs font-semibold text-primary truncate">
             Registro de Decisiones de Arquitectura (ADRs)
           </h2>
-          <p className="text-[10.5px] text-secondary font-mono">
+          <p className="text-[10px] sm:text-[10.5px] text-secondary font-mono truncate">
             Gobernanza formal, trazabilidad inmutable y certificación técnica Human-in-the-Loop.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <VisionButton
             variant="default"
             icon="architecture"
@@ -122,7 +122,8 @@ export const DecisionsView: React.FC<DecisionsViewProps> = ({
             onClick={() => setIsArchModalOpen(true)}
             className="!border-cyan-500/30 text-cyan-600 dark:text-cyan-400 hover:!bg-cyan-500/10"
           >
-            Evaluar Arquitectura
+            <span className="hidden xs:inline">Evaluar Arquitectura</span>
+            <span className="xs:hidden">Evaluar</span>
           </VisionButton>
           <VisionButton
             variant="primary"
@@ -130,28 +131,29 @@ export const DecisionsView: React.FC<DecisionsViewProps> = ({
             size="sm"
             onClick={() => setIsCreateOpen(true)}
           >
-            Nueva Acta ADR
+            <span className="hidden xs:inline">Nueva Acta ADR</span>
+            <span className="xs:hidden">Nueva</span>
           </VisionButton>
         </div>
       </div>
 
       {/* Banner de Estado Arquitectónico Oficial */}
       {isArchitecturePending ? (
-        <div className="p-3 rounded-[7px] bg-amber-500/10 border border-amber-500/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shrink-0">
-          <div className="flex items-start gap-2.5">
+        <div className="p-2.5 sm:p-3 rounded-[7px] bg-amber-500/10 border border-amber-500/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3 shrink-0">
+          <div className="flex items-start gap-2.5 min-w-0">
             <span className="material-symbols-outlined text-amber-500 dark:text-amber-400 text-lg mt-0.5 shrink-0">
               pending_actions
             </span>
-            <div>
-              <div className="flex items-center gap-2">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-semibold text-xs text-primary">
-                  Estilo Arquitectónico Canónico: Pendiente de Ratificación
+                  Estilo Canónico: En Evaluación
                 </span>
-                <span className="text-[9.5px] font-mono text-amber-600 dark:text-amber-300 bg-amber-400/20 px-2 py-0.5 rounded-[4px] border border-amber-400/30">
-                  EN EVALUACIÓN
+                <span className="text-[9px] font-mono text-amber-600 dark:text-amber-300 bg-amber-400/20 px-1.5 py-0.5 rounded-[4px] border border-amber-400/30 shrink-0">
+                  PENDIENTE
                 </span>
               </div>
-              <p className="text-[11px] text-secondary mt-0.5">
+              <p className="text-[10.5px] sm:text-[11px] text-secondary mt-0.5 line-clamp-2 sm:line-clamp-none">
                 El proyecto no impone una arquitectura rígida al inicio. Evalúa los 4 estilos canónicos y ratifica el acta formal correspondiente.
               </p>
             </div>
@@ -161,25 +163,25 @@ export const DecisionsView: React.FC<DecisionsViewProps> = ({
             icon="architecture"
             size="sm"
             onClick={() => setIsArchModalOpen(true)}
-            className="!bg-amber-600 hover:!bg-amber-500 text-white shrink-0"
+            className="!bg-amber-600 hover:!bg-amber-500 text-white shrink-0 w-full sm:w-auto justify-center"
           >
             Definir Estilo (ADR-001)
           </VisionButton>
         </div>
       ) : (
-        <div className="p-2.5 rounded-[7px] bg-cyan-500/[0.08] border border-cyan-500/20 flex items-center justify-between gap-2 shrink-0 text-xs">
-          <div className="flex items-center gap-2 font-mono">
+        <div className="p-2 sm:p-2.5 rounded-[7px] bg-cyan-500/[0.08] border border-cyan-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2 shrink-0 text-xs">
+          <div className="flex items-center gap-2 font-mono flex-wrap">
             <span className="material-symbols-outlined text-cyan-400 text-sm">verified</span>
-            <span className="text-secondary text-[11px]">Estilo Arquitectónico Oficial:</span>
-            <span className="font-bold text-cyan-600 dark:text-cyan-300 text-[11px] bg-cyan-400/10 px-2 py-0.5 rounded border border-cyan-400/20">
+            <span className="text-secondary text-[10.5px] sm:text-[11px]">Estilo Arquitectónico Oficial:</span>
+            <span className="font-bold text-cyan-600 dark:text-cyan-300 text-[10.5px] sm:text-[11px] bg-cyan-400/10 px-2 py-0.5 rounded border border-cyan-400/20">
               {activeProject?.architecture_style}
             </span>
           </div>
           <button
             onClick={() => setIsArchModalOpen(true)}
-            className="text-[10.5px] font-mono text-muted hover:text-cyan-400 underline transition-colors"
+            className="text-[10.5px] font-mono text-muted hover:text-cyan-400 underline transition-colors self-start sm:self-auto"
           >
-            Evaluar Re-arquitectura
+            Re-evaluar Arquitectura
           </button>
         </div>
       )}

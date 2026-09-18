@@ -92,7 +92,16 @@ Ubicación: `src/modules/ai/providers/gemini.provider.ts`
 Ubicación: `src/modules/ai/providers/mock.provider.ts`
 - Evalúa el contexto real del proyecto: detecta si existen tablas como `users`, `orders`, `payments`, etc.
 - Evalúa la normalización relacional (3FN), claves primarias/foráneas y genera bloques de acción reales con códigos autoincrementales (`[RF-xx]`, `[RNF-xx]`, `[ADR-xxx]`).
-- Permite desarrollo continuo sin cuotas de red ni consumo de tokens.
+- Aplica el **Protocolo de Razonamiento en 4 Fases**: infiere múltiples requisitos (2-3 RFs/RNFs), múltiples entidades relacionales interconectadas (cabecera-detalle en 3FN con claves foráneas cruzadas) y actas de decisión técnica (ADRs) contextuales.
+- **Regla Inviolable de No-Duplicación**: Si una entidad (`orders`, `payments`, `roles`) ya existe en el canvas, omite su recreación y propone entidades complementarias hijas o adyacentes (`shipments`, `payment_methods`, `auth_audit_logs`) con claves foráneas hacia las entidades existentes.
+
+### 2.4. Protocolo Canónico de Razonamiento en 4 Fases (`ai.prompts.ts`)
+Tanto en modo real (Google Gemini / OpenAI) como en modo de resiliencia local (`MockAiProvider`), el copiloto opera bajo 4 fases estrictas:
+1. **Fase 1: Descomposición y Razonamiento de Requisitos (IEEE-830)**: Razona sobre el ciclo de vida del módulo (creación, validación de reglas de negocio, y restricciones no funcionales de concurrencia o rendimiento), generando códigos correlativos consecutivos.
+2. **Fase 2: Derivación Relacional en 3FN (Canvas ERD)**: Modela las entidades relacionales necesarias vinculadas por claves foráneas explícitas (`isFk: true`, `referencesTable`, `cardinality: "1:N"`), con claves primarias `id UUID` y campos de auditoría.
+3. **Fase 3: Gobernanza Técnica y Actas de Decisión (ADRs)**: Plantea actas de arquitectura en estado `PROPOSED` que fundamentan la estrategia de persistencia, aislamiento o integración.
+4. **Fase 4: Deduplicación Contextual (In-Memory RAG)**: Cruza la propuesta contra el `ESTADO ACTUAL` inyectado (requisitos, tablas y ADRs ya registrados). Si una entidad como `users` o `orders` ya existe, no la duplica, sino que la referencia mediante clave foránea.
+
 
 ---
 
@@ -207,3 +216,23 @@ DEEPSEEK_API_KEY=
 - Backend compilado con `tsc && tsc-alias` sin advertencias ni errores (`Exit Code 0`).
 - Strict typing en TypeScript con interfaces completas y sin uso de `any` descontrolado.
 - Sanitización de logs vía Pino: las API keys y tokens nunca se imprimen en consola ni en registros de auditoría.
+
+---
+
+## 7. Razonamiento Dinámico por Criterios, Deduplicación y Resiliencia en Inyección
+
+### 7.1. Criterio Autónomo de Requisitos (Erradicación de Rangos Cerrados)
+- **Flexibilidad Arquitectónica**: Se eliminó cualquier techo o rango estático (como "generar de 2 a 4 requisitos"). El motor deduce de forma **100% autónoma y dinámica** la cantidad de requisitos funcionales (RF) y no funcionales (RNF) requeridos, adaptándose a la complejidad del prompt (por ejemplo, validación de precios, reserva concurrente de stock, liquidación de pagos, órdenes de despacho, trazabilidad y políticas de anulación).
+- **Contadores de Correlatividad Independientes**:
+  - Los requerimientos funcionales (`RF`) se indexan a partir del `maxRf` detectado en la base de datos.
+  - Los requerimientos no funcionales (`RNF`) mantienen su propia secuencia (`RNF-01`, `RNF-02`, etc.) para no colisionar ni desfasar la numeración.
+
+### 7.2. Modelado Relacional en 3FN y Claves Cruzadas
+- **Desacoplamiento Multi-Entidad**: Ante requerimientos integrales (ej. checkout de e-commerce), el motor formula esquemas relacionales normalizados separando:
+  1. Cabecera (`orders`).
+  2. Renglones o detalle de productos (`order_items`, con claves foráneas `order_id` y `product_id`).
+  3. Despacho logístico (`shipping_addresses`, con relación `1:1` y restricción `UNIQUE` en `order_id`).
+  4. Transacción financiera (`payments`, con relación `1:1`, `UNIQUE` en `order_id` y token de idempotencia).
+- **Conformidad con PostgreSQL y Enums**:
+  - Normalización de prioridades a `HIGH`, `MEDIUM`, `LOW` para cumplir con el `CHECK (priority IN ('HIGH', 'MEDIUM', 'LOW'))` de la base de datos y validaciones Zod.
+  - Generación de referencias canónicas en plural (`users`, `products`) evitando colisiones con palabras reservadas de SQL (`user`).

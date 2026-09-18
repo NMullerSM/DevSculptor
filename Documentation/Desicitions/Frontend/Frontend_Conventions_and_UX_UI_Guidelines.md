@@ -19,6 +19,11 @@ Sintetiza la visión de producto (gobernanza técnica pre-código y mitigación 
    - 3.6. [Catálogo Canónico de Primitivas y Componentes Glassmórficos](#36-catálogo-canónico-de-primitivas-y-componentes-glassmórficos)
    - 3.7. [Ergonomía Visual de Nodos ERD y Conectores Bezier SVG Neón](#37-ergonomía-visual-de-nodos-erd-y-conectores-bezier-svg-neón)
    - 3.8. [Reglas de Implementación en Producción (React 18, Tailwind y GPU)](#38-reglas-de-implementación-en-producción-react-18-tailwind-y-gpu)
+   - 3.9. [Arquitectura de Responsividad y Adaptabilidad Multi-Pantalla (Mobile, Tablet, Desktop, Ultra-Wide)](#39-arquitectura-de-responsividad-y-adaptabilidad-multi-pantalla-mobile-tablet-desktop-ultra-wide)
+     - 3.9.1. [Matriz Canónica de Breakpoints](#391-matriz-canónica-de-breakpoints)
+     - 3.9.2. [Patrón de Transición: Del Layout Tripartito a Drawers Deslizantes de Cristal](#392-patrón-de-transición-del-layout-tripartito-a-drawers-deslizantes-de-cristal)
+     - 3.9.3. [Ergonomía Táctil y Solución a Restricciones de Viewport Móvil](#393-ergonomía-táctil-y-solución-a-restricciones-de-viewport-móvil)
+     - 3.9.4. [Patrón de Colapso Selectivo en Toolbars Complejas (Canvas Subtabs & Multi-Motor Combobox)](#394-patrón-de-colapso-selectivo-en-toolbars-complejas-canvas-subtabs--multi-motor-combobox)
 4. [Estructura Canónica de Pantallas y Flujos de Navegación](#4-estructura-canónica-de-pantallas-y-flujos-de-navegación)
    - 4.1. [Mapa General de Navegación y Flujo del Usuario](#41-mapa-general-de-navegación-y-flujo-del-usuario)
    - 4.2. [Pantalla 0: Portal de Acceso y Autenticación (`/auth`)](#42-pantalla-0-portal-de-acceso-y-autenticación-auth)
@@ -750,6 +755,80 @@ Para trasladar este sistema desde el sandbox de prototipado hacia `devsculptor-f
    - El arrastre de nodos y el zoom en React Flow deben ejecutarse usando transformaciones GPU (`transform: translate3d(x, y, 0) scale(z)`).
    - Aplicar `will-change: transform` durante interacciones dinámicas y retirarlo al entrar en reposo para evitar fugas de memoria gráfica.
 4. **Respeto a Preferencias del Sistema:** Consultar `window.matchMedia('(prefers-color-scheme: light)')` en la inicialización si no existe clave previa en `localStorage`.
+
+---
+
+### 3.9. Arquitectura de Responsividad y Adaptabilidad Multi-Pantalla (Mobile, Tablet, Desktop, Ultra-Wide)
+
+Para satisfacer los requerimientos de usabilidad transversal y permitir la gobernanza de software tanto en estaciones de trabajo de alta resolución como en dispositivos portátiles y táctiles, DevSculptor implementa un modelo **Líquido y Adaptativo** guiado por las siguientes convenciones de ingeniería:
+
+#### 3.9.1. Matriz Canónica de Breakpoints
+El sistema opera sobre cuatro rangos de viewport normalizados:
+
+| Breakpoint | Ancho de Pantalla (Viewport) | Dispositivos Típicos | Comportamiento del Layout |
+| :--- | :--- | :--- | :--- |
+| **Móvil (Compact)** | `< 768px` (`xs`, `sm`) | Smartphones (iPhone, Pixel, Galaxy) | Workspace a ancho completo (100%). Paneles laterales (`FlowSidebar` y `CopilotInspector`) transformados en *Slide-Over Glass Drawers* activables vía TopBar o Bottom Dock. |
+| **Tablet Portrait** | `768px - 1023px` (`md`) | iPad, Galaxy Tab vertical | Workspace central expandido. Drawers laterales deslizables con animación GPU a 60 FPS y fondo desenfocado (`backdrop-blur-sm`). Grid de proyectos en 2 columnas. |
+| **Laptop / Tablet Horiz.** | `1024px - 1279px` (`lg`) | iPad Pro horizontal, Laptops 13" | Transición fluida: barra de navegación rápida visible, visualización de métricas y acceso ágil a copiloto sin saturar el lienzo ERD. Grid de proyectos en 3 columnas. |
+| **Desktop / Ultra-Wide** | `≥ 1280px` (`xl`, `2xl`) | Monitores QHD, 4K, Dual Screen | **Layout Tripartito NotebookLM simultáneo**: Flujo Izquierdo (240px) + Workspace Central (`flex-1`) + Copiloto Inspector Derecho (260px) activos en paralelo. |
+
+#### 3.9.2. Patrón de Transición: Del Layout Tripartito a Drawers Deslizantes de Cristal
+En lugar de forzar tres columnas fijas en pantallas estrechas —lo cual colapsaba el espacio útil a menos de 200px—, el sistema implementa una arquitectura híbrida gobernada por el store desacoplado [`useLayoutStore`](file:///src/stores/useLayoutStore.ts):
+
+```
+                       ARQUITECTURA DE RESPONSIVIDAD DEVSCULPTOR
+                       
+   [ ESCRITORIO ≥ 1280px ]                    [ MÓVIL Y TABLET < 1280px ]
+┌───────┬───────────────────┬───────┐      ┌─────────────────────────────────────┐
+│ Flow  │                   │ Copil.│      │ TopBar: Toggles [Flujo] & [Copiloto]│
+│ 240px │  Workspace Studio │ 260px │      ├─────────────────────────────────────┤
+│       │      flex-1       │       │      │                                     │
+│       │  (Chat/Reqs/ERD)  │       │      │       Workspace Studio (100%)       │
+│       │                   │       │      │         Área Máxima Táctil          │
+│       │                   │       │      │                                     │
+└───────┴───────────────────┴───────┘      ├─────────────────────────────────────┤
+                                           │ Floating Vision Dock (Pasos & Copil)│
+                                           └─────────────────────────────────────┘
+                                                    │                │
+                                           [Slide-Over Left]  [Slide-Over Right]
+                                           Drawer de Flujo    Drawer de Copiloto
+```
+
+1. **Desacoplamiento mediante `useLayoutStore`:**
+   - Controla `isFlowDrawerOpen` e `isCopilotDrawerOpen`.
+   - Permite que la barra superior (`AppleTopBar`) y el dock flotante disparen los drawers sin prop-drilling.
+2. **Animaciones Nativas Aceleradas por GPU:**
+   - `.animate-slide-right`: Transición `translateX(-100%)` a `translateX(0)` en `0.24s cubic-bezier(0.16, 1, 0.3, 1)`.
+   - `.animate-slide-left`: Transición `translateX(100%)` a `translateX(0)`.
+   - Descarte táctil al pulsar sobre el backdrop overlay oscurecido con `backdrop-blur-sm`.
+3. **Cierre Automático por Contexto:**
+   - Al seleccionar un paso en `FlowSidebar` o disparar una acción de calidad en `CopilotInspector` desde un dispositivo móvil, el drawer se cierra automáticamente devolviendo al usuario al área de trabajo.
+
+#### 3.9.3. Ergonomía Táctil y Solución a Restricciones de Viewport Móvil
+* **Mitigación del Bug de `100vh` en Navegadores Móviles:**
+  - Se sustituye el clásico `h-screen` (que causa solapamientos con la barra de navegación de iOS Safari y Chrome Android) por `h-screen h-dvh`, garantizando que la superficie de la aplicación se ajuste dinámicamente al viewport real visible (*Dynamic Viewport Height*).
+* **Dimensionamiento Táctil de Botones (Touch Targets):**
+  - Todo elemento interactivo en móvil cumple con el estándar mínimo de **44x44px** de área de toque, evitando toques accidentales en formularios y selectores.
+* **Scroll Inercial y Ocultación de Barras:**
+  - En chips de acción rápida de IA y elementos de navegación secundaria, se aplica la clase `.no-scrollbar` con `overflow-x-auto`, permitiendo deslizamiento táctil horizontal sin barras de desplazamiento intrusivas.
+* **Modales Adaptativos con Altura Controlada:**
+  - Todos los modales basados en `VisionModal` incorporan `max-h-[calc(100dvh-1.5rem)]` y `overflow-y-auto custom-scrollbar`, asegurando que formularios densos (como selección de estilo arquitectónico o edición de entidades) siempre expongan los botones de acción inferior incluso con teclados virtuales desplegados.
+
+#### 3.9.4. Patrón de Colapso Selectivo en Toolbars Complejas (Canvas Subtabs & Multi-Motor Combobox)
+En vistas densas con múltiples controles de navegación transversal —como el lienzo técnico `CanvasView` que combina 6 subpestañas de generación (`Lienzo ERD`, `DDL Multi-Motor`, `TypeScript DTOs`, `JSON Schema`, `Python Pydantic`, `Auditoría Triggers`) y selectores de dialecto SQL (`postgres`, `mysql`, `sqlite`, `oracle`)—, el ancho agregado de botones supera los 1000px.
+
+En laptops estándar (`xl: 1280px - 1535px`), el layout tripartito de `StudioWorkspace` despliega simultáneamente `FlowSidebar` (240px) y `CopilotInspector` (260px), dejando únicamente entre **780px y 950px libres para el espacio central**. Si los botones se mantuvieran desplegados en pantallas laptop, colisionarían y se solaparían inevitablemente contra el botón de copiado y los selectores de motor.
+
+Para neutralizar este conflicto de espacio preservando una estética intachable, se aplica el **Patrón de Combobox Dinámico visionOS con Breakpoint en `2xl` (1536px)**:
+1. **Punto de Quiebre Canónico (`2xl: 1536px`)**:
+   - **En pantallas ultra-amplias y monitores de escritorio (`≥ 2xl`)**: La columna central dispone de más de 1050px de ancho neto, por lo que ambos grupos de controles se despliegan en su totalidad como botones estilizados con `vision-btn` y `vision-btn-primary`, permitiendo acceso de un clic con sus respectivos iconos Material Symbols.
+   - **En móviles, tablets y laptops estándar (`< 2xl`)**:
+     - **Subpestañas de Canvas**: Se colapsan en un `<select>` interactivo encapsulado en una pastilla de cristal (`bg-[var(--glass-card)]` con borde `border-glass-subtle` y ancho flexible `max-w-[220px] sm:max-w-[240px]`), precedido por el icono dinámico reactivo correspondiente a la vista seleccionada.
+     - **Selector de Dialecto Multi-Motor**: Cuando la subpestaña activa es DDL Multi-Motor (`'sql'`), los 4 botones de motor se compactan en un combobox secundario tipo pastilla con etiqueta monocromática `Motor:`, permitiendo alternar instantáneamente entre PostgreSQL, MySQL, SQLite y Oracle sin quebrar el layout horizontal ni solaparse con el botón de "Copiar Código".
+2. **Preservación de Accesibilidad y Estado**:
+   - Ambos comboboxes implementan atributos `aria-label` descriptivos y sincronización de dos vías directa con los estados `activeSubTab` y `sqlDialect`, asegurando paridad funcional 100% idéntica en cualquier resolución.
+
+
 
 ---
 

@@ -66,12 +66,12 @@ export const RequirementsView: React.FC<RequirementsViewProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full p-4 gap-3 select-none">
+    <div className="flex-1 flex flex-col h-full p-2.5 sm:p-4 gap-2.5 sm:gap-3 select-none">
       {/* Encabezado */}
-      <div className="flex items-center justify-between pb-2 border-b border-glass-subtle shrink-0">
-        <div>
-          <h2 className="text-xs font-semibold text-primary">Matriz de Requisitos (IEEE-830)</h2>
-          <p className="text-[10.5px] text-secondary font-mono">
+      <div className="flex items-center justify-between pb-2 border-b border-glass-subtle shrink-0 gap-2">
+        <div className="min-w-0">
+          <h2 className="text-xs font-semibold text-primary truncate">Matriz de Requisitos (IEEE-830)</h2>
+          <p className="text-[10px] sm:text-[10.5px] text-secondary font-mono truncate">
             Parametrizados bajo formato formal y validados con Zod.
           </p>
         </div>
@@ -80,30 +80,32 @@ export const RequirementsView: React.FC<RequirementsViewProps> = ({
           icon="add"
           size="sm"
           onClick={() => setIsCreateOpen(true)}
+          className="shrink-0"
         >
-          Nuevo Requisito
+          <span className="hidden xs:inline">Nuevo Requisito</span>
+          <span className="xs:hidden">Nuevo</span>
         </VisionButton>
       </div>
 
       {/* Barra de Filtros y Búsqueda */}
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex flex-wrap items-center gap-2 shrink-0">
         <input
           type="text"
           placeholder="Buscar por código o título..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="vision-input !py-1 text-xs max-w-xs"
+          className="vision-input !py-1 text-xs flex-1 min-w-[130px] sm:max-w-xs"
         />
         <select
           value={filterType}
           onChange={(e) => setFilterType(e.target.value)}
-          className="vision-btn text-xs !py-1 bg-[var(--glass-input)] text-primary"
+          className="vision-btn text-xs !py-1 bg-[var(--glass-input)] text-primary shrink-0"
         >
-          <option value="ALL" className="bg-slate-900 text-white dark:bg-slate-900">Todos los tipos</option>
+          <option value="ALL" className="bg-slate-900 text-white dark:bg-slate-900">Todos</option>
           <option value="RF" className="bg-slate-900 text-white dark:bg-slate-900">Solo RF (Funcionales)</option>
           <option value="RNF" className="bg-slate-900 text-white dark:bg-slate-900">Solo RNF (No Funcionales)</option>
         </select>
-        <span className="text-[10.5px] font-mono text-muted ml-auto">
+        <span className="text-[10px] sm:text-[10.5px] font-mono text-muted ml-auto hidden xs:inline shrink-0">
           {filtered.length} {filtered.length === 1 ? 'requisito' : 'requisitos'}
         </span>
       </div>

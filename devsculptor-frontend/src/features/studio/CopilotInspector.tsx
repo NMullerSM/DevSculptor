@@ -4,9 +4,15 @@ import { VisionPill } from '@/components/ui/VisionPill';
 
 interface CopilotInspectorProps {
   onQuickAction?: (actionText: string) => void;
+  onClose?: () => void;
+  className?: string;
 }
 
-export const CopilotInspector: React.FC<CopilotInspectorProps> = ({ onQuickAction }) => {
+export const CopilotInspector: React.FC<CopilotInspectorProps> = ({
+  onQuickAction,
+  onClose,
+  className = '',
+}) => {
   const { metrics, activeProject } = useProjectStore();
 
   const maturityScore = metrics ? metrics.maturity_index : 100;
@@ -15,17 +21,36 @@ export const CopilotInspector: React.FC<CopilotInspectorProps> = ({ onQuickActio
   const totalEntities = metrics ? metrics.total_entities : 0;
   const totalAdrs = metrics ? metrics.total_adrs_accepted : 0;
 
+  const handleActionClick = (actionText: string) => {
+    onQuickAction?.(actionText);
+    if (onClose) {
+      onClose();
+    }
+  };
+
   return (
-    <aside className="vision-window w-[260px] shrink-0 flex flex-col p-3 gap-3 select-none">
+    <aside className={`vision-window flex flex-col p-3 gap-3 select-none ${className}`}>
       {/* Encabezado */}
       <div className="flex items-center justify-between pb-1 border-b border-glass-subtle">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(56,189,248,0.8)] animate-pulse" />
           <span className="font-semibold text-xs text-primary">Copiloto</span>
         </div>
-        <VisionPill variant="cyan" className="text-[8.5px]">
-          ACTIVO
-        </VisionPill>
+        <div className="flex items-center gap-1.5">
+          <VisionPill variant="cyan" className="text-[8.5px]">
+            ACTIVO
+          </VisionPill>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="vision-btn vision-btn-icon !p-1 text-muted hover:text-primary"
+              title="Cerrar panel de copiloto"
+              aria-label="Cerrar panel de copiloto"
+            >
+              <span className="material-symbols-outlined text-sm">close</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tarjeta de Maturity Index del Stored Procedure */}
@@ -85,7 +110,7 @@ export const CopilotInspector: React.FC<CopilotInspectorProps> = ({ onQuickActio
         </div>
 
         <button
-          onClick={() => onQuickAction?.('Auditoría IA 3FN & ADRs')}
+          onClick={() => handleActionClick('Auditoría IA 3FN & ADRs')}
           className="vision-card p-2 w-full text-left text-[10.5px] text-primary hover:border-indigo-400/50 flex items-center gap-2 transition-all cursor-pointer bg-indigo-500/10 border-indigo-500/30"
         >
           <span className="material-symbols-outlined text-sm text-indigo-400">auto_awesome</span>
@@ -93,7 +118,7 @@ export const CopilotInspector: React.FC<CopilotInspectorProps> = ({ onQuickActio
         </button>
 
         <button
-          onClick={() => onQuickAction?.('Validar RF con Esquema DDL')}
+          onClick={() => handleActionClick('Validar RF con Esquema DDL')}
           className="vision-card p-2 w-full text-left text-[10.5px] text-primary hover:border-indigo-400/50 flex items-center gap-2 transition-all cursor-pointer"
         >
           <span className="material-symbols-outlined text-sm text-cyan-500 dark:text-cyan-400">verified</span>
@@ -101,7 +126,7 @@ export const CopilotInspector: React.FC<CopilotInspectorProps> = ({ onQuickActio
         </button>
 
         <button
-          onClick={() => onQuickAction?.('Inspeccionar Políticas RLS')}
+          onClick={() => handleActionClick('Inspeccionar Políticas RLS')}
           className="vision-card p-2 w-full text-left text-[10.5px] text-primary hover:border-indigo-400/50 flex items-center gap-2 transition-all cursor-pointer"
         >
           <span className="material-symbols-outlined text-sm text-emerald-500 dark:text-emerald-400">lock</span>
@@ -109,7 +134,7 @@ export const CopilotInspector: React.FC<CopilotInspectorProps> = ({ onQuickActio
         </button>
 
         <button
-          onClick={() => onQuickAction?.('Métricas de Cobertura')}
+          onClick={() => handleActionClick('Métricas de Cobertura')}
           className="vision-card p-2 w-full text-left text-[10.5px] text-primary hover:border-indigo-400/50 flex items-center gap-2 transition-all cursor-pointer"
         >
           <span className="material-symbols-outlined text-sm text-amber-500 dark:text-amber-400">insights</span>

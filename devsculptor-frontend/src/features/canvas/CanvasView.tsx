@@ -100,13 +100,35 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
   return (
     <div className="flex-1 flex flex-col h-full relative overflow-hidden select-none">
       {/* Barra Superior de Subpestañas */}
-      <div className="h-10 px-3 border-b border-glass-subtle flex items-center justify-between bg-black/5 dark:bg-black/20 shrink-0 z-20">
-        <div className="flex items-center gap-1 overflow-x-auto">
+      <div className="min-h-10 py-1.5 px-2 sm:px-3 border-b border-glass-subtle flex items-center justify-between gap-2 bg-black/5 dark:bg-black/20 shrink-0 z-20">
+        {/* Modo Combobox en Pantallas Pequeñas, Tablets y Laptops (< 2xl) */}
+        <div className="2xl:hidden flex items-center gap-1.5 flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 bg-[var(--glass-card)] border border-glass-subtle rounded-lg px-2 py-1 w-full max-w-[220px] sm:max-w-[240px]">
+            <span className="material-symbols-outlined text-[15px] text-cyan-400 shrink-0">
+              {subtabs.find((t) => t.id === activeSubTab)?.icon || 'schema'}
+            </span>
+            <select
+              value={activeSubTab}
+              onChange={(e) => setActiveSubTab(e.target.value as CanvasSubTab)}
+              className="bg-transparent text-primary text-xs font-medium focus:outline-none w-full cursor-pointer truncate"
+              aria-label="Seleccionar vista de canvas"
+            >
+              {subtabs.map((tab) => (
+                <option key={tab.id} value={tab.id} className="bg-slate-900 text-white dark:bg-slate-900">
+                  {tab.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Modo Botones Desplegados en Monitores Grandes y Ultra-Wide (>= 2xl) */}
+        <div className="hidden 2xl:flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
           {subtabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveSubTab(tab.id)}
-              className={`vision-btn !py-1 !px-2.5 text-[11px] ${
+              className={`vision-btn !py-1 !px-2.5 text-[11px] shrink-0 ${
                 activeSubTab === tab.id ? 'vision-btn-primary' : ''
               }`}
             >
@@ -116,30 +138,51 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
           ))}
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Lado Derecho: Selector de Motor y Acciones */}
+        <div className="flex items-center gap-2 shrink-0">
           {/* Selector de Dialecto Multi-Motor cuando está en SQL */}
           {activeSubTab === 'sql' && (
-            <div className="flex items-center gap-1 bg-[var(--glass-card)] border border-glass-subtle rounded-lg p-0.5 font-mono text-[10.5px]">
-              <span className="text-muted px-1 text-[10px]">Motor:</span>
-              {(['postgres', 'mysql', 'sqlite', 'oracle'] as SqlDialect[]).map((d) => (
-                <button
-                  key={d}
-                  onClick={() => setSqlDialect(d)}
-                  className={`px-2 py-0.5 rounded capitalize transition-colors ${
-                    sqlDialect === d
-                      ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 font-bold border border-cyan-500/40'
-                      : 'text-muted hover:text-primary'
-                  }`}
+            <>
+              {/* Combobox de Motor en móvil, tablet y laptops (< 2xl) */}
+              <div className="2xl:hidden flex items-center gap-1 bg-[var(--glass-card)] border border-glass-subtle rounded-lg px-2 py-1 font-mono text-[11px]">
+                <span className="text-muted text-[10px]">Motor:</span>
+                <select
+                  value={sqlDialect}
+                  onChange={(e) => setSqlDialect(e.target.value as SqlDialect)}
+                  className="bg-transparent text-cyan-600 dark:text-cyan-300 font-bold focus:outline-none capitalize text-xs cursor-pointer"
+                  aria-label="Seleccionar motor de base de datos"
                 >
-                  {d}
-                </button>
-              ))}
-            </div>
+                  {(['postgres', 'mysql', 'sqlite', 'oracle'] as SqlDialect[]).map((d) => (
+                    <option key={d} value={d} className="bg-slate-900 text-white dark:bg-slate-900 capitalize">
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Botones Desplegados de Motor en pantallas ultra-grandes (>= 2xl) */}
+              <div className="hidden 2xl:flex items-center gap-1 bg-[var(--glass-card)] border border-glass-subtle rounded-lg p-0.5 font-mono text-[10.5px]">
+                <span className="text-muted px-1 text-[10px]">Motor:</span>
+                {(['postgres', 'mysql', 'sqlite', 'oracle'] as SqlDialect[]).map((d) => (
+                  <button
+                    key={d}
+                    onClick={() => setSqlDialect(d)}
+                    className={`px-2 py-0.5 rounded capitalize transition-colors ${
+                      sqlDialect === d
+                        ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 font-bold border border-cyan-500/40'
+                        : 'text-muted hover:text-primary'
+                    }`}
+                  >
+                    {d}
+                  </button>
+                ))}
+              </div>
+            </>
           )}
 
           {activeSubTab === 'erd' && (
             <div className="flex items-center gap-2">
-              <span className="text-[10.5px] font-mono text-muted bg-[var(--glass-card)] px-2 py-0.5 rounded border border-glass-subtle">
+              <span className="text-[10.5px] font-mono text-muted bg-[var(--glass-card)] px-2 py-0.5 rounded border border-glass-subtle hidden sm:inline-block">
                 {entities.length} {entities.length === 1 ? 'tabla' : 'tablas'}
               </span>
               {!isDrawerOpen && (
@@ -162,7 +205,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
               onClick={handleCopyCode}
               className={copyFeedback ? 'text-emerald-400' : ''}
             >
-              {copyFeedback ? 'Copiado' : 'Copiar Código'}
+              <span className="hidden xs:inline">{copyFeedback ? 'Copiado' : 'Copiar Código'}</span>
+              <span className="xs:hidden">{copyFeedback ? 'Listo' : 'Copiar'}</span>
             </VisionButton>
           )}
         </div>

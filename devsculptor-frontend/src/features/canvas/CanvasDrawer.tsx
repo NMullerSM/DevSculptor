@@ -86,7 +86,7 @@ export const CanvasDrawer: React.FC<CanvasDrawerProps> = ({
 
       {/* Panel Desplegable (Sliding Drawer) con Soporte Nativo Claro / Oscuro */}
       <div
-        className={`vision-drawer absolute top-0 left-0 bottom-0 w-80 z-20 flex flex-col transition-transform duration-300 ease-out shadow-2xl ${
+        className={`vision-drawer absolute top-0 left-0 bottom-0 w-80 max-w-[90vw] z-20 flex flex-col transition-transform duration-300 ease-out shadow-2xl ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

@@ -39,7 +39,7 @@ export const App: React.FC = () => {
   // Pantalla 0: Portal de Acceso y Autenticación
   if (!token || !user) {
     return (
-      <div className="h-screen w-screen relative overflow-hidden flex flex-col">
+      <div className="h-screen h-dvh w-screen relative overflow-hidden flex flex-col">
         <WallpaperCanvas currentWallpaperUrl={currentWallpaperUrl} />
         <AuthPortal />
       </div>
@@ -52,7 +52,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="h-screen w-screen relative overflow-hidden flex flex-col p-3 gap-3">
+    <div className="h-screen h-dvh w-screen relative overflow-hidden flex flex-col p-1.5 sm:p-2.5 md:p-3 gap-1.5 sm:gap-2.5 md:gap-3">
       {/* 1. Fondo Escénico de Vidrio Multicapa */}
       <WallpaperCanvas currentWallpaperUrl={currentWallpaperUrl} />
 

@@ -165,6 +165,64 @@ Completada para asegurar que el sistema preserve el control y juicio técnico hu
 
 ---
 
+### 4.4. Épica D: Responsividad Multi-Pantalla a 60 FPS y Patrón Combobox visionOS (100%)
+
+Completada para garantizar que DevSculptor opere de forma fluida en cualquier factor de forma:
+
+1. **Layout Híbrido Tripartito vs. Slide-Over Glass Drawers (`StudioWorkspace.tsx` y `useLayoutStore.ts`)**:
+   - **Escritorio (≥ 1280px)**: 3 columnas estables en pantalla (`FlowSidebar` 240px + Canvas central `flex-1` + `CopilotInspector` 260px).
+   - **Tablets y Móviles (< 1280px)**: El lienzo central ocupa el **100% del viewport**. Los paneles laterales se convierten en drawers flotantes sobre un backdrop desenfocado (`backdrop-blur-sm`), controlados por el store reactivo `useLayoutStore`.
+2. **Floating Vision Dock en Dispositivos Táctiles**:
+   - Barra de control flotante inferior en pantallas `< 1280px` para cambiar en 1 tap entre las 4 vistas (Chat, Requisitos, ADRs, Canvas) y disparar los drawers laterales.
+3. **Resiliencia de Viewports Dinámicos y Modales**:
+   - Adopción de `h-dvh` en `App.tsx` y `AuthPortal.tsx` para evitar que la barra del navegador corte la interfaz en móviles.
+   - Contención `max-h-[calc(100dvh-1.5rem)]` y scroll inercial en `VisionModal.tsx`.
+4. **Patrón Combobox en Lienzo ERD (`CanvasView.tsx`)**:
+   - En pantallas `< 1536px` (`< 2xl`: laptops y tablets), las 6 subpestañas se agrupan en un selector combobox de cristal líquido con icono dinámico.
+   - En el visor DDL, los 4 motores SQL se condensan en un selector tipo pastilla (`Motor:`), neutralizando por completo el solapamiento visual.
+
+---
+
+### 4.5. Épica E: Razonamiento Dinámico del Copiloto IA, Resiliencia 3FN y Copiado Integral (100%)
+
+Perfeccionamiento del motor de arquitectura asistida para eliminar rigideces y garantizar robustez técnica:
+
+1. **Erradicación de Rangos Fijos**:
+   - Eliminación de la limitación artificial de "2 a 4 requisitos". El motor formula de manera **100% autónoma y dinámica** la cantidad de requisitos funcionales y no funcionales que demande la complejidad del requerimiento.
+2. **Desacoplamiento Relacional 3FN Multi-Entidad**:
+   - Generación de esquemas relacionales normalizados complejos (ej. pedidos con cabecera `orders`, detalle `order_items`, destino `shipping_addresses` [1:1] y transacción `payments` [1:1]).
+   - Claves foráneas canónicas en plural (`users`, `products`), neutralizando colisiones con palabras reservadas SQL como `user`.
+3. **Resiliencia en Inyecciones RNF y Prioridades**:
+   - Contadores correlativos independientes para requerimientos funcionales (`maxRf`) y no funcionales (`maxRnf`).
+   - Normalización de prioridades a `HIGH | MEDIUM | LOW` para cumplir estrictamente con el constraint de base de datos `CHECK (priority IN ('HIGH', 'MEDIUM', 'LOW'))` y validaciones Zod.
+4. **Copiado Integral de Propuestas Técnicas (`ChatConsultantView.tsx`)**:
+   - El botón principal de copia en el chat formatea e incluye la propuesta completa: razonamiento arquitectónico, requisitos IEEE-830 (código, título, tipo, prioridad, descripción), tablas relacionales (con columnas, PKs y FKs) y actas ADR.
+   - Incorporación de botones de copia específicos: *"Copiar RFs"*, *"Copiar JSON"* y botones individuales por tarjeta de requisito.
+5. **Corrección de DDL Multi-Motor (`scriptGenerators.ts`)**:
+   - Detección previa de columnas de auditoría (`created_at`, `updated_at`) para evitar duplicaciones sintácticas en PostgreSQL, MySQL, SQLite y Oracle.
+   - Inyección automática de `DEFAULT gen_random_uuid()` para claves primarias UUID en PostgreSQL.
+
+---
+
+### 4.6. Épica F: Eliminación Atómica en Cascada y Ticket de Confirmación para Proyectos (100%)
+
+Solución de fondo al problema de persistencia en eliminación de proyectos y refuerzo de seguridad operativa:
+
+1. **Resolución del Conflicto de Claves Foráneas en PostgreSQL (`projects.service.ts`)**:
+   - **Diagnóstico**: Al eliminar un proyecto con entidades de Canvas, PostgreSQL ejecutaba el trigger `trg_audit_canvas_changes`, el cual intentaba insertar un registro en `audit_logs` con `project_id` cuando la fila del proyecto padre ya estaba en proceso de borrado, detonando el error `23503: foreign_key_violation`.
+   - **Solución Transaccional Atómica**: Se implementó una secuencia de eliminación ordenada y encapsulada en transacción:
+     1. Purgar `canvas_entities` mientras el proyecto aún existe (permitiendo la ejecución segura de triggers).
+     2. Purgar `audit_logs`.
+     3. Purgar `requirements` y `architecture_decisions`.
+     4. Eliminar el registro raíz en `projects`.
+2. **Ticket de Confirmación Explícito (`ConfirmModal.tsx` y `ProjectsHub.tsx`)**:
+   - Se añadió el prop `requireConfirmationTicket` a `ConfirmModal`.
+   - Despliegue de una casilla de verificación ("ticket") obligatoria: *"Confirmo que deseo eliminar este proyecto y todos sus artefactos asociados de forma irreversible."*
+   - Bloqueo total del botón de confirmación hasta que el usuario marque la casilla, previniendo borrados involuntarios.
+   - Manejo y presentación de errores inline dentro del modal ante cualquier eventualidad.
+
+---
+
 ## 5. Sprint 4 & Sprint 5: Roadmap Futuro y Cierre
 
 ### Sprint 4: Compilación OKF Dinámica, Pruebas E2E y Rendimiento

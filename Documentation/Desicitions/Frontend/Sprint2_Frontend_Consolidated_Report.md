@@ -16,6 +16,8 @@
 2. [Arquitectura de Pantallas y Flujos de Navegación](#2-arquitectura-de-pantallas-y-flujos-de-navegación)
 3. [Integración con el Backend Core (Sprint 1)](#3-integración-con-el-backend-core-sprint-1)
 4. [Diseño y Componentes: Apple visionOS Liquid Glassmorphism](#4-diseño-y-componentes-apple-visionos-liquid-glassmorphism)
+   - 4.1. [Fundamentos Visuales y Tokens de Cristal Líquido](#41-fundamentos-visuales-y-tokens-de-cristal-líquido)
+   - 4.2. [Arquitectura de Responsividad y Adaptabilidad Multi-Pantalla](#42-arquitectura-de-responsividad-y-adaptabilidad-multi-pantalla)
 5. [Auditoría de Cierre: Modales de Edición y Primitivas Glassmórficas](#5-auditoría-de-cierre-modales-de-edición-y-primitivas-glassmórficas)
 6. [Estado de la Exportación OKF (Open Knowledge Framework)](#6-estado-de-la-exportación-okf-open-knowledge-framework)
 7. [Aseguramiento de Calidad y Definición de Terminado (DoD)](#7-aseguramiento-de-calidad-y-definición-de-terminado-dod)
@@ -112,12 +114,33 @@ En [`apiClient.ts`](file:///c:/Users/natha/Documents/Repos/DevSculptor/devsculpt
 ## 4. Diseño y Componentes: Apple visionOS Liquid Glassmorphism
 
 El sistema visual implementa las convenciones detalladas en `Frontend_Conventions_and_UX_UI_Guidelines.md`:
+
+### 4.1. Fundamentos Visuales y Tokens de Cristal Líquido
 * **Fondo Escénico Multicapa (`WallpaperCanvas.tsx`):** Lienzo de fondo con imágenes escénicas espaciales desenfocadas y capas superpuestas de ruido fractal y gradientes radiales.
 * **Tokens de Cristal Líquido:**
   - `vision-window`: `backdrop-blur-xl bg-white/[0.04] border border-white/[0.08] shadow-2xl rounded-2xl`.
   - `vision-card`: Superficies de segundo nivel con `bg-white/[0.03] border border-white/[0.06] rounded-xl`.
   - `vision-btn-primary`: Acento en degradado índigo-cian con efecto de biselado especular.
 * **Tema Dual Canónico (`useThemeStore.ts`):** Soporte en caliente de modo Obsidian Crystal (espacial oscuro) y Snow Spatial Glass (luz polar), persistido en `localStorage`.
+
+### 4.2. Arquitectura de Responsividad y Adaptabilidad Multi-Pantalla
+Se implementó una reestructuración profunda del layout para garantizar ergonomía táctil en resoluciones móviles, tablets y monitores ultra-anchos:
+1. **Layout Híbrido Tripartito NotebookLM:**
+   - En pantallas amplias (`≥ 1280px`): Las 3 columnas (`FlowSidebar` 240px + Workspace Central `flex-1` + `CopilotInspector` 260px) se presentan en simultáneo.
+   - En tablets y móviles (`< 1280px`): El área de trabajo central (`main`) se expande al **100% de la superficie visual**, transformando los paneles laterales en **Slide-Over Glass Drawers** animados por GPU (`.animate-slide-right` y `.animate-slide-left`) sobre un backdrop oscurecido con `backdrop-blur-sm`.
+2. **Orquestación Global con `useLayoutStore`:**
+   - Centraliza el estado reactivo `isFlowDrawerOpen` e `isCopilotDrawerOpen`, desacoplando la barra superior (`AppleTopBar`), el dock inferior móvil y el espacio de trabajo.
+3. **Floating Vision Dock en Dispositivos Táctiles:**
+   - Incorporación de una barra flotante inferior en pantallas `< 1280px` que permite conmutar en 1 tap entre las 4 vistas activas (Chat, Requisitos, Documentos ADR y Modelador ERD) y disparar los drawers laterales.
+4. **Resiliencia de Viewports Móviles:**
+   - Adopción de `h-screen h-dvh` en los contenedores raíz, neutralizando el desbordamiento provocado por la barra de navegación dinámica en navegadores de iOS y Android.
+   - Todos los modales (`VisionModal`) incorporan contención de altura `max-h-[calc(100dvh-1.5rem)]` y scroll inercial, evitando que los botones de acción queden inaccesibles en pantallas reducidas.
+   - Adaptación de la cuadrícula del Hub de proyectos a 1 columna en móvil, 2 en tablet y 3 en escritorio (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-3`).
+5. **Combobox Dinámico visionOS en el Lienzo Técnico (`CanvasView`):**
+   - En pantallas `< 1536px` (`< 2xl`: móviles, tablets y laptops con sidebars activos), las 6 subpestañas de scripts (Lienzo ERD, DDL Multi-Motor, TypeScript, JSON Schema, Python Pydantic y Auditoría) se colapsan automáticamente en un selector combobox de cristal con icono de contexto reactivo.
+   - En la subpestaña de DDL Multi-Motor, los 4 botones de dialecto SQL (`postgres`, `mysql`, `sqlite`, `oracle`) también se transforman en un combobox compacto tipo píldora (`Motor:`), erradicando por completo el solapamiento visual y garantizando un layout pulcro en laptops y dispositivos táctiles.
+
+
 
 ---
 

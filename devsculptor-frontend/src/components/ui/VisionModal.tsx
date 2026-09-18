@@ -44,15 +44,15 @@ export const VisionModal: React.FC<VisionModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 fade-in"
+      className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-4 fade-in overflow-y-auto"
       role="dialog"
       aria-modal="true"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className={`vision-window ${maxWidthClass} w-full p-5 flex flex-col gap-4 shadow-2xl`}>
-        <div className="flex items-center justify-between pb-2 border-b border-glass-subtle">
+      <div className={`vision-window ${maxWidthClass} w-full p-3.5 sm:p-5 flex flex-col gap-3 sm:gap-4 shadow-2xl max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-2.5rem)] overflow-y-auto custom-scrollbar my-auto`}>
+        <div className="flex items-center justify-between pb-2 border-b border-glass-subtle shrink-0">
           <div className="flex flex-col gap-0.5 min-w-0 pr-2">
             <div className="flex items-center gap-2">
               {icon && (
@@ -63,7 +63,7 @@ export const VisionModal: React.FC<VisionModalProps> = ({
               <h3 className="font-semibold text-xs text-primary tracking-tight truncate">{title}</h3>
             </div>
             {description && (
-              <p className="text-[11px] text-secondary leading-tight font-mono">{description}</p>
+              <p className="text-[10px] sm:text-[11px] text-secondary leading-tight font-mono">{description}</p>
             )}
           </div>
           <button

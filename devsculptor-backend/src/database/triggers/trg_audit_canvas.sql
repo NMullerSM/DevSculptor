@@ -22,8 +22,16 @@ BEGIN
     VALUES (NEW.project_id, v_user_id, 'canvas_entity', NEW.id, 'UPDATE', to_jsonb(OLD), to_jsonb(NEW));
     RETURN NEW;
   ELSIF TG_OP = 'DELETE' THEN
-    INSERT INTO audit_logs (project_id, user_id, entity_type, entity_id, action, payload_before, payload_after)
-    VALUES (OLD.project_id, v_user_id, 'canvas_entity', OLD.id, 'DELETE', to_jsonb(OLD), NULL);
+    -- Evitar fallo de FK si el proyecto padre está siendo eliminado en cascada
+    IF EXISTS (SELECT 1 FROM projects WHERE id = OLD.project_id) THEN
+      BEGIN
+        INSERT INTO audit_logs (project_id, user_id, entity_type, entity_id, action, payload_before, payload_after)
+        VALUES (OLD.project_id, v_user_id, 'canvas_entity', OLD.id, 'DELETE', to_jsonb(OLD), NULL);
+      EXCEPTION WHEN foreign_key_violation THEN
+        -- Si el proyecto padre está en proceso de eliminación transaccional, ignorar
+        NULL;
+      END;
+    END IF;
     RETURN OLD;
   END IF;
 
