@@ -19,6 +19,7 @@ export interface VaultSummary {
   driftDocuments: number;
   freshnessScore: number; // 0 - 100%
   categories: {
+    manifest: number;
     documentation: number;
     database: number;
     skills: number;
@@ -142,7 +143,8 @@ export const okfVaultService = {
     let stale = 0;
     let drift = 0;
 
-    const categories = {
+    const categories: VaultSummary['categories'] = {
+      manifest: 0,
       documentation: 0,
       database: 0,
       skills: 0,

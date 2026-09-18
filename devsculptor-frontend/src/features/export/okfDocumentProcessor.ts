@@ -12,6 +12,7 @@ import {
 } from '@/features/canvas/scriptGenerators';
 
 export type OkfDocumentType =
+  | 'OKF_INDEX_MANIFEST'
   | 'REQUIREMENT_SRS'
   | 'ARCHITECTURE_DECISION'
   | 'DDL_SCHEMA'
@@ -42,13 +43,18 @@ export interface OkfMetadataHeader {
     related_requirements?: string[];
     related_adrs?: string[];
   };
+  ai_reading_order?: Array<{
+    step: number;
+    path: string;
+    purpose: string;
+  }>;
 }
 
 export interface ProcessedOkfDocument {
   id: string;
   path: string;
   filename: string;
-  category: 'documentation' | 'database' | 'skills' | 'context';
+  category: 'manifest' | 'documentation' | 'database' | 'skills' | 'context';
   description: string;
   content: string;
   header: OkfMetadataHeader;
@@ -143,6 +149,15 @@ export function formatYamlFrontmatter(header: OkfMetadataHeader): string {
     }
   }
 
+  if (header.ai_reading_order && header.ai_reading_order.length > 0) {
+    yaml += `ai_reading_order:\n`;
+    header.ai_reading_order.forEach((item) => {
+      yaml += `  - step: ${item.step}\n`;
+      yaml += `    path: "${item.path}"\n`;
+      yaml += `    purpose: "${item.purpose.replace(/"/g, '\\"')}"\n`;
+    });
+  }
+
   yaml += `---\n\n`;
   return yaml;
 }
@@ -174,6 +189,13 @@ export function inferSemanticTags(title: string, body: string, baseType: OkfDocu
     case 'REQUIREMENT_SRS':
       tags.add('ieee-830');
       tags.add('requirements');
+      break;
+    case 'OKF_INDEX_MANIFEST':
+      tags.add('manifest');
+      tags.add('okf-index');
+      tags.add('ai-protocol');
+      tags.add('reading-order');
+      tags.add('governance');
       break;
     case 'ARCHITECTURE_DECISION':
       tags.add('adr');
@@ -777,7 +799,7 @@ export async function processProjectOkfVault(input: OkfProcessorInput): Promise<
 
   const claudeMdHash = await computeSha256(claudeMdBody);
   const claudeMdHeader: OkfMetadataHeader = {
-    okf_spec: '1.0',
+    okf_spec: '1.0.0',
     document_id: 'DOC-CLAUDE-MD',
     document_type: 'PROMPT_BUNDLE',
     project_id: project.id,
@@ -805,6 +827,156 @@ export async function processProjectOkfVault(input: OkfProcessorInput): Promise<
     stateHash: claudeMdHash,
     freshnessStatus: 'FRESH',
   });
+
+  // =========================================================================
+  // 8. Manifiesto Maestro OKF & Protocolo de Ingestión IA -> /INDEX.md
+  // =========================================================================
+  const aiReadingOrder = [
+    {
+      step: 1,
+      path: 'INDEX.md',
+      purpose: 'Manifiesto maestro, inventario de integridad criptográfica y mapa de navegación',
+    },
+    {
+      step: 2,
+      path: 'context/PROMPT_MAESTRO_CONTEXTO.md',
+      purpose: 'Identidad, stack tecnológico, puertos y restricciones globales del proyecto',
+    },
+    {
+      step: 3,
+      path: 'skills/devsculptor-architect.md',
+      purpose: 'Directrices de ingeniería, reglas de codificación estricta y arquitectura transversal',
+    },
+    {
+      step: 4,
+      path: 'documentation/requirements/SRS_Requisitos_IEEE830.md',
+      purpose: 'Catálogo oficial de Requisitos Funcionales (RF) y No Funcionales (RNF) bajo IEEE-830',
+    },
+    {
+      step: 5,
+      path: 'documentation/adrs/ADR_INDEX.md',
+      purpose: 'Registro consolidado de Decisiones de Arquitectura (ADRs) ratificadas e inmutables',
+    },
+    {
+      step: 6,
+      path: `database/schemas/schema_ddl_${sqlDialect}.sql`,
+      purpose: 'DDL físico relacional, tablas, tipos, claves primarias, foráneas e índices',
+    },
+    {
+      step: 7,
+      path: 'database/dictionaries/DATA_DICTIONARY.md',
+      purpose: 'Diccionario exhaustivo de entidades, atributos, cardinalidades y diagramas',
+    },
+    {
+      step: 8,
+      path: 'context/.cursorrules',
+      purpose: 'Reglas de comportamiento y contexto de sistema para Cursor AI IDE',
+    },
+    {
+      step: 9,
+      path: 'context/CLAUDE.md',
+      purpose: 'Guía de comandos de desarrollo, test y convención de estilo para Claude Code',
+    },
+  ];
+
+  let indexBody = `# 🏛️ ${project.name} — Bóveda de Gobernanza Canónica OKF\n\n`;
+  indexBody += `> **Especificación:** One Knowledge Format (OKF v1.0.0)\n`;
+  indexBody += `> **Organización:** ${project.organization || 'DevSculptor'}\n`;
+  indexBody += `> **Líder Arquitecto:** ${verifier}\n`;
+  indexBody += `> **Estilo de Arquitectura:** ${project.architecture_style || 'Monolito Modular Layered MVC'}\n`;
+  indexBody += `> **Estado de Madurez:** ${maturity}%\n`;
+  indexBody += `> **Generado el:** ${now}\n\n`;
+
+  indexBody += `---\n\n`;
+  indexBody += `## 🤖 Protocolo de Ingestión Secuencial para Modelos de Lenguaje (LLMs)\n\n`;
+  indexBody += `Cualquier agente de inteligencia artificial (Cursor, Claude Code, GitHub Copilot, Gemini CLI, Aider, Devin) o ingeniero que se incorpore a este proyecto **DEBE leer y procesar los documentos en el siguiente orden estricto** para garantizar comprensión holística sin alucinaciones ni desviaciones arquitectónicas:\n\n`;
+
+  indexBody += `| Paso | Archivo | Propósito / Qué aprender de este archivo |\n`;
+  indexBody += `| :---: | :--- | :--- |\n`;
+  aiReadingOrder.forEach((item) => {
+    indexBody += `| **${item.step}** | [\`${item.path}\`](./${item.path}) | ${item.purpose} |\n`;
+  });
+  indexBody += `\n---\n\n`;
+
+  indexBody += `## 📂 Jerarquía Canónica de Archivos en la Bóveda\n\n`;
+  indexBody += `\`\`\`text\n`;
+  indexBody += `.\n`;
+  indexBody += `├── INDEX.md                                       # [ESTE ARCHIVO] Manifiesto maestro y protocolo de IA\n`;
+  indexBody += `├── documentation/\n`;
+  indexBody += `│   ├── requirements/\n`;
+  indexBody += `│   │   └── SRS_Requisitos_IEEE830.md              # Requisitos de software IEEE-830\n`;
+  indexBody += `│   └── adrs/\n`;
+  indexBody += `│       ├── ADR_INDEX.md                           # Índice consolidado de decisiones\n`;
+  decisions.slice(0, 3).forEach((d, i) => {
+    const adrCode = d.code || `ADR-${String(i + 1).padStart(3, '0')}`;
+    const dSlug = sanitizeCanonicalSlug(d.title);
+    indexBody += `│       ├── ${adrCode}_${dSlug.substring(0, 20)}.md\n`;
+  });
+  if (decisions.length > 3) {
+    indexBody += `│       └── ... (${decisions.length - 3} ADRs adicionales)\n`;
+  }
+  indexBody += `├── database/\n`;
+  indexBody += `│   ├── schemas/\n`;
+  indexBody += `│   │   └── schema_ddl_${sqlDialect}.sql               # Esquema DDL físico (${sqlDialect.toUpperCase()})\n`;
+  indexBody += `│   └── dictionaries/\n`;
+  indexBody += `│       ├── DATA_DICTIONARY.md                     # Diccionario de datos de entidades\n`;
+  indexBody += `│       └── ERD_DIAGRAM.md                         # Diagrama Entidad-Relación Mermaid\n`;
+  indexBody += `├── skills/\n`;
+  indexBody += `│   └── devsculptor-architect.md                   # Manual de conducta técnica y estilo\n`;
+  indexBody += `└── context/\n`;
+  indexBody += `    ├── PROMPT_MAESTRO_CONTEXTO.md                 # Contexto unificado de arquitectura\n`;
+  indexBody += `    ├── .cursorrules                               # Configuración de contexto para Cursor\n`;
+  indexBody += `    └── CLAUDE.md                                  # Guía de comandos para Claude Code\n`;
+  indexBody += `\`\`\`\n\n`;
+
+  indexBody += `---\n\n`;
+  indexBody += `## 📋 Inventario de Artefactos y Hashes de Integridad (SHA-256)\n\n`;
+  indexBody += `| Documento | Categoría | Hash SHA-256 (Estado) | Vigencia |\n`;
+  indexBody += `| :--- | :--- | :--- | :---: |\n`;
+  documents.forEach((d) => {
+    indexBody += `| [\`${d.path}\`](./${d.path}) | \`${d.category}\` | \`${d.stateHash.substring(0, 16)}...\` | \`${d.freshnessStatus}\` |\n`;
+  });
+  indexBody += `\n---\n\n`;
+
+  indexBody += `## 🛡️ Guardarraíles de Arquitectura para la Inteligencia Artificial\n\n`;
+  indexBody += `1. **Inmutabilidad de Decisiones (ADRs):** Ningún agente debe sugerir cambios de dependencias o patrones que contradigan los ADRs aprobados en \`documentation/adrs/\`.\n`;
+  indexBody += `2. **Gobernanza de Base de Datos:** Toda tabla, columna o relación debe adherirse al diccionario de datos en \`database/dictionaries/\` y sus tipos SQL canónicos.\n`;
+  indexBody += `3. **Calidad de Tipado y Seguridad:** Cumplimiento irrestricto de las directrices en \`skills/devsculptor-architect.md\` (TypeScript estricto, cero \`any\`, sanitización de entradas con Zod y parámetros posicionales en consultas SQL).\n`;
+
+  const indexHash = await computeSha256(indexBody);
+  const indexHeader: OkfMetadataHeader = {
+    okf_spec: '1.0.0',
+    document_id: 'OKF-INDEX-001',
+    document_type: 'OKF_INDEX_MANIFEST',
+    project_id: project.id,
+    project_name: project.name,
+    title: `${project.name} - Manifiesto Maestro OKF e Índice de Ingestión IA`,
+    canonical_path: 'INDEX.md',
+    tags: inferSemanticTags(project.name, project.description || '', 'OKF_INDEX_MANIFEST'),
+    freshness: {
+      status: 'FRESH',
+      last_verified: now,
+      state_hash: indexHash,
+      verified_by: verifier,
+    },
+    ai_reading_order: aiReadingOrder,
+  };
+
+  const indexDoc: ProcessedOkfDocument = {
+    id: indexHeader.document_id,
+    path: 'INDEX.md',
+    filename: 'INDEX.md',
+    category: 'manifest',
+    description: 'Manifiesto maestro de la bóveda OKF con protocolo de lectura secuencial para IA',
+    content: `${formatYamlFrontmatter(indexHeader)}${indexBody}`,
+    header: indexHeader,
+    rawBody: indexBody,
+    stateHash: indexHash,
+    freshnessStatus: 'FRESH',
+  };
+
+  // Prepend para que sea el primer documento en la bóveda
+  documents.unshift(indexDoc);
 
   return documents;
 }

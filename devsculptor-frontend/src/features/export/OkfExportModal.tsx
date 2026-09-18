@@ -63,9 +63,10 @@ export const OkfExportModal: React.FC<OkfExportModalProps> = ({ isOpen, onClose 
     return okfVaultService.calculateSummary(documents);
   }, [documents]);
 
-  // Documentos filtrados por las categorías seleccionadas
+  // Documentos filtrados por las categorías seleccionadas (el manifiesto INDEX.md siempre se incluye)
   const filteredDocuments = useMemo(() => {
     return documents.filter((doc) => {
+      if (doc.category === 'manifest') return true;
       if (doc.category === 'documentation' && !includeDocs) return false;
       if (doc.category === 'database' && !includeDb) return false;
       if (doc.category === 'skills' && !includeSkills) return false;
@@ -74,12 +75,12 @@ export const OkfExportModal: React.FC<OkfExportModalProps> = ({ isOpen, onClose 
     });
   }, [documents, includeDocs, includeDb, includeSkills, includeContext]);
 
-  // Agrupación por carpetas para la vista de árbol
+  // Agrupación por carpetas para la vista de árbol (Raíz/Manifiesto primero)
   const groupedTree = useMemo(() => {
     const groups: Record<string, ProcessedOkfDocument[]> = {};
     documents.forEach((doc) => {
       const parts = doc.path.split('/');
-      const folder = parts.length > 1 ? `/${parts.slice(0, -1).join('/')}` : '/root';
+      const folder = parts.length > 1 ? `/${parts.slice(0, -1).join('/')}` : '/ (Raíz OKF)';
       if (!groups[folder]) groups[folder] = [];
       groups[folder].push(doc);
     });
@@ -300,47 +301,67 @@ export const OkfExportModal: React.FC<OkfExportModalProps> = ({ isOpen, onClose 
                   const visibleDocs = docs.filter((d) => filteredDocuments.some((fd) => fd.path === d.path));
                   if (visibleDocs.length === 0) return null;
 
-                  return (
-                    <div key={folder} className="space-y-1">
-                      <div className="text-indigo-400 font-semibold flex items-center gap-1 text-[10.5px]">
-                        <span className="material-symbols-outlined text-xs">folder</span>
-                        <span>{folder}</span>
-                      </div>
-                      <div className="pl-3 space-y-0.5 border-l border-white/10">
-                        {visibleDocs.map((doc) => {
-                          const isSelected = selectedDoc?.path === doc.path;
-                          return (
-                            <button
-                              key={doc.path}
-                              type="button"
-                              onClick={() => setSelectedDoc(doc)}
-                              className={`w-full text-left px-2 py-1 rounded-[4px] flex items-center justify-between gap-1.5 transition-all ${
-                                isSelected
-                                  ? 'bg-indigo-500/20 border border-indigo-500/40 text-white font-medium'
-                                  : 'text-muted hover:text-primary hover:bg-white/[0.04]'
-                              }`}
-                            >
-                              <div className="flex items-center gap-1.5 truncate">
-                                <span className="material-symbols-outlined text-[12px] opacity-70">
-                                  description
-                                </span>
-                                <span className="truncate">{doc.filename}</span>
-                              </div>
-                              <span
-                                className={`text-[9px] px-1 py-0.2 rounded font-sans shrink-0 uppercase ${
-                                  doc.freshnessStatus === 'FRESH'
-                                    ? 'bg-emerald-500/10 text-emerald-400'
-                                    : 'bg-amber-500/10 text-amber-400'
+                    const isRootFolder = folder.startsWith('/ (Raíz');
+                    return (
+                      <div key={folder} className="space-y-1">
+                        <div
+                          className={`font-semibold flex items-center gap-1 text-[10.5px] ${
+                            isRootFolder ? 'text-amber-400' : 'text-indigo-400'
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-xs">
+                            {isRootFolder ? 'star' : 'folder'}
+                          </span>
+                          <span>{folder}</span>
+                        </div>
+                        <div className="pl-3 space-y-0.5 border-l border-white/10">
+                          {visibleDocs.map((doc) => {
+                            const isSelected = selectedDoc?.path === doc.path;
+                            const isManifest = doc.category === 'manifest';
+                            return (
+                              <button
+                                key={doc.path}
+                                type="button"
+                                onClick={() => setSelectedDoc(doc)}
+                                className={`w-full text-left px-2 py-1 rounded-[4px] flex items-center justify-between gap-1.5 transition-all ${
+                                  isSelected
+                                    ? isManifest
+                                      ? 'bg-amber-500/20 border border-amber-500/50 text-white font-medium shadow-sm'
+                                      : 'bg-indigo-500/20 border border-indigo-500/40 text-white font-medium'
+                                    : isManifest
+                                      ? 'text-amber-300/90 hover:text-amber-200 hover:bg-amber-500/10'
+                                      : 'text-muted hover:text-primary hover:bg-white/[0.04]'
                                 }`}
                               >
-                                {doc.freshnessStatus}
-                              </span>
-                            </button>
-                          );
-                        })}
+                                <div className="flex items-center gap-1.5 truncate">
+                                  <span
+                                    className={`material-symbols-outlined text-[12px] ${
+                                      isManifest ? 'text-amber-400 opacity-100' : 'opacity-70'
+                                    }`}
+                                  >
+                                    {isManifest ? 'auto_awesome' : 'description'}
+                                  </span>
+                                  <span className={`truncate ${isManifest ? 'font-semibold' : ''}`}>
+                                    {doc.filename}
+                                  </span>
+                                </div>
+                                <span
+                                  className={`text-[9px] px-1 py-0.2 rounded font-sans shrink-0 uppercase ${
+                                    isManifest
+                                      ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30'
+                                      : doc.freshnessStatus === 'FRESH'
+                                        ? 'bg-emerald-500/10 text-emerald-400'
+                                        : 'bg-amber-500/10 text-amber-400'
+                                  }`}
+                                >
+                                  {isManifest ? 'INDEX' : doc.freshnessStatus}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  );
+                    );
                 })}
               </div>
             )}
