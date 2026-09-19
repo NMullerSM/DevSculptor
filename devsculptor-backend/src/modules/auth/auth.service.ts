@@ -5,12 +5,15 @@ import { UnauthorizedError } from '../../shared/exceptions/UnauthorizedError';
 import { hashPassword, comparePassword } from '../../shared/utils/hash';
 import { signToken } from '../../shared/utils/jwt';
 
+import { UserRole } from '../../shared/types/express';
+
 export interface AuthResponse {
   token: string;
   user: {
     id: string;
     email: string;
     full_name: string;
+    role: UserRole;
   };
 }
 
@@ -29,9 +32,12 @@ export class AuthService {
       email: dto.email.toLowerCase().trim(),
       password_hash: passwordHash,
       full_name: dto.full_name.trim(),
+      role: 'USER',
+      is_active: true,
     });
 
-    const token = signToken({ id: newUser.id, email: newUser.email });
+    const userRole = newUser.role || 'USER';
+    const token = signToken({ id: newUser.id, email: newUser.email, role: userRole });
 
     return {
       token,
@@ -39,6 +45,7 @@ export class AuthService {
         id: newUser.id,
         email: newUser.email,
         full_name: newUser.full_name,
+        role: userRole,
       },
     };
   }
@@ -50,13 +57,18 @@ export class AuthService {
       throw new UnauthorizedError('Credenciales inválidas.');
     }
 
+    if (!user.is_active) {
+      throw new UnauthorizedError('Esta cuenta se encuentra temporalmente inactiva o suspendida.');
+    }
+
     const isMatch = await comparePassword(dto.password, user.password_hash);
     if (!isMatch) {
       // Mensaje genérico por seguridad
       throw new UnauthorizedError('Credenciales inválidas.');
     }
 
-    const token = signToken({ id: user.id, email: user.email });
+    const userRole = user.role || 'USER';
+    const token = signToken({ id: user.id, email: user.email, role: userRole });
 
     return {
       token,
@@ -64,6 +76,7 @@ export class AuthService {
         id: user.id,
         email: user.email,
         full_name: user.full_name,
+        role: userRole,
       },
     };
   }

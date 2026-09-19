@@ -16,6 +16,7 @@ import { canvasRouter, auditLogsRouter } from './modules/canvas/canvas.routes';
 import decisionsRoutes from './modules/decisions/decisions.routes';
 import metricsRoutes from './modules/metrics/metrics.routes';
 import aiRoutes from './modules/ai/ai.routes';
+import adminRoutes from './modules/admin/admin.routes';
 
 export function createApp(): Express {
   const app = express();
@@ -81,7 +82,10 @@ export function createApp(): Express {
   app.use('/api/v1/projects/:projectId/metrics', metricsRoutes);
   app.use('/api/v1/projects/:projectId/ai', aiRoutes);
 
-  // 10. Manejador de rutas no encontradas (404)
+  // 10. Rutas de Administrador Maestro (Protegidas por RBAC SUPERADMIN)
+  app.use('/api/v1/admin', adminRoutes);
+
+  // 11. Manejador de rutas no encontradas (404)
   app.use(notFoundHandler);
 
   // 11. Manejador centralizado de errores con sanitización (500, PG errors, etc.)

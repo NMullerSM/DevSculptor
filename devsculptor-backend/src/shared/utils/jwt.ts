@@ -2,9 +2,12 @@ import jwt from 'jsonwebtoken';
 import { env } from '../../config/env';
 import { UnauthorizedError } from '../exceptions/UnauthorizedError';
 
+import { UserRole } from '../types/express';
+
 export interface TokenPayload {
   id: string;
   email: string;
+  role: UserRole;
 }
 
 export function signToken(payload: TokenPayload): string {
@@ -19,7 +22,11 @@ export function verifyToken(token: string): TokenPayload {
     if (!decoded.id || !decoded.email) {
       throw new UnauthorizedError('Token malformado o payload inválido');
     }
-    return { id: decoded.id, email: decoded.email };
+    return {
+      id: decoded.id,
+      email: decoded.email,
+      role: decoded.role || 'USER',
+    };
   } catch (error) {
     if (error instanceof UnauthorizedError) {
       throw error;

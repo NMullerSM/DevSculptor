@@ -1,6 +1,9 @@
+export type UserRole = 'USER' | 'ADMIN' | 'SUPERADMIN';
+
 export interface AuthUser {
   id: string;
   email: string;
+  role: UserRole;
 }
 
 declare global {
@@ -11,3 +14,4 @@ declare global {
     }
   }
 }
+

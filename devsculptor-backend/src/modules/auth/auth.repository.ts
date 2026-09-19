@@ -1,16 +1,19 @@
 import { BaseRepository } from '../../shared/base/BaseRepository';
+import { UserRole } from '../../shared/types/express';
 
 export interface User {
   id: string;
   email: string;
   password_hash: string;
   full_name: string;
+  role: UserRole;
+  is_active: boolean;
   created_at: Date;
 }
 
 export class AuthRepository extends BaseRepository<User> {
   constructor() {
-    super('users', ['email', 'password_hash', 'full_name']);
+    super('users', ['email', 'password_hash', 'full_name', 'role', 'is_active']);
   }
 
   async findByEmail(email: string): Promise<User | null> {

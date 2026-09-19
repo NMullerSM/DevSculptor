@@ -2,6 +2,8 @@ export interface User {
   id: string;
   email: string;
   full_name: string;
+  role?: 'USER' | 'ADMIN' | 'SUPERADMIN';
+  is_active?: boolean;
   created_at?: string;
 }
 

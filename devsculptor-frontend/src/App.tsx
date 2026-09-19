@@ -7,6 +7,7 @@ import { AppleTopBar } from '@/components/layout/AppleTopBar';
 import { AuthPortal } from '@/features/auth/AuthPortal';
 import { ProjectsHub } from '@/features/projects/ProjectsHub';
 import { StudioWorkspace } from '@/features/studio/StudioWorkspace';
+import { AdminConsoleView } from '@/features/admin/AdminConsoleView';
 import { Project } from '@/types/project.types';
 
 export const App: React.FC = () => {
@@ -14,7 +15,7 @@ export const App: React.FC = () => {
   const { currentWallpaperUrl, initTheme } = useThemeStore();
   const { setActiveProject, fetchProjects } = useProjectStore();
 
-  const [currentScreen, setCurrentScreen] = useState<'studio' | 'hub'>('studio');
+  const [currentScreen, setCurrentScreen] = useState<'studio' | 'hub' | 'admin'>('studio');
 
   // Inicialización de autenticación y tema en el montaje
   useEffect(() => {
@@ -51,6 +52,9 @@ export const App: React.FC = () => {
     setCurrentScreen('studio');
   };
 
+  // Guardarraíl de seguridad en cliente para la consola de administración
+  const effectiveScreen = currentScreen === 'admin' && user?.role !== 'SUPERADMIN' ? 'studio' : currentScreen;
+
   return (
     <div className="h-screen h-dvh w-screen relative overflow-hidden flex flex-col p-1.5 sm:p-2.5 md:p-3 gap-1.5 sm:gap-2.5 md:gap-3">
       {/* 1. Fondo Escénico de Vidrio Multicapa */}
@@ -58,15 +62,17 @@ export const App: React.FC = () => {
 
       {/* 2. Barra Superior Flotante Apple Glass */}
       <AppleTopBar
-        currentScreen={currentScreen}
+        currentScreen={effectiveScreen}
         onNavigateScreen={(screen) => setCurrentScreen(screen)}
       />
 
       {/* 3. Contenido Principal */}
-      {currentScreen === 'studio' ? (
+      {effectiveScreen === 'studio' ? (
         <StudioWorkspace />
-      ) : (
+      ) : effectiveScreen === 'hub' ? (
         <ProjectsHub onOpenProject={handleOpenProject} />
+      ) : (
+        <AdminConsoleView onBack={() => setCurrentScreen('studio')} />
       )}
     </div>
   );

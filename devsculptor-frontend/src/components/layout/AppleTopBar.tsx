@@ -6,8 +6,8 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { VisionPill } from '@/components/ui/VisionPill';
 
 interface AppleTopBarProps {
-  currentScreen: 'studio' | 'hub';
-  onNavigateScreen: (screen: 'studio' | 'hub') => void;
+  currentScreen: 'studio' | 'hub' | 'admin';
+  onNavigateScreen: (screen: 'studio' | 'hub' | 'admin') => void;
 }
 
 export const AppleTopBar: React.FC<AppleTopBarProps> = ({
@@ -82,6 +82,22 @@ export const AppleTopBar: React.FC<AppleTopBarProps> = ({
             <span className="hidden sm:inline">Proyectos</span>
           </button>
         </div>
+
+        {/* Acceso Exclusivo Superadmin: Consola Maestra */}
+        {user?.role === 'SUPERADMIN' && (
+          <button
+            onClick={() => onNavigateScreen('admin')}
+            className={`vision-btn !py-1 !px-2 sm:!px-2.5 text-[11px] flex items-center gap-1.5 transition-all ${
+              currentScreen === 'admin'
+                ? '!bg-amber-500/20 !border-amber-500/60 !text-amber-300 shadow-[0_0_14px_rgba(245,158,11,0.35)]'
+                : 'text-amber-400/90 hover:text-amber-300 hover:bg-amber-500/10 border border-amber-500/25 bg-amber-500/5'
+            }`}
+            title="Consola de Gobernanza y Administrador Maestro"
+          >
+            <span className="material-symbols-outlined text-[14px] text-amber-400">shield_person</span>
+            <span className="hidden sm:inline font-semibold tracking-wide">Consola Maestra</span>
+          </button>
+        )}
       </div>
 
       {/* Centro: Proyecto Activo */}

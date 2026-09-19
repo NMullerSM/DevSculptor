@@ -20,6 +20,7 @@ export function authenticate(req: Request, _res: Response, next: NextFunction): 
     req.user = {
       id: payload.id,
       email: payload.email,
+      role: payload.role || 'USER',
     };
     next();
   } catch (error) {
