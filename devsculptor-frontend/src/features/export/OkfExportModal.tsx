@@ -7,6 +7,7 @@ import { useProjectStore } from '@/stores/useProjectStore';
 import { SqlDialect } from '@/features/canvas/scriptGenerators';
 import { okfVaultService, VaultSummary } from './okfVaultService';
 import { ProcessedOkfDocument } from './okfDocumentProcessor';
+import { OkfIngestModal } from './OkfIngestModal';
 
 interface OkfExportModalProps {
   isOpen: boolean;
@@ -29,6 +30,26 @@ export const OkfExportModal: React.FC<OkfExportModalProps> = ({ isOpen, onClose 
   const [progress, setProgress] = useState(0);
   const [exportError, setExportError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [isIngestModalOpen, setIsIngestModalOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncSuccess, setSyncSuccess] = useState<string | null>(null);
+  const [tagFilter, setTagFilter] = useState('');
+
+  const handleSyncWithCloud = async () => {
+    if (!activeProject || documents.length === 0) return;
+    setIsSyncing(true);
+    setExportError(null);
+    setSyncSuccess(null);
+    try {
+      const res = await okfVaultService.syncWithDatabase(activeProject.id, documents);
+      setSyncSuccess(`Sincronizados ${res.syncedCount} documentos en PostgreSQL.`);
+      setTimeout(() => setSyncSuccess(null), 4000);
+    } catch (err: unknown) {
+      setExportError(err instanceof Error ? err.message : 'Error al sincronizar con la nube');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   // Cargar y compilar documentos de la bóveda
   const loadVaultDocuments = async () => {
@@ -71,9 +92,17 @@ export const OkfExportModal: React.FC<OkfExportModalProps> = ({ isOpen, onClose 
       if (doc.category === 'database' && !includeDb) return false;
       if (doc.category === 'skills' && !includeSkills) return false;
       if (doc.category === 'context' && !includeContext) return false;
+
+      if (tagFilter.trim()) {
+        const query = tagFilter.toLowerCase().trim();
+        const hasTag = doc.header.tags?.some((t) => t.toLowerCase().includes(query));
+        const matchesName = doc.filename.toLowerCase().includes(query);
+        if (!hasTag && !matchesName) return false;
+      }
+
       return true;
     });
-  }, [documents, includeDocs, includeDb, includeSkills, includeContext]);
+  }, [documents, includeDocs, includeDb, includeSkills, includeContext, tagFilter]);
 
   // Agrupación por carpetas para la vista de árbol (Raíz/Manifiesto primero)
   const groupedTree = useMemo(() => {
@@ -200,6 +229,27 @@ export const OkfExportModal: React.FC<OkfExportModalProps> = ({ isOpen, onClose 
           </div>
 
           <div className="flex items-center gap-2">
+            <VisionButton
+              type="button"
+              size="sm"
+              variant="secondary"
+              icon="upload_file"
+              onClick={() => setIsIngestModalOpen(true)}
+              title="Ingestar especificaciones o papers externos a la bóveda"
+            >
+              Ingestar Doc
+            </VisionButton>
+            <VisionButton
+              type="button"
+              size="sm"
+              variant="secondary"
+              icon="cloud_sync"
+              onClick={handleSyncWithCloud}
+              disabled={isSyncing || documents.length === 0}
+              title="Sincronizar la bóveda completa con PostgreSQL / Supabase"
+            >
+              {isSyncing ? 'Sincronizando...' : 'Sincronizar en BD'}
+            </VisionButton>
             {summary.staleDocuments > 0 && (
               <VisionButton
                 type="button"
@@ -232,6 +282,14 @@ export const OkfExportModal: React.FC<OkfExportModalProps> = ({ isOpen, onClose 
             </div>
           </div>
         </div>
+
+        {/* Mensaje de Éxito al sincronizar */}
+        {syncSuccess && (
+          <div className="p-2.5 rounded-[6px] bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[11px] flex items-center gap-2">
+            <span className="material-symbols-outlined text-sm">check_circle</span>
+            <span>{syncSuccess}</span>
+          </div>
+        )}
 
         {/* Mensaje de Error si existiese */}
         {exportError && (
@@ -288,6 +346,27 @@ export const OkfExportModal: React.FC<OkfExportModalProps> = ({ isOpen, onClose 
                 />
                 <span>/context</span>
               </label>
+            </div>
+
+            {/* Buscador de Tags Semánticos */}
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded-[6px] bg-white/[0.03] border border-white/10 text-[10.5px]">
+              <span className="material-symbols-outlined text-xs text-muted">search</span>
+              <input
+                type="text"
+                placeholder="Filtrar por tag (ej: arch:monolith)..."
+                value={tagFilter}
+                onChange={(e) => setTagFilter(e.target.value)}
+                className="bg-transparent border-none text-primary placeholder:text-muted/60 text-[10px] font-mono focus:outline-none w-full"
+              />
+              {tagFilter && (
+                <button
+                  type="button"
+                  onClick={() => setTagFilter('')}
+                  className="text-muted hover:text-primary text-[10px]"
+                >
+                  ✕
+                </button>
+              )}
             </div>
 
             {/* Lista del Árbol */}
@@ -474,6 +553,20 @@ export const OkfExportModal: React.FC<OkfExportModalProps> = ({ isOpen, onClose 
           </div>
         </div>
       </div>
+
+      {activeProject && (
+        <OkfIngestModal
+          isOpen={isIngestModalOpen}
+          onClose={() => {
+            setIsIngestModalOpen(false);
+            loadVaultDocuments();
+          }}
+          projectId={activeProject.id}
+          onDocumentImported={() => {
+            loadVaultDocuments();
+          }}
+        />
+      )}
     </VisionModal>
   );
 };

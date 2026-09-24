@@ -11,6 +11,8 @@ import { canvasService } from '@/services/canvas.service';
 import { useProjectStore } from '@/stores/useProjectStore';
 import { useCanvasStore } from '@/stores/useCanvasStore';
 import { SqlDialect } from '@/features/canvas/scriptGenerators';
+import { okfService } from '@/services/okf.service';
+import { SyncVaultItemPayload, SyncVaultResponse, ConvertedOkfResponse } from '@/types/okf.types';
 
 export interface VaultSummary {
   totalDocuments: number;
@@ -24,6 +26,8 @@ export interface VaultSummary {
     database: number;
     skills: number;
     context: number;
+    knowledge?: number;
+    templates?: number;
   };
 }
 
@@ -149,6 +153,8 @@ export const okfVaultService = {
       database: 0,
       skills: 0,
       context: 0,
+      knowledge: 0,
+      templates: 0,
     };
 
     documents.forEach((d) => {
@@ -236,5 +242,90 @@ export const okfVaultService = {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  },
+
+  /**
+   * Sincroniza la colección completa de documentos OKF en PostgreSQL / Supabase.
+   */
+  async syncWithDatabase(
+    projectId: string,
+    documents: ProcessedOkfDocument[]
+  ): Promise<SyncVaultResponse> {
+    const payloads: SyncVaultItemPayload[] = documents.map((doc) => {
+      // Mapear document_type canónico
+      let docType: SyncVaultItemPayload['documentType'] = 'DOCUMENT_TEMPLATE';
+      if (doc.header.document_type === 'REQUIREMENT_SRS') docType = 'REQUIREMENT_SPEC';
+      else if (doc.header.document_type === 'ARCHITECTURE_DECISION') docType = 'DECISION_ADR';
+      else if (doc.header.document_type === 'DDL_SCHEMA') docType = 'DATABASE_SCHEMA';
+      else if (doc.header.document_type === 'DATA_DICTIONARY') docType = 'DATABASE_SCHEMA';
+      else if (doc.header.document_type === 'MERMAID_ERD') docType = 'DATABASE_SCHEMA';
+      else if (doc.header.document_type === 'SKILL') docType = 'AGENT_SKILL';
+      else if (doc.header.document_type === 'PROMPT_BUNDLE') docType = 'PROJECT_CONTEXT';
+      else if (doc.header.document_type === 'KNOWLEDGE_BASE') docType = 'KNOWLEDGE_BASE';
+      else if (doc.header.document_type === 'ARCHITECTURE_PATTERN') docType = 'ARCHITECTURE_PATTERN';
+      else if (doc.header.document_type === 'PROJECT_CONTEXT') docType = 'PROJECT_CONTEXT';
+
+      return {
+        documentId: doc.id,
+        documentType: docType,
+        canonicalPath: doc.path,
+        title: doc.header.title,
+        tags: doc.header.tags,
+        contentPreview: doc.rawBody.slice(0, 300),
+        stateHash: doc.stateHash,
+        freshnessStatus: doc.freshnessStatus,
+        verifiedBy: doc.header.freshness.verified_by,
+      };
+    });
+
+    const result = await okfService.syncVault(projectId, payloads);
+    // Guardar snapshot local tras sincronización exitosa
+    this.saveVaultSnapshot(projectId, documents);
+    return result;
+  },
+
+  /**
+   * Ejecuta la conversión de un documento externo hacia OKF (modo IA o mecánico).
+   */
+  async convertDocument(
+    projectId: string,
+    rawContent: string,
+    mode: 'ai' | 'mechanical',
+    options: {
+      title?: string;
+      targetCategory: 'knowledge-base' | 'patterns' | 'templates';
+      tags: string[];
+      contextHint?: string;
+      author?: string;
+    }
+  ): Promise<ConvertedOkfResponse> {
+    if (mode === 'ai') {
+      return okfService.convertWithAi(projectId, {
+        rawContent,
+        contextHint: options.contextHint,
+        targetCategory: options.targetCategory,
+        suggestedTags: options.tags,
+      });
+    }
+
+    return okfService.convertMechanically(projectId, {
+      rawContent,
+      title: options.title,
+      targetCategory: options.targetCategory,
+      tags: options.tags,
+      author: options.author,
+    });
+  },
+
+  /**
+   * Ratifica un documento en la base de datos por el arquitecto.
+   */
+  async verifyDocumentInCloud(
+    projectId: string,
+    canonicalPath: string,
+    verifiedBy: string,
+    freshnessStatus: 'FRESH' | 'STALE' | 'DRIFT_DETECTED' = 'FRESH'
+  ) {
+    return okfService.verifyDocument(projectId, canonicalPath, verifiedBy, freshnessStatus);
   },
 };

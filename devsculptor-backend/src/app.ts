@@ -16,6 +16,7 @@ import { canvasRouter, auditLogsRouter } from './modules/canvas/canvas.routes';
 import decisionsRoutes from './modules/decisions/decisions.routes';
 import metricsRoutes from './modules/metrics/metrics.routes';
 import aiRoutes from './modules/ai/ai.routes';
+import okfRoutes from './modules/okf/okf.routes';
 import adminRoutes from './modules/admin/admin.routes';
 
 export function createApp(): Express {
@@ -81,6 +82,7 @@ export function createApp(): Express {
   app.use('/api/v1/projects/:projectId/decisions', decisionsRoutes);
   app.use('/api/v1/projects/:projectId/metrics', metricsRoutes);
   app.use('/api/v1/projects/:projectId/ai', aiRoutes);
+  app.use('/api/v1/projects/:projectId/okf', okfRoutes);
 
   // 10. Rutas de Administrador Maestro (Protegidas por RBAC SUPERADMIN)
   app.use('/api/v1/admin', adminRoutes);

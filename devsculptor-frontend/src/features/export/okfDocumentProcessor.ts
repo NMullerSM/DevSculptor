@@ -1,15 +1,15 @@
-import { Project } from '@/types/project.types';
-import { Requirement } from '@/types/requirement.types';
-import { CanvasEntity } from '@/types/canvas.types';
-import { Decision } from '@/types/decision.types';
-import { ProjectMetrics } from '@/types/metrics.types';
+import { Project } from '../../types/project.types';
+import { Requirement } from '../../types/requirement.types';
+import { CanvasEntity } from '../../types/canvas.types';
+import { Decision } from '../../types/decision.types';
+import { ProjectMetrics } from '../../types/metrics.types';
 import {
   generatePostgreSqlDdl,
   generateMySqlDdl,
   generateSqliteDdl,
   generateOracleDdl,
   SqlDialect,
-} from '@/features/canvas/scriptGenerators';
+} from '../canvas/scriptGenerators';
 
 export type OkfDocumentType =
   | 'OKF_INDEX_MANIFEST'
@@ -19,7 +19,15 @@ export type OkfDocumentType =
   | 'DATA_DICTIONARY'
   | 'MERMAID_ERD'
   | 'SKILL'
-  | 'PROMPT_BUNDLE';
+  | 'PROMPT_BUNDLE'
+  | 'KNOWLEDGE_BASE'
+  | 'ARCHITECTURE_PATTERN'
+  | 'DOCUMENT_TEMPLATE'
+  | 'PROJECT_CONTEXT'
+  | 'REQUIREMENT_SPEC'
+  | 'DECISION_ADR'
+  | 'DATABASE_SCHEMA'
+  | 'AGENT_SKILL';
 
 export type OkfFreshnessStatus = 'FRESH' | 'STALE' | 'DRIFT_DETECTED';
 
@@ -54,7 +62,7 @@ export interface ProcessedOkfDocument {
   id: string;
   path: string;
   filename: string;
-  category: 'manifest' | 'documentation' | 'database' | 'skills' | 'context';
+  category: 'manifest' | 'documentation' | 'database' | 'skills' | 'context' | 'knowledge' | 'templates';
   description: string;
   content: string;
   header: OkfMetadataHeader;
