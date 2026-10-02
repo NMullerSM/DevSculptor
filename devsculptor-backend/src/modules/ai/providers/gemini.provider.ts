@@ -8,13 +8,26 @@ import { buildSystemInstruction, parseDevSculptorActions } from '../ai.prompts';
 import { MockAiProvider } from './mock.provider';
 import { logger } from '../../../config/logger';
 
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 12000): Promise<T> {
+  let timeoutHandle: NodeJS.Timeout;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutHandle = setTimeout(() => {
+      reject(new Error(`Tiempo de espera agotado (${timeoutMs}ms) al invocar Google Gemini`));
+    }, timeoutMs);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    clearTimeout(timeoutHandle);
+  });
+}
+
 export class GeminiProvider implements IAiProvider {
   public readonly name = 'gemini';
   private ai: GoogleGenAI;
   private model: string;
   private fallback: MockAiProvider;
 
-  constructor(apiKey: string, model: string = 'gemini-3.5-flash') {
+  constructor(apiKey: string, model: string = 'gemini-3.1-flash-lite') {
     this.ai = new GoogleGenAI({ apiKey });
     this.model = model;
     this.fallback = new MockAiProvider();
@@ -33,14 +46,17 @@ export class GeminiProvider implements IAiProvider {
         parts: [{ text: m.content }],
       }));
 
-      const response = await this.ai.models.generateContent({
-        model: this.model,
-        contents,
-        config: {
-          systemInstruction,
-          temperature: options?.temperature ?? 0.4,
-        },
-      });
+      const response = await withTimeout(
+        this.ai.models.generateContent({
+          model: this.model,
+          contents,
+          config: {
+            systemInstruction,
+            temperature: options?.temperature ?? 0.4,
+          },
+        }),
+        12000
+      );
 
       const rawText = response.text || 'Sin respuesta del modelo.';
       const { cleanText, suggestedRequirements, suggestedEntities, suggestedDecisions } =
@@ -63,12 +79,12 @@ export class GeminiProvider implements IAiProvider {
     } catch (err: unknown) {
       logger.warn(
         { err, model: this.model },
-        'Google Gemini API no disponible temporalmente. Activando respuesta resiliente vía MockAiProvider.'
+        'Google Gemini API no disponible temporalmente o excedió tiempo límite. Activando respuesta resiliente vía MockAiProvider.'
       );
       const fallbackResult = await this.fallback.generateChat(messages, context, options);
       return {
         ...fallbackResult,
-        model: `${this.model} (fallback heurístico)`,
+        model: `${this.model} (fallback resiliente)`,
       };
     }
   }
@@ -83,14 +99,17 @@ export class GeminiProvider implements IAiProvider {
 4. Índices y rendimiento estimado.
 Entrega un resumen ejecutivo de recomendaciones y, si detectas tablas faltantes o mejoras clave, incluye el bloque json:devsculptor-actions.`;
 
-      const response = await this.ai.models.generateContent({
-        model: this.model,
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        config: {
-          systemInstruction,
-          temperature: 0.2,
-        },
-      });
+      const response = await withTimeout(
+        this.ai.models.generateContent({
+          model: this.model,
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          config: {
+            systemInstruction,
+            temperature: 0.2,
+          },
+        }),
+        12000
+      );
 
       const rawText = response.text || 'Auditoría completada sin observaciones.';
       const { cleanText, suggestedRequirements, suggestedEntities, suggestedDecisions } =
@@ -131,14 +150,17 @@ Entrega un resumen ejecutivo de recomendaciones y, si detectas tablas faltantes 
 Sintetiza los requisitos funcionales (RF) y no funcionales (RNF) bajo el estándar IEEE-830.
 Debes estructurarlos en el bloque json:devsculptor-actions con campos: code, title, type (RF/RNF), priority (HIGH/MEDIUM/LOW), description.`;
 
-      const response = await this.ai.models.generateContent({
-        model: this.model,
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        config: {
-          systemInstruction,
-          temperature: 0.3,
-        },
-      });
+      const response = await withTimeout(
+        this.ai.models.generateContent({
+          model: this.model,
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          config: {
+            systemInstruction,
+            temperature: 0.3,
+          },
+        }),
+        12000
+      );
 
       const rawText = response.text || '';
       const { cleanText, suggestedRequirements, suggestedEntities, suggestedDecisions } =

@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useProjectStore } from '@/stores/useProjectStore';
 import { VisionPill } from '@/components/ui/VisionPill';
+import { CoverageMetricsModal } from './CoverageMetricsModal';
 
 interface CopilotInspectorProps {
   onQuickAction?: (actionText: string) => void;
@@ -13,7 +14,8 @@ export const CopilotInspector: React.FC<CopilotInspectorProps> = ({
   onClose,
   className = '',
 }) => {
-  const { metrics, activeProject } = useProjectStore();
+  const { metrics } = useProjectStore();
+  const [isMetricsOpen, setIsMetricsOpen] = useState(false);
 
   const maturityScore = metrics ? metrics.maturity_index : 100;
   const totalRf = metrics ? metrics.total_rf : 0;
@@ -134,7 +136,7 @@ export const CopilotInspector: React.FC<CopilotInspectorProps> = ({
         </button>
 
         <button
-          onClick={() => handleActionClick('Métricas de Cobertura')}
+          onClick={() => setIsMetricsOpen(true)}
           className="vision-card p-2 w-full text-left text-[10.5px] text-primary hover:border-indigo-400/50 flex items-center gap-2 transition-all cursor-pointer"
         >
           <span className="material-symbols-outlined text-sm text-amber-500 dark:text-amber-400">insights</span>
@@ -142,16 +144,11 @@ export const CopilotInspector: React.FC<CopilotInspectorProps> = ({
         </button>
       </div>
 
-      {/* Certificación Metodológica */}
-      <div className="p-2.5 vision-card text-[11px] space-y-1 border-emerald-500/20 bg-emerald-500/[0.02]">
-        <div className="font-semibold text-emerald-400 flex items-center gap-1 text-[11px]">
-          <span className="material-symbols-outlined text-[13px]">task_alt</span>
-          <span>Pre-Código Verificado</span>
-        </div>
-        <p className="text-secondary leading-tight text-[10px]">
-          {activeProject?.name || 'Proyecto'} listo para inyección como Prompt Bundle en Cursor o Claude.
-        </p>
-      </div>
+      {/* Modal de Métricas de Cobertura Real */}
+      <CoverageMetricsModal
+        isOpen={isMetricsOpen}
+        onClose={() => setIsMetricsOpen(false)}
+      />
     </aside>
   );
 };

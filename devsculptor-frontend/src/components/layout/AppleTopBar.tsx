@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useProjectStore } from '@/stores/useProjectStore';
 import { useLayoutStore } from '@/stores/useLayoutStore';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
-import { VisionPill } from '@/components/ui/VisionPill';
+import { UserSecurityModal } from '@/features/auth/UserSecurityModal';
 
 interface AppleTopBarProps {
   currentScreen: 'studio' | 'hub' | 'admin';
@@ -16,6 +16,7 @@ export const AppleTopBar: React.FC<AppleTopBarProps> = ({
 }) => {
   const { user, logout } = useAuthStore();
   const { activeProject } = useProjectStore();
+  const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
   const {
     isFlowDrawerOpen,
     isCopilotDrawerOpen,
@@ -51,7 +52,6 @@ export const AppleTopBar: React.FC<AppleTopBarProps> = ({
         )}
 
         <div className="flex items-center gap-1.5 sm:gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)] shrink-0" />
           <span className="font-semibold text-xs tracking-tight text-primary hidden xs:inline">
             DevSculptor
           </span>
@@ -100,31 +100,11 @@ export const AppleTopBar: React.FC<AppleTopBarProps> = ({
         )}
       </div>
 
-      {/* Centro: Proyecto Activo */}
+      {/* Centro: Nombre Limpio del Proyecto Activo */}
       <div className="hidden md:flex items-center gap-2 truncate max-w-xs lg:max-w-md">
-        <span className="text-[11px] text-muted font-mono shrink-0">Proyecto:</span>
-        <span className="font-semibold text-xs text-primary truncate">
-          {activeProject ? activeProject.name : 'Sin proyecto'}
+        <span className="font-semibold text-xs text-primary truncate tracking-wide">
+          {activeProject ? activeProject.name : 'Sin proyecto seleccionado'}
         </span>
-        {activeProject && (
-          <>
-            {!activeProject.architecture_style ||
-            activeProject.architecture_style === 'Por Definir / En Evaluación' ? (
-              <span className="text-[9.5px] font-mono text-amber-500 dark:text-amber-300 bg-amber-400/10 px-2 py-0.5 rounded-[4px] border border-amber-400/20 inline-flex items-center gap-1 shrink-0">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                <span className="hidden lg:inline">Arq. En Evaluación</span>
-              </span>
-            ) : (
-              <span className="text-[9.5px] font-mono text-cyan-600 dark:text-cyan-300 bg-cyan-400/10 px-2 py-0.5 rounded-[4px] border border-cyan-400/20 inline-flex items-center gap-1 shrink-0">
-                <span className="material-symbols-outlined text-[11px]">architecture</span>
-                <span className="hidden lg:inline">{activeProject.architecture_style}</span>
-              </span>
-            )}
-            <VisionPill variant="indigo" className="text-[8.5px] shrink-0 hidden lg:inline-flex">
-              Pre-Código
-            </VisionPill>
-          </>
-        )}
       </div>
 
       {/* Derecha: Persistencia, ThemeToggle, Copiloto Mobile & Perfil */}
@@ -145,24 +125,31 @@ export const AppleTopBar: React.FC<AppleTopBarProps> = ({
           </button>
         )}
 
-        {/* Badge de DB (Visible solo en desktop amplio) */}
-        <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-0.5 rounded-[5px] bg-emerald-500/10 border border-emerald-500/20 text-[10.5px]">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-          <span className="text-emerald-400 font-medium">PostgreSQL pg.Pool</span>
-        </div>
-
         <div className="h-3 w-px bg-[var(--border-glass-subtle-color)] mx-0.5 hidden sm:block" />
 
         <ThemeToggle />
 
         {/* Avatar de Usuario y Cerrar Sesión */}
         <div className="flex items-center gap-1 sm:gap-2">
-          <div
-            className="w-6 h-6 rounded-full bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center text-white font-semibold text-[10px] shadow-sm cursor-default shrink-0"
-            title={user ? `${user.full_name} (${user.email})` : 'Usuario'}
+          <button
+            type="button"
+            onClick={() => setIsSecurityModalOpen(true)}
+            className="flex items-center gap-1.5 vision-btn !py-0.5 !px-1.5 text-xs text-secondary hover:text-primary transition-all group"
+            title={user ? `${user.full_name} (${user.email}) - Click para gestionar Seguridad & 2FA` : 'Seguridad'}
           >
-            {getInitials(user?.full_name)}
-          </div>
+            <div
+              className="w-5 h-5 rounded-full bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center text-white font-semibold text-[9.5px] shadow-sm shrink-0 group-hover:scale-105 transition-transform"
+            >
+              {getInitials(user?.full_name)}
+            </div>
+            {user?.mfa_enabled && (
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" title="2FA Activo" />
+            )}
+            <span className="material-symbols-outlined text-[13px] text-muted group-hover:text-primary">
+              security
+            </span>
+          </button>
+
           <button
             onClick={logout}
             className="vision-btn vision-btn-icon text-muted hover:text-rose-400 !p-1"
@@ -173,6 +160,12 @@ export const AppleTopBar: React.FC<AppleTopBarProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Modal de Seguridad y 2FA */}
+      <UserSecurityModal
+        isOpen={isSecurityModalOpen}
+        onClose={() => setIsSecurityModalOpen(false)}
+      />
     </header>
   );
 };

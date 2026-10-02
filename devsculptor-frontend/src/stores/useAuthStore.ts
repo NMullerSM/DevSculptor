@@ -8,7 +8,8 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
 
-  login: (payload: LoginPayload) => Promise<void>;
+  login: (payload: LoginPayload) => Promise<{ mfaRequired?: boolean; tempToken?: string } | void>;
+  verifyMfaLogin: (tempToken: string, code: string) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
   logout: () => void;
   initAuth: () => void;
@@ -37,12 +38,34 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (payload: LoginPayload) => {
     set({ isLoading: true, error: null });
     try {
-      const { user, token } = await authService.login(payload);
+      const res = await authService.login(payload);
+
+      if (res.mfaRequired && res.tempToken) {
+        set({ isLoading: false });
+        return { mfaRequired: true, tempToken: res.tempToken };
+      }
+
+      if (res.user && res.token) {
+        localStorage.setItem('devsculptor_token', res.token);
+        localStorage.setItem('devsculptor_user', JSON.stringify(res.user));
+        set({ user: res.user, token: res.token, isLoading: false, error: null });
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error al iniciar sesión';
+      set({ error: message, isLoading: false });
+      throw err;
+    }
+  },
+
+  verifyMfaLogin: async (tempToken: string, code: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const { user, token } = await authService.verifyMfaLogin({ temp_token: tempToken, code });
       localStorage.setItem('devsculptor_token', token);
       localStorage.setItem('devsculptor_user', JSON.stringify(user));
       set({ user, token, isLoading: false, error: null });
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Error al iniciar sesión';
+      const message = err instanceof Error ? err.message : 'Código 2FA incorrecto o expirado';
       set({ error: message, isLoading: false });
       throw err;
     }

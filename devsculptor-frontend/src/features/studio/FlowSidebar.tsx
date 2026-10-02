@@ -27,34 +27,30 @@ export const FlowSidebar: React.FC<FlowSidebarProps> = ({
     {
       id: 'view-chat' as StudioStep,
       icon: 'chat_bubble',
-      title: '1. Conversación',
-      subtitle: 'Entrevista & Alcance',
+      title: 'Conversación',
       iconColor: 'text-indigo-400',
     },
     {
       id: 'view-reqs' as StudioStep,
       icon: 'checklist',
-      title: '2. Requisitos',
-      subtitle: 'Matriz RF y RNF',
-      iconColor: 'text-amber-400',
+      title: 'Requisitos',
+      iconColor: 'text-indigo-400',
       badge: reqsCount.toString(),
       badgeVariant: 'amber' as const,
     },
     {
       id: 'view-docs' as StudioStep,
       icon: 'description',
-      title: '3. Documentos',
-      subtitle: 'Actas ADRs & Specs',
-      iconColor: 'text-cyan-400',
+      title: 'Documentos',
+      iconColor: 'text-indigo-400',
       badge: adrsCount.toString(),
       badgeVariant: 'cyan' as const,
     },
     {
       id: 'view-canvas' as StudioStep,
       icon: 'schema',
-      title: '4. Modelador & Código',
-      subtitle: 'ERD, DDL, TS, Py',
-      iconColor: 'text-emerald-400',
+      title: 'Modelador de Código',
+      iconColor: 'text-indigo-400',
     },
   ];
 
@@ -67,14 +63,14 @@ export const FlowSidebar: React.FC<FlowSidebarProps> = ({
 
   return (
     <aside className={`vision-window flex flex-col p-3 gap-3 select-none ${className}`}>
-      {/* Encabezado */}
+      {/* Encabezado con título blanco de alto contraste */}
       <div className="flex items-center justify-between pb-1.5 border-b border-glass-subtle">
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-mono uppercase tracking-wider text-muted font-semibold">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-white font-semibold">
             Flujo de Trabajo
           </span>
           <VisionPill variant="indigo" className="text-[8.5px]">
-            5 PASOS
+            4 PASOS
           </VisionPill>
         </div>
 
@@ -90,8 +86,8 @@ export const FlowSidebar: React.FC<FlowSidebarProps> = ({
         )}
       </div>
 
-      {/* Lista de Pasos */}
-      <div className="flex-1 overflow-y-auto space-y-2 text-xs pr-0.5 custom-scrollbar">
+      {/* Lista de Pasos Minimalista */}
+      <div className="flex-1 overflow-y-auto space-y-1.5 text-xs pr-0.5 custom-scrollbar">
         {steps.map((step) => {
           const isSelected = activeStep === step.id;
           return (
@@ -99,7 +95,7 @@ export const FlowSidebar: React.FC<FlowSidebarProps> = ({
               key={step.id}
               onClick={() => handleStepClick(step.id)}
               className={`w-full vision-card p-2.5 text-left flex items-center gap-2.5 transition-all ${
-                isSelected ? 'selected ring-1 ring-indigo-500/50' : ''
+                isSelected ? 'selected ring-1 ring-indigo-500/50 bg-indigo-500/10' : 'hover:border-indigo-400/40'
               }`}
             >
               <span className={`material-symbols-outlined text-[17px] ${step.iconColor}`}>
@@ -107,7 +103,6 @@ export const FlowSidebar: React.FC<FlowSidebarProps> = ({
               </span>
               <div className="min-w-0 flex-1">
                 <div className="font-semibold text-primary truncate text-xs">{step.title}</div>
-                <div className="text-[10px] text-secondary truncate font-mono">{step.subtitle}</div>
               </div>
               {step.badge && (
                 <VisionPill variant={step.badgeVariant} className="text-[9px] px-1.5 py-0.5">

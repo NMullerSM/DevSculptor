@@ -6,7 +6,9 @@ import { VisionPill } from '@/components/ui/VisionPill';
 import { CreateRequirementModal } from './CreateRequirementModal';
 import { EditRequirementModal } from './EditRequirementModal';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
-import { okfVaultService } from '@/features/export/okfVaultService';
+
+import { useProjectStore } from '@/stores/useProjectStore';
+import { documentExportService, ExportFormat } from '@/features/export/documentExportService';
 
 interface RequirementsViewProps {
   projectId: string;
@@ -17,6 +19,7 @@ export const RequirementsView: React.FC<RequirementsViewProps> = ({
   projectId,
   onCountChange,
 }) => {
+  const { activeProject } = useProjectStore();
   const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [filterType, setFilterType] = useState<string>('ALL');
   const [search, setSearch] = useState('');
@@ -26,16 +29,15 @@ export const RequirementsView: React.FC<RequirementsViewProps> = ({
   const [deletingReq, setDeletingReq] = useState<Requirement | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [isExportingSrs, setIsExportingSrs] = useState(false);
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
 
-  const handleExportSrs = async () => {
+  const handleExportSrs = (format: ExportFormat = 'html') => {
+    if (!activeProject || requirements.length === 0) return;
     setIsExportingSrs(true);
     setActionError(null);
+    setIsExportMenuOpen(false);
     try {
-      const docs = await okfVaultService.compileVault(projectId);
-      const srs = docs.find((d) => d.header.document_type === 'REQUIREMENT_SRS');
-      if (srs) {
-        okfVaultService.downloadSingleDocument(srs);
-      }
+      documentExportService.exportSrs(activeProject, requirements, format);
     } catch (err: unknown) {
       setActionError(err instanceof Error ? err.message : 'Error al exportar SRS');
     } finally {
@@ -94,17 +96,71 @@ export const RequirementsView: React.FC<RequirementsViewProps> = ({
           </p>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          <VisionButton
-            variant="secondary"
-            icon="download"
-            size="sm"
-            onClick={handleExportSrs}
-            disabled={isExportingSrs || requirements.length === 0}
-            title="Descargar especificación de requisitos en Markdown (IEEE-830)"
-          >
-            <span className="hidden xs:inline">{isExportingSrs ? 'Exportando...' : 'Exportar SRS (.md)'}</span>
-            <span className="xs:hidden">SRS</span>
-          </VisionButton>
+          <div className="relative">
+            <div className="flex items-center">
+              <VisionButton
+                variant="secondary"
+                icon="download"
+                size="sm"
+                onClick={() => handleExportSrs('html')}
+                disabled={isExportingSrs || requirements.length === 0}
+                title="Descargar especificación de requisitos en formato HTML (Abre de inmediato en Windows y permite imprimir a PDF)"
+                className="!rounded-r-none border-r-0"
+              >
+                <span className="hidden xs:inline">{isExportingSrs ? 'Exportando...' : 'Exportar SRS (.html)'}</span>
+                <span className="xs:hidden">SRS</span>
+              </VisionButton>
+              <button
+                type="button"
+                onClick={() => setIsExportMenuOpen((prev) => !prev)}
+                disabled={isExportingSrs || requirements.length === 0}
+                className="vision-btn !p-1 !px-1.5 !text-xs !rounded-l-none border-l border-white/10 hover:bg-white/10 disabled:opacity-50"
+                title="Otras opciones de exportación"
+              >
+                <span className="material-symbols-outlined text-[15px]">arrow_drop_down</span>
+              </button>
+            </div>
+
+            {isExportMenuOpen && (
+              <div 
+                className="absolute right-0 mt-1.5 w-64 vision-card p-1.5 shadow-2xl z-50 animate-fade-in border border-indigo-500/30 bg-[#0f172a]/95 backdrop-blur-xl rounded-xl"
+                onMouseLeave={() => setIsExportMenuOpen(false)}
+              >
+                <div className="px-2 py-1 text-[10px] font-semibold text-secondary uppercase tracking-wider">
+                  Formatos Disponibles
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleExportSrs('html')}
+                  className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg text-left text-xs text-primary hover:bg-indigo-500/20 hover:text-white transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-sm text-indigo-400">html</span>
+                    <div>
+                      <div className="font-medium">Documento HTML (.html)</div>
+                      <div className="text-[10px] text-secondary">Abre directo en Windows + PDF</div>
+                    </div>
+                  </div>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-mono">RECOMENDADO</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleExportSrs('md')}
+                  className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg text-left text-xs text-primary hover:bg-indigo-500/20 hover:text-white transition-colors mt-0.5"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-sm text-slate-400">description</span>
+                    <div>
+                      <div className="font-medium">Markdown Puro (.md)</div>
+                      <div className="text-[10px] text-secondary">Para repositorios Git</div>
+                    </div>
+                  </div>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-500/20 text-slate-300 font-mono">DEV</span>
+                </button>
+              </div>
+            )}
+          </div>
+
           <VisionButton
             variant="primary"
             icon="add"

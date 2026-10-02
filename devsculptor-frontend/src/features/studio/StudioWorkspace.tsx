@@ -23,6 +23,8 @@ export const StudioWorkspace: React.FC = () => {
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [reqsCount, setReqsCount] = useState(0);
   const [adrsCount, setAdrsCount] = useState(0);
+  const [isRightPanelExpanded, setIsRightPanelExpanded] = useState(false);
+  const [rightPanelTab, setRightPanelTab] = useState<'chat' | 'inspector'>('chat');
 
   const handleQuickAction = (actionText: string) => {
     if (actionText.includes('Auditoría IA') || actionText.includes('3FN')) {
@@ -84,11 +86,97 @@ export const StudioWorkspace: React.FC = () => {
         )}
       </main>
 
-      {/* 3. Panel Derecho Desktop: Copiloto & Inspector (Visible en pantallas >= 1280px) */}
-      <CopilotInspector
-        onQuickAction={handleQuickAction}
-        className="w-[260px] shrink-0 hidden xl:flex"
-      />
+      {/* 3. Panel Derecho Desktop: Copiloto / Inspector (Visible en pantallas >= 1280px) */}
+      <aside
+        className={`hidden xl:flex flex-col shrink-0 transition-all duration-300 ease-in-out ${
+          isRightPanelExpanded
+            ? 'w-[33.3vw] max-w-[33.3vw]'
+            : activeStep === 'view-chat'
+            ? 'w-[260px]'
+            : 'w-[320px]'
+        }`}
+      >
+        {activeStep === 'view-chat' ? (
+          <div className="relative w-full h-full flex flex-col">
+            <div className="absolute top-2.5 right-2.5 z-20">
+              <button
+                type="button"
+                onClick={() => setIsRightPanelExpanded((prev) => !prev)}
+                className="vision-btn !p-1 text-muted hover:text-primary text-[10px]"
+                title={isRightPanelExpanded ? 'Reducir panel' : 'Expandir panel a 1/3 de pantalla'}
+              >
+                <span className="material-symbols-outlined text-[13px]">
+                  {isRightPanelExpanded ? 'close_fullscreen' : 'open_in_full'}
+                </span>
+              </button>
+            </div>
+            <CopilotInspector
+              onQuickAction={handleQuickAction}
+              className="w-full h-full"
+            />
+          </div>
+        ) : (
+          <div className="vision-window w-full h-full flex flex-col overflow-hidden">
+            {/* Cabecera del Panel con Selector de Pestañas y Control de Ancho */}
+            <div className="flex items-center justify-between px-3 py-2 border-b border-glass-subtle bg-black/5 dark:bg-white/[0.02] shrink-0">
+              <div className="flex items-center gap-1 bg-black/10 dark:bg-white/[0.04] p-0.5 rounded-lg border border-glass-subtle">
+                <button
+                  type="button"
+                  onClick={() => setRightPanelTab('chat')}
+                  className={`px-2 py-0.5 rounded-md text-[10.5px] font-medium transition-all flex items-center gap-1 ${
+                    rightPanelTab === 'chat'
+                      ? 'bg-indigo-600 text-white shadow-sm'
+                      : 'text-secondary hover:text-primary'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[13px]">chat_bubble</span>
+                  <span>Copiloto IA</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRightPanelTab('inspector')}
+                  className={`px-2 py-0.5 rounded-md text-[10.5px] font-medium transition-all flex items-center gap-1 ${
+                    rightPanelTab === 'inspector'
+                      ? 'bg-indigo-600 text-white shadow-sm'
+                      : 'text-secondary hover:text-primary'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[13px]">tune</span>
+                  <span>Métricas</span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setIsRightPanelExpanded((prev) => !prev)}
+                  className="vision-btn !p-1 text-muted hover:text-primary text-[10px]"
+                  title={isRightPanelExpanded ? 'Reducir panel' : 'Expandir panel a 1/3 de pantalla'}
+                >
+                  <span className="material-symbols-outlined text-[13px]">
+                    {isRightPanelExpanded ? 'close_fullscreen' : 'open_in_full'}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {/* Contenido Dinámico: Chat o Inspector */}
+            <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+              {rightPanelTab === 'chat' ? (
+                <ChatConsultantView
+                  isCompact={!isRightPanelExpanded}
+                  onNavigateStep={(step) => setActiveStep(step)}
+                />
+              ) : (
+                <CopilotInspector
+                  onQuickAction={handleQuickAction}
+                  className="w-full h-full !border-none !bg-transparent !p-3"
+                />
+              )}
+            </div>
+          </div>
+        )}
+      </aside>
 
       {/* Barra de Navegación Rápida Flotante en Móvil y Tablet (< 1280px) */}
       <div className="xl:hidden flex items-center justify-between px-3 py-1.5 vision-window mx-auto w-full shrink-0 z-20 gap-1.5 text-xs shadow-lg">
@@ -107,40 +195,40 @@ export const StudioWorkspace: React.FC = () => {
             className={`vision-btn !py-1 !px-2 text-[11px] flex items-center gap-1 ${
               activeStep === 'view-chat' ? 'vision-btn-primary' : ''
             }`}
-            title="1. Conversación"
+            title="Conversación"
           >
             <span className="material-symbols-outlined text-[14px] text-indigo-400">chat_bubble</span>
-            <span className="hidden xs:inline">1. Chat</span>
+            <span className="hidden xs:inline">Chat</span>
           </button>
           <button
             onClick={() => setActiveStep('view-reqs')}
             className={`vision-btn !py-1 !px-2 text-[11px] flex items-center gap-1 ${
               activeStep === 'view-reqs' ? 'vision-btn-primary' : ''
             }`}
-            title="2. Requisitos"
+            title="Requisitos"
           >
-            <span className="material-symbols-outlined text-[14px] text-amber-400">checklist</span>
-            <span className="hidden xs:inline">2. RF/RNF</span>
+            <span className="material-symbols-outlined text-[14px] text-indigo-400">checklist</span>
+            <span className="hidden xs:inline">Requisitos</span>
           </button>
           <button
             onClick={() => setActiveStep('view-docs')}
             className={`vision-btn !py-1 !px-2 text-[11px] flex items-center gap-1 ${
               activeStep === 'view-docs' ? 'vision-btn-primary' : ''
             }`}
-            title="3. Documentos"
+            title="Documentos"
           >
-            <span className="material-symbols-outlined text-[14px] text-cyan-400">description</span>
-            <span className="hidden xs:inline">3. ADRs</span>
+            <span className="material-symbols-outlined text-[14px] text-indigo-400">description</span>
+            <span className="hidden xs:inline">ADRs</span>
           </button>
           <button
             onClick={() => setActiveStep('view-canvas')}
             className={`vision-btn !py-1 !px-2 text-[11px] flex items-center gap-1 ${
               activeStep === 'view-canvas' ? 'vision-btn-primary' : ''
             }`}
-            title="4. Modelador & Código"
+            title="Modelador de Código"
           >
-            <span className="material-symbols-outlined text-[14px] text-emerald-400">schema</span>
-            <span className="hidden xs:inline">4. Canvas</span>
+            <span className="material-symbols-outlined text-[14px] text-indigo-400">schema</span>
+            <span className="hidden xs:inline">Canvas</span>
           </button>
         </div>
 
@@ -186,11 +274,59 @@ export const StudioWorkspace: React.FC = () => {
             onClick={() => toggleCopilotDrawer(false)}
           />
           <div className="relative w-80 max-w-[85vw] h-full p-2 z-50 animate-slide-left flex flex-col">
-            <CopilotInspector
-              onQuickAction={handleQuickAction}
-              onClose={() => toggleCopilotDrawer(false)}
-              className="w-full h-full shadow-2xl"
-            />
+            <div className="vision-window w-full h-full flex flex-col overflow-hidden shadow-2xl">
+              <div className="flex items-center justify-between px-3 py-2 border-b border-glass-subtle shrink-0">
+                <div className="flex items-center gap-1 bg-black/10 dark:bg-white/[0.04] p-0.5 rounded-lg border border-glass-subtle">
+                  <button
+                    type="button"
+                    onClick={() => setRightPanelTab('chat')}
+                    className={`px-2 py-0.5 rounded-md text-[10.5px] font-medium transition-all ${
+                      rightPanelTab === 'chat'
+                        ? 'bg-indigo-600 text-white'
+                        : 'text-secondary hover:text-primary'
+                    }`}
+                  >
+                    Copiloto
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRightPanelTab('inspector')}
+                    className={`px-2 py-0.5 rounded-md text-[10.5px] font-medium transition-all ${
+                      rightPanelTab === 'inspector'
+                        ? 'bg-indigo-600 text-white'
+                        : 'text-secondary hover:text-primary'
+                    }`}
+                  >
+                    Métricas
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => toggleCopilotDrawer(false)}
+                  className="vision-btn !p-1 text-muted hover:text-primary"
+                >
+                  <span className="material-symbols-outlined text-sm">close</span>
+                </button>
+              </div>
+
+              <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+                {rightPanelTab === 'chat' ? (
+                  <ChatConsultantView
+                    isCompact={true}
+                    onNavigateStep={(step) => {
+                      setActiveStep(step);
+                      toggleCopilotDrawer(false);
+                    }}
+                  />
+                ) : (
+                  <CopilotInspector
+                    onQuickAction={handleQuickAction}
+                    onClose={() => toggleCopilotDrawer(false)}
+                    className="w-full h-full !border-none !bg-transparent !p-3"
+                  />
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}

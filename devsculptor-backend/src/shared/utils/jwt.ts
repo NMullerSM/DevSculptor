@@ -10,9 +10,9 @@ export interface TokenPayload {
   role: UserRole;
 }
 
-export function signToken(payload: TokenPayload): string {
+export function signToken(payload: TokenPayload, expiresIn?: string | number): string {
   return jwt.sign(payload, env.JWT_SECRET, {
-    expiresIn: env.JWT_EXPIRES_IN as jwt.SignOptions['expiresIn'],
+    expiresIn: (expiresIn || env.JWT_EXPIRES_IN) as jwt.SignOptions['expiresIn'],
   });
 }
 

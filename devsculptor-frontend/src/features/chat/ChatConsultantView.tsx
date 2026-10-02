@@ -13,9 +13,10 @@ import {
 
 interface ChatConsultantViewProps {
   onNavigateStep?: (step: 'view-reqs' | 'view-docs' | 'view-canvas') => void;
+  isCompact?: boolean;
 }
 
-export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNavigateStep }) => {
+export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNavigateStep, isCompact = false }) => {
   const { activeProject } = useProjectStore();
   const {
     messages,
@@ -30,6 +31,7 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
     injectAllActions,
     isItemInjected,
     clearHistory,
+    switchProject,
   } = useAiChatStore();
 
   const [inputVal, setInputVal] = useState('');
@@ -121,6 +123,13 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
 
+  // Aislamiento y conmutación reactiva de la sesión de chat por proyecto activo
+  useEffect(() => {
+    if (activeProject?.id) {
+      switchProject(activeProject.id);
+    }
+  }, [activeProject?.id, switchProject]);
+
   const showToast = (msg: string) => {
     setInjectionFeedback(msg);
     setTimeout(() => setInjectionFeedback(null), 3500);
@@ -176,24 +185,26 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full p-2.5 sm:p-4 gap-2.5 sm:gap-3 select-none min-h-0 overflow-hidden">
+    <div className={`flex-1 flex flex-col h-full ${isCompact ? 'p-2 sm:p-2.5 gap-2' : 'p-2.5 sm:p-4 gap-2.5 sm:gap-3'} select-none min-h-0 overflow-hidden`}>
       {/* 1. Encabezado */}
-      <div className="flex items-center justify-between pb-2 border-b border-glass-subtle shrink-0 gap-2">
+      <div className="flex items-center justify-between pb-1.5 border-b border-glass-subtle shrink-0 gap-1.5">
         <div className="min-w-0">
-          <h2 className="text-xs font-semibold text-primary flex items-center gap-2 truncate">
-            <span className="truncate">Copiloto de Arquitectura en Tiempo Real</span>
+          <h2 className="text-xs font-semibold text-primary flex items-center gap-1.5 truncate">
+            <span className="truncate">{isCompact ? 'Copiloto de Arquitectura' : 'Copiloto de Arquitectura en Tiempo Real'}</span>
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
           </h2>
-          <p className="text-[10px] sm:text-[10.5px] text-secondary font-mono truncate">
-            Evaluación contextual viva de requisitos IEEE-830, esquema relacional y actas ADR.
-          </p>
+          {!isCompact && (
+            <p className="text-[10px] sm:text-[10.5px] text-secondary font-mono truncate">
+              Evaluación contextual viva de requisitos IEEE-830, esquema relacional y actas ADR.
+            </p>
+          )}
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           {injectionFeedback && (
-            <div className="text-[10px] sm:text-[11px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 sm:px-2.5 py-1 rounded-[6px] animate-fade-in flex items-center gap-1">
-              <span className="material-symbols-outlined text-[13px]">check_circle</span>
-              <span className="truncate max-w-[120px] sm:max-w-none">{injectionFeedback}</span>
+            <div className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-[6px] animate-fade-in flex items-center gap-1">
+              <span className="material-symbols-outlined text-[12px]">check_circle</span>
+              <span className="truncate max-w-[100px]">{injectionFeedback}</span>
             </div>
           )}
 
@@ -201,13 +212,15 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
             size="sm"
             icon="delete_sweep"
             onClick={clearHistory}
-            className="text-muted hover:text-primary"
+            className="text-muted hover:text-primary !py-0.5 !px-1.5"
             title="Reiniciar conversación"
           >
             <span className="hidden xs:inline">Limpiar</span>
           </VisionButton>
 
-          <VisionPill variant="indigo" className="hidden xs:inline-flex">CONSULTOR ACTIVO</VisionPill>
+          {!isCompact && (
+            <VisionPill variant="indigo" className="hidden xs:inline-flex">CONSULTOR ACTIVO</VisionPill>
+          )}
         </div>
       </div>
 
@@ -240,7 +253,9 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
             return (
               <div
                 key={m.id}
-                className="vision-card p-3 sm:p-4 mr-1 sm:mr-6 md:mr-12 text-xs text-primary border-glass-subtle space-y-3"
+                className={`vision-card text-xs text-primary border-glass-subtle ${
+                  isCompact ? 'p-2.5 mr-0 space-y-2' : 'p-3 sm:p-4 mr-1 sm:mr-6 md:mr-12 space-y-3'
+                }`}
               >
                 {/* Cabecera del mensaje de la IA */}
                 <div className="flex items-center justify-between gap-2">
@@ -488,7 +503,9 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
           return (
             <div
               key={m.id}
-              className="vision-card p-3 self-end ml-2 sm:ml-8 md:ml-20 bg-indigo-600/15 dark:bg-indigo-600/20 border-indigo-500/30 text-xs text-primary max-w-xl group"
+              className={`vision-card self-end bg-indigo-600/15 dark:bg-indigo-600/20 border-indigo-500/30 text-xs text-primary max-w-xl group ${
+                isCompact ? 'p-2.5 ml-2' : 'p-3 ml-2 sm:ml-8 md:ml-20'
+              }`}
             >
               <div className="flex items-center justify-between gap-2 mb-1">
                 <span className="text-[10px] text-indigo-600 dark:text-indigo-300 font-mono">

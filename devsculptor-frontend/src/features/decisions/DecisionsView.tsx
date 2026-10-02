@@ -9,7 +9,7 @@ import { AdrStatusVerifyModal } from './AdrStatusVerifyModal';
 import { ArchitectureStyleModal } from './ArchitectureStyleModal';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { useProjectStore } from '@/stores/useProjectStore';
-import { okfVaultService } from '@/features/export/okfVaultService';
+import { documentExportService, ExportFormat } from '@/features/export/documentExportService';
 
 interface DecisionsViewProps {
   projectId: string;
@@ -34,19 +34,18 @@ export const DecisionsView: React.FC<DecisionsViewProps> = ({
 
   const [actionError, setActionError] = useState<string | null>(null);
   const [isExportingAdrs, setIsExportingAdrs] = useState(false);
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const { activeProject, updateProject, fetchMetrics } = useProjectStore();
 
-  const handleExportAdrs = async () => {
+  const handleExportAdrs = (format: ExportFormat = 'html') => {
+    if (!activeProject || decisions.length === 0) return;
     setIsExportingAdrs(true);
     setActionError(null);
+    setIsExportMenuOpen(false);
     try {
-      const docs = await okfVaultService.compileVault(projectId);
-      const indexDoc = docs.find((d) => d.path.includes('ADR_INDEX.md'));
-      if (indexDoc) {
-        okfVaultService.downloadSingleDocument(indexDoc);
-      }
+      documentExportService.exportAdrsDossier(activeProject, decisions, format);
     } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : 'Error al exportar catálogo de ADRs');
+      setActionError(err instanceof Error ? err.message : 'Error al exportar dossier de ADRs');
     } finally {
       setIsExportingAdrs(false);
     }
@@ -133,17 +132,70 @@ export const DecisionsView: React.FC<DecisionsViewProps> = ({
           </p>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          <VisionButton
-            variant="secondary"
-            icon="download"
-            size="sm"
-            onClick={handleExportAdrs}
-            disabled={isExportingAdrs || decisions.length === 0}
-            title="Descargar catálogo de actas de arquitectura en Markdown"
-          >
-            <span className="hidden xs:inline">{isExportingAdrs ? 'Exportando...' : 'Exportar ADRs (.md)'}</span>
-            <span className="xs:hidden">ADRs</span>
-          </VisionButton>
+          <div className="relative">
+            <div className="flex items-center">
+              <VisionButton
+                variant="secondary"
+                icon="download"
+                size="sm"
+                onClick={() => handleExportAdrs('html')}
+                disabled={isExportingAdrs || decisions.length === 0}
+                title="Descargar dossier completo de arquitectura en formato HTML (Abre de inmediato en Windows y permite imprimir a PDF)"
+                className="!rounded-r-none border-r-0"
+              >
+                <span className="hidden xs:inline">{isExportingAdrs ? 'Exportando...' : 'Dossier ADRs (.html)'}</span>
+                <span className="xs:hidden">ADRs</span>
+              </VisionButton>
+              <button
+                type="button"
+                onClick={() => setIsExportMenuOpen((prev) => !prev)}
+                disabled={isExportingAdrs || decisions.length === 0}
+                className="vision-btn !p-1 !px-1.5 !text-xs !rounded-l-none border-l border-white/10 hover:bg-white/10 disabled:opacity-50"
+                title="Otras opciones de exportación"
+              >
+                <span className="material-symbols-outlined text-[15px]">arrow_drop_down</span>
+              </button>
+            </div>
+
+            {isExportMenuOpen && (
+              <div 
+                className="absolute right-0 mt-1.5 w-64 vision-card p-1.5 shadow-2xl z-50 animate-fade-in border border-indigo-500/30 bg-[#0f172a]/95 backdrop-blur-xl rounded-xl"
+                onMouseLeave={() => setIsExportMenuOpen(false)}
+              >
+                <div className="px-2 py-1 text-[10px] font-semibold text-secondary uppercase tracking-wider">
+                  Dossier de Arquitectura
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleExportAdrs('html')}
+                  className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg text-left text-xs text-primary hover:bg-indigo-500/20 hover:text-white transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-sm text-indigo-400">html</span>
+                    <div>
+                      <div className="font-medium">Dossier Completo (.html)</div>
+                      <div className="text-[10px] text-secondary">Abre directo en Windows + PDF</div>
+                    </div>
+                  </div>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-mono">RECOMENDADO</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleExportAdrs('md')}
+                  className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg text-left text-xs text-primary hover:bg-indigo-500/20 hover:text-white transition-colors mt-0.5"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-sm text-slate-400">description</span>
+                    <div>
+                      <div className="font-medium">Dossier Markdown (.md)</div>
+                      <div className="text-[10px] text-secondary">Para repositorios Git</div>
+                    </div>
+                  </div>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-500/20 text-slate-300 font-mono">DEV</span>
+                </button>
+              </div>
+            )}
+          </div>
           <VisionButton
             variant="default"
             icon="architecture"

@@ -1,0 +1,66 @@
+{
+  "TC-CANV-01": {
+    "status": "PASSED",
+    "notes": "Entidad cuentas_bancarias renderizada en lienzo relacional con tipos de datos mapeados (UUID, VARCHAR, DECIMAL) y clave primaria persistida en PostgreSQL."
+  },
+  "TC-CANV-02": {
+    "status": "PASSED",
+    "notes": "Arrastre fluido a 60 FPS verificado en EntityNode; actualización reactiva de coordenadas x,y en useCanvasStore y recalculo dinámico de conectores SVG Bezier."
+  },
+  "TC-CANV-03": {
+    "status": "PASSED",
+    "notes": "Sintaxis SQL DDL generada dinámicamente para 4 motores relacionales (PostgreSQL, MySQL, SQLite y Oracle) con manejo de tipos dialectales específicos (AUTO_INCREMENT, SERIAL, NUMBER)."
+  },
+  "TC-CANV-04": {
+    "status": "PASSED",
+    "notes": "Generación reactiva de contratos frontend/backend: interfaces TypeScript (export interface CuentasBancariasDTO) y modelos Python (class CuentasBancarias(BaseModel)) con tipado estricto."
+  },
+  "TC-CANV-05": {
+    "status": "PASSED",
+    "notes": "Motor heurístico y matemático 3FN desplegado en NormalizationCheckerModal con evaluación de dependencias funcionales, claves compuestas y detección de anomalías de modificación."
+  },
+  "TC-AI-01": {
+    "status": "PASSED",
+    "notes": "Copiloto de arquitectura procesó el prompt técnico en streaming/mock context y entregó justificación técnica detallada, píldoras de sugerencias y acciones ejecutables estructuradas."
+  },
+  "TC-AI-02": {
+    "status": "PASSED",
+    "notes": "Mecanismo de inyección 1-Click verificado mediante handleInjectRequirement y sincronización reactiva con useProjectStore / requirementsService."
+  },
+  "TC-AI-03": {
+    "status": "PASSED",
+    "notes": "Mecanismo handleInjectEntity verificado: creación automática de nodo entidad en useCanvasStore y posicionamiento en el lienzo relacional."
+  },
+  "TC-OKF-01": {
+    "status": "PASSED",
+    "notes": "Bóveda OKF compilada y renderizada con árbol canónico: INDEX.md manifiesto, carpetas /documentation, /database, /skills, /context y visor monospace con resaltado de sintaxis."
+  },
+  "TC-OKF-02": {
+    "status": "PASSED",
+    "notes": "Encabezados YAML Frontmatter validados con state_hash SHA-256 de 64 caracteres hexadecimales, especificación okf_spec 1.0.0 y Freshness Score al 100% Al Día."
+  },
+  "TC-OKF-03": {
+    "status": "PASSED",
+    "notes": "Búsqueda semántica reactiva en el árbol documental: filtrado instantáneo por tags (ej: arch:, stack:) y nombre de archivo sin recargar la bóveda."
+  },
+  "TC-OKF-04": {
+    "status": "PASSED",
+    "notes": "Endpoint POST /api/v1/projects/:id/okf/sync invocado con éxito; almacenamiento y versionado de documentos en la tabla okf_documents de PostgreSQL."
+  },
+  "TC-OKF-05": {
+    "status": "PASSED",
+    "notes": "Modal dual OkfIngestModal verificado: transformación de especificaciones externas en texto plano a formato canónico OKF con YAML Frontmatter y extracción de tags ontológicos."
+  },
+  "TC-OKF-06": {
+    "status": "PASSED",
+    "notes": "Generación completa del bundle ZIP autocontenido mediante JSZip: contiene la jerarquía íntegra (/documentation, /database con DDLs, /skills con .cursorrules y CLAUDE.md) con feedback de progreso y animación confetti."
+  },
+  "TC-UI-01": {
+    "status": "PASSED",
+    "notes": "Conmutación instantánea entre paleta Snow Spatial Glass (claro polar esmerilado) y Obsidian Crystal (modo oscuro espacial) con persistencia en localStorage y renderizado impecable sin parpadeo."
+  },
+  "TC-UI-02": {
+    "status": "PASSED",
+    "notes": "Adaptabilidad de interfaz a resolución móvil/tablet (< 1280px): ocultamiento automático de barras fijas, despliegue del drawer retráctil con efecto de cristal desenfocado (backdrop-blur) y barra inferior con accesos rápidos."
+  }
+}

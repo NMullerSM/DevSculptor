@@ -3,6 +3,7 @@ import { Project, CreateProjectPayload, UpdateProjectPayload } from '@/types/pro
 import { ProjectMetrics } from '@/types/metrics.types';
 import { projectsService } from '@/services/projects.service';
 import { metricsService } from '@/services/metrics.service';
+import { useAiChatStore } from './useAiChatStore';
 
 interface ProjectState {
   projects: Project[];
@@ -103,6 +104,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       await projectsService.delete(projectId);
+      useAiChatStore.getState().removeProjectSession(projectId);
       set((state) => {
         const remaining = state.projects.filter((p) => p.id !== projectId);
         return {

@@ -13,12 +13,21 @@ import { decisionsService } from '@/services/decisions.service';
 import { useCanvasStore } from './useCanvasStore';
 import { useProjectStore } from './useProjectStore';
 
+export interface ProjectChatSession {
+  messages: AiChatMessage[];
+  injectedKeys: Record<string, boolean>;
+}
+
 interface AiChatState {
+  currentProjectId: string | null;
+  sessions: Record<string, ProjectChatSession>;
   messages: AiChatMessage[];
   isLoading: boolean;
   error: string | null;
   injectedKeys: Record<string, boolean>;
 
+  switchProject: (projectId: string) => void;
+  removeProjectSession: (projectId: string) => void;
   sendMessage: (projectId: string, content: string, actionContext?: string) => Promise<void>;
   analyzeSchema: (projectId: string) => Promise<void>;
   suggestRequirements: (projectId: string, prompt: string) => Promise<void>;
@@ -40,14 +49,90 @@ const INITIAL_GREETING: AiChatMessage = {
   timestamp: Date.now(),
 };
 
+const STORAGE_KEY = 'devsculptor_chat_sessions_v1';
+
+const loadSessionsFromStorage = (): Record<string, ProjectChatSession> => {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+};
+
+const saveSessionsToStorage = (sessions: Record<string, ProjectChatSession>) => {
+  try {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+  } catch {
+    // Protección ante cuota o restricciones de almacenamiento en navegación privada
+  }
+};
+
+const initialStoredSessions = loadSessionsFromStorage();
+
 export const useAiChatStore = create<AiChatState>((set, get) => ({
+  currentProjectId: null,
+  sessions: initialStoredSessions,
   messages: [INITIAL_GREETING],
   isLoading: false,
   error: null,
   injectedKeys: {},
 
+  switchProject: (projectId: string) => {
+    if (!projectId) return;
+    const { currentProjectId, sessions, messages, injectedKeys } = get();
+    if (currentProjectId === projectId) return;
+
+    const updatedSessions = { ...sessions };
+    if (currentProjectId) {
+      updatedSessions[currentProjectId] = {
+        messages,
+        injectedKeys,
+      };
+    }
+
+    const targetSession: ProjectChatSession = updatedSessions[projectId] || {
+      messages: [INITIAL_GREETING],
+      injectedKeys: {},
+    };
+    updatedSessions[projectId] = targetSession;
+    saveSessionsToStorage(updatedSessions);
+
+    set({
+      currentProjectId: projectId,
+      sessions: updatedSessions,
+      messages: targetSession.messages,
+      injectedKeys: targetSession.injectedKeys,
+      error: null,
+      isLoading: false,
+    });
+  },
+
+  removeProjectSession: (projectId: string) => {
+    const { sessions, currentProjectId } = get();
+    const updatedSessions = { ...sessions };
+    delete updatedSessions[projectId];
+    saveSessionsToStorage(updatedSessions);
+
+    if (currentProjectId === projectId) {
+      set({
+        currentProjectId: null,
+        sessions: updatedSessions,
+        messages: [INITIAL_GREETING],
+        injectedKeys: {},
+      });
+    } else {
+      set({ sessions: updatedSessions });
+    }
+  },
+
   sendMessage: async (projectId: string, content: string, actionContext?: string) => {
     if (!content.trim()) return;
+
+    if (get().currentProjectId !== projectId) {
+      get().switchProject(projectId);
+    }
 
     const userMessage: AiChatMessage = {
       id: `msg-user-${Date.now()}`,
@@ -57,7 +142,21 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
     };
 
     const updatedMessages = [...get().messages, userMessage];
-    set({ messages: updatedMessages, isLoading: true, error: null });
+    const interimSessions = {
+      ...get().sessions,
+      [projectId]: {
+        messages: updatedMessages,
+        injectedKeys: get().injectedKeys,
+      },
+    };
+    saveSessionsToStorage(interimSessions);
+
+    set({
+      messages: updatedMessages,
+      sessions: interimSessions,
+      isLoading: true,
+      error: null,
+    });
 
     try {
       // Filtrar a historial relevante para enviar a la API
@@ -87,10 +186,21 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
         timestamp: Date.now(),
       };
 
-      set((state) => ({
-        messages: [...state.messages, assistantMessage],
+      const finalMessages = [...get().messages, assistantMessage];
+      const finalSessions = {
+        ...get().sessions,
+        [projectId]: {
+          messages: finalMessages,
+          injectedKeys: get().injectedKeys,
+        },
+      };
+      saveSessionsToStorage(finalSessions);
+
+      set({
+        messages: finalMessages,
+        sessions: finalSessions,
         isLoading: false,
-      }));
+      });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Error al consultar al arquitecto IA';
       set({ error: message, isLoading: false });
@@ -98,6 +208,10 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
   },
 
   analyzeSchema: async (projectId: string) => {
+    if (get().currentProjectId !== projectId) {
+      get().switchProject(projectId);
+    }
+
     set({ isLoading: true, error: null });
     try {
       const result = await aiService.analyzeSchema(projectId);
@@ -115,10 +229,21 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
         timestamp: Date.now(),
       };
 
-      set((state) => ({
-        messages: [...state.messages, assistantMessage],
+      const finalMessages = [...get().messages, assistantMessage];
+      const finalSessions = {
+        ...get().sessions,
+        [projectId]: {
+          messages: finalMessages,
+          injectedKeys: get().injectedKeys,
+        },
+      };
+      saveSessionsToStorage(finalSessions);
+
+      set({
+        messages: finalMessages,
+        sessions: finalSessions,
         isLoading: false,
-      }));
+      });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Error al auditar el esquema con IA';
       set({ error: message, isLoading: false });
@@ -126,6 +251,10 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
   },
 
   suggestRequirements: async (projectId: string, prompt: string) => {
+    if (get().currentProjectId !== projectId) {
+      get().switchProject(projectId);
+    }
+
     set({ isLoading: true, error: null });
     try {
       const result = await aiService.suggestRequirements(projectId, prompt);
@@ -143,10 +272,21 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
         timestamp: Date.now(),
       };
 
-      set((state) => ({
-        messages: [...state.messages, assistantMessage],
+      const finalMessages = [...get().messages, assistantMessage];
+      const finalSessions = {
+        ...get().sessions,
+        [projectId]: {
+          messages: finalMessages,
+          injectedKeys: get().injectedKeys,
+        },
+      };
+      saveSessionsToStorage(finalSessions);
+
+      set({
+        messages: finalMessages,
+        sessions: finalSessions,
         isLoading: false,
-      }));
+      });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Error al sintetizar requisitos con IA';
       set({ error: message, isLoading: false });
@@ -154,6 +294,10 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
   },
 
   injectRequirement: async (projectId: string, req: AiSuggestedRequirement) => {
+    if (get().currentProjectId !== projectId) {
+      get().switchProject(projectId);
+    }
+
     const key = `req:${req.code}`;
     if (get().injectedKeys[key]) return;
 
@@ -171,15 +315,30 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
       description: req.description || '',
     });
 
-    set((state) => ({
-      injectedKeys: { ...state.injectedKeys, [key]: true },
-    }));
+    const updatedKeys = { ...get().injectedKeys, [key]: true };
+    const updatedSessions = {
+      ...get().sessions,
+      [projectId]: {
+        messages: get().messages,
+        injectedKeys: updatedKeys,
+      },
+    };
+    saveSessionsToStorage(updatedSessions);
+
+    set({
+      injectedKeys: updatedKeys,
+      sessions: updatedSessions,
+    });
 
     // Refrescar métricas del proyecto en tiempo real
     useProjectStore.getState().fetchMetrics(projectId);
   },
 
   injectEntity: async (projectId: string, entity: AiSuggestedEntity) => {
+    if (get().currentProjectId !== projectId) {
+      get().switchProject(projectId);
+    }
+
     const key = `entity:${entity.tableName}`;
     if (get().injectedKeys[key]) return;
 
@@ -199,8 +358,6 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
         isFk = true;
         const base = col.name.slice(0, -3).toLowerCase();
         const plural = base.endsWith('s') ? base : `${base}s`;
-        // En estándares relacionales SQL, las tablas se nombran en plural (users, products).
-        // 'user' además es palabra reservada en PostgreSQL.
         refTable = existingEntities.some((e) => e.table_name.toLowerCase() === base)
           ? base
           : (base === 'user' ? 'users' : plural);
@@ -239,14 +396,29 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
       position_y: posY,
     });
 
-    set((state) => ({
-      injectedKeys: { ...state.injectedKeys, [key]: true },
-    }));
+    const updatedKeys = { ...get().injectedKeys, [key]: true };
+    const updatedSessions = {
+      ...get().sessions,
+      [projectId]: {
+        messages: get().messages,
+        injectedKeys: updatedKeys,
+      },
+    };
+    saveSessionsToStorage(updatedSessions);
+
+    set({
+      injectedKeys: updatedKeys,
+      sessions: updatedSessions,
+    });
 
     useProjectStore.getState().fetchMetrics(projectId);
   },
 
   injectDecision: async (projectId: string, decision: AiSuggestedDecision) => {
+    if (get().currentProjectId !== projectId) {
+      get().switchProject(projectId);
+    }
+
     const key = `decision:${decision.code}`;
     if (get().injectedKeys[key]) return;
 
@@ -259,14 +431,29 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
       consequences: decision.consequences || 'Mitigación de riesgos y consistencia técnica',
     });
 
-    set((state) => ({
-      injectedKeys: { ...state.injectedKeys, [key]: true },
-    }));
+    const updatedKeys = { ...get().injectedKeys, [key]: true };
+    const updatedSessions = {
+      ...get().sessions,
+      [projectId]: {
+        messages: get().messages,
+        injectedKeys: updatedKeys,
+      },
+    };
+    saveSessionsToStorage(updatedSessions);
+
+    set({
+      injectedKeys: updatedKeys,
+      sessions: updatedSessions,
+    });
 
     useProjectStore.getState().fetchMetrics(projectId);
   },
 
   injectAllActions: async (projectId: string, actions: DevSculptorActions) => {
+    if (get().currentProjectId !== projectId) {
+      get().switchProject(projectId);
+    }
+
     let count = 0;
 
     if (actions.requirements && actions.requirements.length > 0) {
@@ -300,9 +487,24 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
   },
 
   clearHistory: () => {
-    set({
+    const { currentProjectId, sessions } = get();
+    const cleanSession: ProjectChatSession = {
       messages: [INITIAL_GREETING],
       injectedKeys: {},
+    };
+
+    const updatedSessions = currentProjectId
+      ? { ...sessions, [currentProjectId]: cleanSession }
+      : sessions;
+
+    if (currentProjectId) {
+      saveSessionsToStorage(updatedSessions);
+    }
+
+    set({
+      messages: cleanSession.messages,
+      injectedKeys: cleanSession.injectedKeys,
+      sessions: updatedSessions,
       error: null,
     });
   },

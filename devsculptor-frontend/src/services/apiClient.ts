@@ -53,6 +53,9 @@ apiClient.interceptors.response.use(
         return Promise.reject(new Error(data.error.message || 'Error en la solicitud'));
       }
     } else if (error.request) {
+      if (error.code === 'ECONNABORTED' || error.message?.toLowerCase().includes('timeout')) {
+        return Promise.reject(new Error('El asistente técnico tardó demasiado en responder (tiempo límite excedido). Por favor reintenta.'));
+      }
       return Promise.reject(new Error('No se pudo establecer conexión con el servidor backend (verifique que esté activo en el puerto 3000).'));
     }
 
