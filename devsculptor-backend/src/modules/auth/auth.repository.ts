@@ -77,4 +77,10 @@ export class AuthRepository extends BaseRepository<User> {
     const query = `UPDATE ${this.tableName} SET mfa_enabled = $1 WHERE id = $2;`;
     await this.pool.query(query, [enabled, userId]);
   }
+
+  async updateProfile(userId: string, fullName: string): Promise<User> {
+    const query = `UPDATE ${this.tableName} SET full_name = $1 WHERE id = $2 RETURNING *;`;
+    const result = await this.pool.query(query, [fullName, userId]);
+    return result.rows[0] as User;
+  }
 }

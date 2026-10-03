@@ -5,6 +5,7 @@ import { GlobalVaultTab } from './tabs/GlobalVaultTab';
 import { PlatformStatsTab } from './tabs/PlatformStatsTab';
 import { AuditLogsTab } from './tabs/AuditLogsTab';
 import { UserManagementTab } from './tabs/UserManagementTab';
+import { AiModelsTab } from './tabs/AiModelsTab';
 
 interface AdminConsoleViewProps {
   onBack: () => void;
@@ -15,6 +16,7 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({ onBack }) =>
 
   const tabs: Array<{ id: AdminTab; label: string; icon: string }> = [
     { id: 'vault', label: 'Bóveda Global (_global/)', icon: 'folder_data' },
+    { id: 'models', label: 'Catálogo Modelos IA', icon: 'smart_toy' },
     { id: 'stats', label: 'Telemetría & KPIs', icon: 'analytics' },
     { id: 'audit', label: 'Auditoría Transversal', icon: 'receipt_long' },
     { id: 'users', label: 'Usuarios & RBAC', icon: 'manage_accounts' },
@@ -71,6 +73,7 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({ onBack }) =>
       {/* 2. Contenido Dinámico de la Pestaña Activa */}
       <section className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {activeTab === 'vault' && <GlobalVaultTab />}
+        {activeTab === 'models' && <AiModelsTab />}
         {activeTab === 'stats' && <PlatformStatsTab />}
         {activeTab === 'audit' && <AuditLogsTab />}
         {activeTab === 'users' && <UserManagementTab />}

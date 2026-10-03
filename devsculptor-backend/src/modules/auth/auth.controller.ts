@@ -100,4 +100,34 @@ export class AuthController {
       next(error);
     }
   };
+
+  updateProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        res.status(401).json({ success: false, message: 'Usuario no autenticado' });
+        return;
+      }
+      const fullName = req.body?.full_name;
+      const result = await this.authService.updateProfile(userId, fullName);
+      sendSuccess(res, result, 200);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  changePassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        res.status(401).json({ success: false, message: 'Usuario no autenticado' });
+        return;
+      }
+      const { currentPassword, newPassword } = req.body;
+      const result = await this.authService.changePassword(userId, currentPassword, newPassword);
+      sendSuccess(res, result, 200);
+    } catch (error) {
+      next(error);
+    }
+  };
 }

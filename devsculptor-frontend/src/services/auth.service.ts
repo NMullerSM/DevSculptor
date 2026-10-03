@@ -1,5 +1,6 @@
 import { apiRequest } from './apiClient';
 import {
+  User,
   AuthResponse,
   LoginResponse,
   LoginPayload,
@@ -51,6 +52,19 @@ export const authService = {
 
   async disableMfa(code: string): Promise<{ message: string }> {
     const res = await apiRequest<{ message: string }>('post', '/auth/mfa/disable', { code });
+    return res.data;
+  },
+
+  async updateProfile(fullName: string): Promise<User> {
+    const res = await apiRequest<User>('put', '/auth/profile', { full_name: fullName });
+    return res.data;
+  },
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<{ message: string }> {
+    const res = await apiRequest<{ message: string }>('put', '/auth/change-password', {
+      currentPassword,
+      newPassword,
+    });
     return res.data;
   },
 

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useProjectStore } from '@/stores/useProjectStore';
-import { VisionPill } from '@/components/ui/VisionPill';
 import { CoverageMetricsModal } from './CoverageMetricsModal';
 
 interface CopilotInspectorProps {
@@ -32,27 +31,22 @@ export const CopilotInspector: React.FC<CopilotInspectorProps> = ({
 
   return (
     <aside className={`vision-window flex flex-col p-3 gap-3 select-none ${className}`}>
-      {/* Encabezado */}
-      <div className="flex items-center justify-between pb-1 border-b border-glass-subtle">
+      {/* Encabezado sin badge que choque con botón de expandir */}
+      <div className="flex items-center justify-between pb-1 border-b border-glass-subtle pr-8">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(56,189,248,0.8)] animate-pulse" />
-          <span className="font-semibold text-xs text-primary">Copiloto</span>
+          <span className="font-semibold text-xs text-primary">Copiloto de Arquitectura</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <VisionPill variant="cyan" className="text-[8.5px]">
-            ACTIVO
-          </VisionPill>
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="vision-btn vision-btn-icon !p-1 text-muted hover:text-primary"
-              title="Cerrar panel de copiloto"
-              aria-label="Cerrar panel de copiloto"
-            >
-              <span className="material-symbols-outlined text-sm">close</span>
-            </button>
-          )}
-        </div>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="vision-btn vision-btn-icon !p-1 text-muted hover:text-primary"
+            title="Cerrar panel de copiloto"
+            aria-label="Cerrar panel de copiloto"
+          >
+            <span className="material-symbols-outlined text-sm">close</span>
+          </button>
+        )}
       </div>
 
       {/* Tarjeta de Maturity Index del Stored Procedure */}

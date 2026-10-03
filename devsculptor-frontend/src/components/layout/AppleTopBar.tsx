@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useProjectStore } from '@/stores/useProjectStore';
 import { useLayoutStore } from '@/stores/useLayoutStore';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
-import { UserSecurityModal } from '@/features/auth/UserSecurityModal';
+import { UserProfileMenu } from '@/features/auth/UserProfileMenu';
+import { PlatformSettingsDrawer } from '@/features/settings/PlatformSettingsDrawer';
 
 interface AppleTopBarProps {
   currentScreen: 'studio' | 'hub' | 'admin';
@@ -14,9 +14,10 @@ export const AppleTopBar: React.FC<AppleTopBarProps> = ({
   currentScreen,
   onNavigateScreen,
 }) => {
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
   const { activeProject } = useProjectStore();
-  const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isSettingsDrawerOpen, setIsSettingsDrawerOpen] = useState(false);
   const {
     isFlowDrawerOpen,
     isCopilotDrawerOpen,
@@ -127,44 +128,51 @@ export const AppleTopBar: React.FC<AppleTopBarProps> = ({
 
         <div className="h-3 w-px bg-[var(--border-glass-subtle-color)] mx-0.5 hidden sm:block" />
 
-        <ThemeToggle />
+        {/* Botón de Configuración de la Plataforma (Apariencia, Fondos, Gobernanza) */}
+        <button
+          type="button"
+          onClick={() => setIsSettingsDrawerOpen(true)}
+          className="vision-btn vision-btn-icon text-muted hover:text-indigo-400 !p-1.5 transition-colors"
+          title="Configuración de la Plataforma (Apariencia, Fondos, Gobernanza)"
+          aria-label="Configuración de la Plataforma"
+        >
+          <span className="material-symbols-outlined text-[17px]">tune</span>
+        </button>
 
-        {/* Avatar de Usuario y Cerrar Sesión */}
-        <div className="flex items-center gap-1 sm:gap-2">
+        <div className="h-3.5 w-px bg-[var(--border-glass-subtle-color)] mx-1" />
+
+        {/* Avatar Único de Usuario (NM) - Al hacer click despliega Menú de Perfil, Seguridad y BYOK */}
+        <div className="relative">
           <button
             type="button"
-            onClick={() => setIsSecurityModalOpen(true)}
-            className="flex items-center gap-1.5 vision-btn !py-0.5 !px-1.5 text-xs text-secondary hover:text-primary transition-all group"
-            title={user ? `${user.full_name} (${user.email}) - Click para gestionar Seguridad & 2FA` : 'Seguridad'}
+            onClick={() => setIsUserMenuOpen((prev) => !prev)}
+            className="relative flex items-center p-0.5 rounded-full transition-all group hover:ring-2 hover:ring-indigo-500/50 cursor-pointer"
+            title={user ? `${user.full_name} (${user.email}) — Click para Perfil, Seguridad 2FA y API Keys` : 'Mi Cuenta'}
+            aria-label="Menú de Usuario"
           >
-            <div
-              className="w-5 h-5 rounded-full bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center text-white font-semibold text-[9.5px] shadow-sm shrink-0 group-hover:scale-105 transition-transform"
-            >
+            <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-500 flex items-center justify-center text-white font-bold text-[10.5px] shadow-sm shrink-0 group-hover:scale-105 transition-transform ring-1 ring-white/20">
               {getInitials(user?.full_name)}
             </div>
             {user?.mfa_enabled && (
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" title="2FA Activo" />
+              <span
+                className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-[#0a0f1d]"
+                title="2FA Activo"
+              />
             )}
-            <span className="material-symbols-outlined text-[13px] text-muted group-hover:text-primary">
-              security
-            </span>
           </button>
 
-          <button
-            onClick={logout}
-            className="vision-btn vision-btn-icon text-muted hover:text-rose-400 !p-1"
-            title="Cerrar sesión"
-            aria-label="Cerrar sesión"
-          >
-            <span className="material-symbols-outlined text-sm">logout</span>
-          </button>
+          {/* Menú Flotante de Usuario (Perfil, Seguridad 2FA, Mis API Keys, Cerrar Sesión) */}
+          <UserProfileMenu
+            isOpen={isUserMenuOpen}
+            onClose={() => setIsUserMenuOpen(false)}
+          />
         </div>
       </div>
 
-      {/* Modal de Seguridad y 2FA */}
-      <UserSecurityModal
-        isOpen={isSecurityModalOpen}
-        onClose={() => setIsSecurityModalOpen(false)}
+      {/* Drawer Deslizante de Configuración de la Plataforma (Desde la Izquierda) */}
+      <PlatformSettingsDrawer
+        isOpen={isSettingsDrawerOpen}
+        onClose={() => setIsSettingsDrawerOpen(false)}
       />
     </header>
   );

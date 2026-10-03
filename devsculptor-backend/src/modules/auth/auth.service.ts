@@ -273,4 +273,35 @@ export class AuthService {
       message: 'Autenticación de dos factores (2FA) desactivada.',
     };
   }
+
+  /**
+   * Actualizar nombre de perfil de usuario
+   */
+  async updateProfile(userId: string, fullName: string): Promise<{ id: string; email: string; full_name: string; role: UserRole; mfa_enabled: boolean }> {
+    if (!fullName || fullName.trim().length < 2) {
+      throw new ValidationError('El nombre debe tener al menos 2 caracteres.');
+    }
+    const updated = await this.authRepository.updateProfile(userId, fullName.trim());
+    return {
+      id: updated.id,
+      email: updated.email,
+      full_name: updated.full_name,
+      role: updated.role,
+      mfa_enabled: Boolean(updated.mfa_enabled),
+    };
+  }
+
+  /**
+   * Cambiar contraseña del usuario autenticado
+   */
+  async changePassword(userId: string, currentPass: string, newPass: string): Promise<{ message: string }> {
+    const user = await this.authRepository.findById(userId);
+    if (!user) throw new NotFoundError('Usuario no encontrado');
+    const isValid = await comparePassword(currentPass, user.password_hash);
+    if (!isValid) throw new UnauthorizedError('La contraseña actual es incorrecta.');
+    if (newPass.length < 8) throw new ValidationError('La nueva contraseña debe tener al menos 8 caracteres.');
+    const newHash = await hashPassword(newPass);
+    await this.authRepository.updatePassword(userId, newHash);
+    return { message: 'Contraseña actualizada con éxito.' };
+  }
 }

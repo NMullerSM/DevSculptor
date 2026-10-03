@@ -74,7 +74,7 @@ PROGRESO GENERAL DE SPRINTS
 ## 3. Sprint 2: Frontend Base, Sistema de Diseño visionOS y Flujo Tripartito (100%)
 
 ### 3.1. Objetivos y Entregables Alcanzados
-- **Sandbox de Prototipado (`/Prototype`)**: Validación empírica previa en HTML5, CSS3 puro y ES6 modules para asegurar fluidez a 60 FPS, física óptica de vidrio y ergonomía antes de codificar en React.
+- **Sandbox de Prototipado**: Validación empírica previa en HTML5, CSS3 puro y ES6 modules para asegurar fluidez a 60 FPS, física óptica de vidrio y ergonomía (fase inicial superada y consolidada en el código fuente de producción).
 - **Construcción en Producción**: Aplicación SPA construida en **React 18+ con Vite y TypeScript** (`devsculptor-frontend`).
 - **Sistema de Diseño Canónico**: **Apple visionOS Liquid Glassmorphism (v2)** integrado con el **Workspace Tripartito de Google NotebookLM Studio**:
   - Refracción angular a 135°, biseles de luz especular (`inset 0 1.5px 1px 0 rgba(255,255,255,0.48)`), desenfoque óptico saturado (`backdrop-filter: blur(...) saturate(...)`) y orbes ambientales cinéticos.
@@ -278,7 +278,39 @@ El Sprint 4 materializa la síntesis final del sistema pre-código mediante la c
 
 ---
 
-## 6. Sprint 5: Hardening de Seguridad, Despliegue y Entrega Portafolio PTY4479 (Roadmap)
+## 6. Sprint 5: Refactorización UX/UI, Configuración de Plataforma, Identidad y Bóveda BYOK (Etapa A — 100%)
+
+El Sprint 5 aborda la separación arquitectónica de dominios de configuración, la seguridad de credenciales de inferencia y la ampliación de la suite documental pre-código:
+
+### 6.1. Separación de Dominios de Configuración y Simplificación de Top Bar
+1. **Barra Superior Minimalista (`AppleTopBar.tsx`)**:
+   - Eliminación de accesos directos redundantes. Se preserva exclusivamente el acceso a Configuración de la Plataforma (`tune`) y el avatar del usuario (`NM`).
+2. **Cajón Deslizante Lateral de Plataforma (`PlatformSettingsDrawer.tsx`)**:
+   - Montado directamente en `document.body` mediante `createPortal` para evitar limitaciones de recorte por `backdrop-filter`.
+   - Selector de Modo de Iluminación (Modo Oscuro vs. Modo Claro).
+   - Galería de 6 fondos de pantalla en alta resolución + soporte para URL externa.
+   - Controles deslizantes para desenfoque de vidrio (Glass Blur) y opacidad de ventanas.
+   - Reglas de gobernanza pre-coding: Normalización Estricta 3FN y prefijos canónicos de requisitos (`RF`, `REQ`, `US`).
+
+### 6.2. Bóveda de Inferencia Local BYOK y Verdad en Catálogo de Modelos
+1. **Transparencia en Costos y Proveedores**:
+   - Solo los modelos servidos por el backend (`Gemini Flash`) se etiquetan como gratuitos/incluidos.
+   - Los modelos de terceros (OpenRouter, DeepSeek, OpenAI, Groq) se identifican formalmente con la etiqueta *Requiere Clave Privada*.
+2. **Menú de Usuario y Credenciales (`UserProfileMenu.tsx`)**:
+   - Pestaña Perfil: Edición de nombre para mostrar (`full_name`) y actualización segura de contraseña.
+   - Pestaña Seguridad & 2FA: Flujo completo de activación y desactivación de TOTP RFC 6238.
+   - Pestaña Mis API Keys (BYOK): Almacenamiento local en cliente (cero persistencia en base de datos), ping test de latencia y conmutación transparente a fallback de servidor.
+
+### 6.3. Endpoints de Backend para Identidad y Contraseñas
+1. **`PUT /auth/profile`**: Modificación autenticada de nombre completo con saneamiento y validación.
+2. **`PUT /auth/change-password`**: Comprobación criptográfica de contraseña previa mediante `bcrypt.compare` y salting seguro de nueva contraseña (`bcrypt.hash(..., 12)`).
+
+### 6.4. Bóveda Documental OKF con 13 Plantillas Enterprise
+- Integración en el Paso 3 del Estudio ("Documentos") de 13 especificaciones técnicas que cubren Requerimientos (SRS, Matriz, Casos de Uso), Arquitectura (Visión C4, ADRs, Topología), Base de Datos (DDL, Diccionario, Migraciones), Calidad & Testing (Plan de Pruebas, Cobertura), Gobernanza (Auditoría ISO/IEC 25010) y Despliegue (Runbook DevOps).
+
+---
+
+## 7. Sprint 5: Hardening de Seguridad Final y Despliegue (Etapa B — Roadmap)
 
 - **Auditoría de Seguridad Final**: Rate limiting granular, políticas CSP estrictas y sanitización contra inyecciones.
 - **Contenerización y CI/CD**: Empaquetado Docker multicapa para backend y frontend con despliegue Cloud automatizado.
@@ -286,21 +318,26 @@ El Sprint 4 materializa la síntesis final del sistema pre-código mediante la c
 
 ---
 
-## 7. Matriz de Cumplimiento de la Definición de Terminado (DoD)
+## 8. Matriz de Cumplimiento de la Definición de Terminado (DoD)
 
 | Criterio de Aceptación (DoD) | Estado | Evidencia Técnica |
 | :--- | :---: | :--- |
 | **Cero Errores de Compilación TypeScript** | ✅ CUMPLIDO | `npm run build` compila con 0 errores en frontend (Vite) y backend (`tsc && tsc-alias`). |
 | **Arquitectura de IA Provider-Agnostic** | ✅ CUMPLIDO | Patrón Strategy/Adapter implementado (`IAiProvider`, `GeminiProvider`, `MockAiProvider`, `OpenAiProvider`). |
 | **Protección de Credenciales de IA** | ✅ CUMPLIDO | API keys aisladas al 100% en backend `.env`; cero exposición en cliente o git. |
+| **Bóveda Local BYOK (Bring Your Own Key)** | ✅ CUMPLIDO | Almacenamiento local en cliente (cero retención en BD), soporte multi-proveedor y ping test. |
+| **Verdad en Catálogo de Modelos** | ✅ CUMPLIDO | Solo modelos con disponibilidad de servidor etiquetados como gratuitos; terceros requieren clave explícita. |
+| **Separación de Dominios de Configuración** | ✅ CUMPLIDO | Drawer lateral izquierdo para estética/fondos/3FN y Popover en avatar para perfil/contraseñas/2FA. |
+| **Gestión de Identidad y Contraseña Segura** | ✅ CUMPLIDO | Endpoints `PUT /auth/profile` y `PUT /auth/change-password` con hashing bcrypt salt 12. |
 | **Resiliencia y Modo Offline Heurístico** | ✅ CUMPLIDO | `MockAiProvider` analiza contexto real de base de datos sin lanzar errores si no hay API key. |
 | **Inyección 1-Click de Artefactos IA** | ✅ CUMPLIDO | Inserción directa de requisitos, entidades y ADRs con actualización de métricas en tiempo real. |
 | **Seguridad RLS y Tenencia Horizontal** | ✅ CUMPLIDO | Todas las consultas filtran por `user_id` del token JWT verificado (Pilar 7). |
 | **Validación Zod como SSOT** | ✅ CUMPLIDO | DTOs de entrada validados en middleware antes de los controladores. |
 | **Rendimiento Visual a 60 FPS** | ✅ CUMPLIDO | Arrastre y Bezier calculados mediante `useRef` mutable y GPU transforms. |
 | **Contraste WCAG 2.1 AA Dual Theme** | ✅ CUMPLIDO | Textos legibles y oscuros (`#090d16`) en modo claro y brillantes en modo oscuro. |
-| **Bóveda de Documentación OKF** | ✅ CUMPLIDO | Compilación de 9 artefactos normalizados con YAML frontmatter y SHA-256 state hashing. |
+| **Bóveda de Documentación OKF (13 Plantillas)**| ✅ CUMPLIDO | Compilación de 13 artefactos normalizados con YAML frontmatter y SHA-256 state hashing. |
 | **Detección de Desviación (Drift)** | ✅ CUMPLIDO | `okfVaultService` clasifica el estado en `FRESH`, `DRIFT_DETECTED` y `STALE`. |
 | **Exportaciones Granulares Multi-Dialecto** | ✅ CUMPLIDO | Descarga directa de DDL (Postgres, MySQL, SQLite, Oracle), SRS e índice ADR. |
 | **Trazabilidad Git en `develop` y `main`** | ✅ CUMPLIDO | Commits atómicos bilingües con convención Conventional Commits y sincronización controlada. |
+
 

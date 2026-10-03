@@ -1,6 +1,9 @@
 import { Project } from '@/types/project.types';
 import { Requirement } from '@/types/requirement.types';
 import { Decision } from '@/types/decision.types';
+import { CanvasEntity } from '@/types/canvas.types';
+import { ProjectMetrics } from '@/types/metrics.types';
+import { EnterpriseTemplateDef } from './okfTemplates';
 
 export type ExportFormat = 'html' | 'md';
 
@@ -15,6 +18,7 @@ export function convertMarkdownToHtml(markdown: string): string {
   const lines = cleanMd.split('\n');
   const processedLines: string[] = [];
   let inCodeBlock = false;
+  let codeLang = '';
   let codeBuffer: string[] = [];
   let inTable = false;
   let tableBuffer: string[] = [];
@@ -61,13 +65,67 @@ export function convertMarkdownToHtml(markdown: string): string {
 
   const flushCode = () => {
     if (codeBuffer.length === 0) return;
-    const escaped = codeBuffer
-      .join('\n')
+    const rawCode = codeBuffer.join('\n').trim();
+    const escaped = rawCode
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
-    processedLines.push(`<pre class="code-block"><code>${escaped}</code></pre>`);
+
+    const isMermaid =
+      codeLang === 'mermaid' ||
+      codeLang === 'mmd' ||
+      /^(classDiagram|flowchart|graph|erDiagram|sequenceDiagram|stateDiagram|pie|gantt|gitGraph|C4Context|C4Container|C4Component)/m.test(
+        rawCode
+      );
+
+    if (isMermaid) {
+      let diagramLabel = 'Diagrama Arquitectónico';
+      if (/^classDiagram/m.test(rawCode)) diagramLabel = 'Diagrama de Clases (UML 2.5)';
+      else if (/^sequenceDiagram/m.test(rawCode)) diagramLabel = 'Diagrama de Secuencia (UML)';
+      else if (/^erDiagram/m.test(rawCode)) diagramLabel = 'Diagrama Entidad-Relación (ERD)';
+      else if (/^stateDiagram/m.test(rawCode)) diagramLabel = 'Diagrama de Estados (FSM)';
+      else if (/^(flowchart|graph)/m.test(rawCode)) diagramLabel = 'Diagrama de Paquetes / Flujo';
+      else if (/^C4/m.test(rawCode)) diagramLabel = 'Modelo C4 de Arquitectura';
+
+      processedLines.push(`
+<div class="diagram-composite-module">
+  <div class="diagram-meta-header">
+    <div class="diagram-meta-left">
+      <span class="diagram-icon">⬡</span>
+      <span class="diagram-meta-title">${diagramLabel}</span>
+    </div>
+    <span class="diagram-badge">MERMAID UML / .MMD</span>
+  </div>
+
+  <!-- SECCIÓN 1: CÓDIGO FORMAL VISUALMENTE EXPRESADO -->
+  <div class="diagram-code-section">
+    <div class="diagram-section-header">
+      <span class="diagram-section-title">Definición Formal de Código (.mmd)</span>
+      <span class="diagram-line-count">${rawCode.split('\n').length} líneas</span>
+    </div>
+    <pre class="code-block diagram-source"><code>${escaped}</code></pre>
+  </div>
+
+  <!-- SECCIÓN 2: DIAGRAMA VISUAL EXPRESADO ABAJO -->
+  <div class="diagram-visual-section">
+    <div class="diagram-section-header">
+      <div class="flex-align-center">
+        <span class="pulse-dot"></span>
+        <span class="diagram-section-title">Representación Gráfica del Diagrama</span>
+      </div>
+      <span class="render-badge">Renderizado Visual</span>
+    </div>
+    <div class="diagram-render-container">
+      <div class="mermaid">${rawCode}</div>
+    </div>
+  </div>
+</div>
+`);
+    } else {
+      processedLines.push(`<pre class="code-block"><code>${escaped}</code></pre>`);
+    }
     codeBuffer = [];
+    codeLang = '';
     inCodeBlock = false;
   };
 
@@ -80,6 +138,7 @@ export function convertMarkdownToHtml(markdown: string): string {
         flushCode();
       } else {
         if (inTable) flushTable();
+        codeLang = line.trim().slice(3).trim().toLowerCase();
         inCodeBlock = true;
       }
       continue;
@@ -611,6 +670,147 @@ export function buildUniversalHtmlDocument(params: {
       letter-spacing: 0.4px;
     }
 
+    /* Composite Diagram Module (Code + Visual Render) */
+    .diagram-composite-module {
+      margin: 28px 0;
+      border-radius: 16px;
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      background: rgba(6, 10, 20, 0.85);
+      overflow: hidden;
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
+    }
+
+    .diagram-meta-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 18px;
+      background: linear-gradient(90deg, rgba(30, 27, 75, 0.6) 0%, rgba(15, 23, 42, 0.6) 100%);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .diagram-meta-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .diagram-icon {
+      color: #818cf8;
+      font-size: 16px;
+    }
+
+    .diagram-meta-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.2px;
+    }
+
+    .diagram-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(99, 102, 241, 0.2);
+      color: #a5b4fc;
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      letter-spacing: 0.5px;
+    }
+
+    .diagram-code-section {
+      background: #030712;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .diagram-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 18px;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #94a3b8;
+    }
+
+    .diagram-section-title {
+      font-weight: 600;
+      color: #cbd5e1;
+    }
+
+    .diagram-line-count {
+      color: #64748b;
+      font-size: 10px;
+    }
+
+    .diagram-source {
+      margin: 0 !important;
+      border-radius: 0 !important;
+      border: none !important;
+      background: transparent !important;
+      padding: 14px 18px !important;
+      font-size: 11.5px !important;
+      color: #6ee7b7 !important;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .diagram-visual-section {
+      background: #070b16;
+    }
+
+    .render-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 12px;
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .diagram-render-container {
+      padding: 24px;
+      overflow-x: auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 240px;
+      background: radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 0.4) 0%, rgba(3, 7, 18, 0.8) 100%);
+    }
+
+    .mermaid {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .mermaid svg {
+      max-width: 100% !important;
+      height: auto !important;
+      filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+    }
+
+    .flex-align-center {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pulse-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10b981;
+      display: inline-block;
+      box-shadow: 0 0 8px #10b981;
+    }
+
     /* Print Stylesheet (Optimizado para guardar en PDF ejecutivo) */
     @media print {
       body {
@@ -675,6 +875,56 @@ export function buildUniversalHtmlDocument(params: {
       .badge {
         border: 1px solid #64748b !important;
       }
+
+      .diagram-composite-module {
+        background: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        box-shadow: none !important;
+        page-break-inside: avoid;
+        margin: 20px 0 !important;
+      }
+
+      .diagram-meta-header {
+        background: #f1f5f9 !important;
+        border-bottom: 1px solid #cbd5e1 !important;
+      }
+
+      .diagram-meta-title {
+        color: #0f172a !important;
+      }
+
+      .diagram-code-section {
+        background: #f8fafc !important;
+        border-bottom: 1px solid #cbd5e1 !important;
+      }
+
+      .diagram-source {
+        color: #0f172a !important;
+        max-height: none !important;
+      }
+
+      .diagram-section-header {
+        background: #f1f5f9 !important;
+        color: #475569 !important;
+      }
+
+      .diagram-section-title {
+        color: #0f172a !important;
+      }
+
+      .diagram-visual-section {
+        background: #ffffff !important;
+      }
+
+      .diagram-render-container {
+        background: #ffffff !important;
+        min-height: auto !important;
+        padding: 16px !important;
+      }
+
+      .mermaid svg {
+        filter: none !important;
+      }
     }
   </style>
 </head>
@@ -733,6 +983,47 @@ export function buildUniversalHtmlDocument(params: {
       DevSculptor Enterprise Architecture Governance &bull; Certificado para producción y compliance normativo.
     </div>
   </div>
+
+  <!-- Mermaid Architecture Diagram Engine -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof mermaid !== 'undefined') {
+        try {
+          mermaid.initialize({
+            startOnLoad: true,
+            theme: 'dark',
+            securityLevel: 'loose',
+            fontFamily: 'JetBrains Mono, Inter, ui-sans-serif, system-ui',
+            themeVariables: {
+              darkMode: true,
+              background: '#070b16',
+              primaryColor: '#6366f1',
+              primaryTextColor: '#f8fafc',
+              primaryBorderColor: '#818cf8',
+              lineColor: '#38bdf8',
+              secondaryColor: '#0ea5e9',
+              tertiaryColor: '#1e1b4b',
+              mainBkg: '#0f172a',
+              nodeBorder: '#6366f1',
+              clusterBkg: 'rgba(30, 27, 75, 0.4)',
+              clusterBorder: '#818cf8',
+              defaultLinkColor: '#38bdf8',
+              titleColor: '#ffffff',
+              edgeLabelBackground: '#1e1b4b',
+              actorBkg: '#1e1b4b',
+              actorBorder: '#6366f1',
+              actorTextColor: '#ffffff',
+              signalColor: '#38bdf8',
+              signalTextColor: '#f8fafc'
+            }
+          });
+        } catch (e) {
+          console.warn('[DevSculptor] Error al inicializar Mermaid en documento:', e);
+        }
+      }
+    });
+  </script>
 </body>
 </html>`;
 }
@@ -905,6 +1196,102 @@ export const documentExportService = {
       triggerFileDownload(fullHtml, `${sanitizedProjectName}_Dossier_ADR.html`, 'text/html;charset=utf-8');
     } else {
       triggerFileDownload(md, `${sanitizedProjectName}_Dossier_ADR.md`, 'text/markdown;charset=utf-8');
+    }
+  },
+
+  /**
+   * Genera el HTML universal de una plantilla empresarial específica para visualización o impresión.
+   */
+  getEnterpriseTemplateHtml(
+    project: Project,
+    template: EnterpriseTemplateDef,
+    requirements: Requirement[],
+    entities: CanvasEntity[],
+    decisions: Decision[],
+    metrics?: ProjectMetrics | null
+  ): string {
+    const now = new Date().toISOString().split('T')[0];
+    const generated = template.generate(project, requirements, entities, decisions, metrics);
+    const contentHtml = convertMarkdownToHtml(generated.fullContent);
+
+    return buildUniversalHtmlDocument({
+      title: template.title,
+      subtitle: `${template.description} — Estándar: ${template.standard}. Conforme a especificaciones de DevSculptor.`,
+      badgeText: template.standard,
+      projectName: project.name,
+      projectDescription: project.description || undefined,
+      architectureStyle: project.architecture_style || undefined,
+      leadArchitect: project.lead_architect || undefined,
+      dateStr: now,
+      contentHtml,
+    });
+  },
+
+  /**
+   * Exporta una plantilla empresarial específica en formato HTML o Markdown (.md)
+   */
+  exportEnterpriseTemplate(
+    project: Project,
+    template: EnterpriseTemplateDef,
+    format: ExportFormat,
+    requirements: Requirement[],
+    entities: CanvasEntity[],
+    decisions: Decision[],
+    metrics?: ProjectMetrics | null
+  ): void {
+    const sanitizedProjectName = project.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const sanitizedTitle = template.id.toUpperCase().replace(/[^a-zA-Z0-9_-]/g, '_');
+    const generated = template.generate(project, requirements, entities, decisions, metrics);
+
+    if (format === 'html') {
+      const fullHtml = this.getEnterpriseTemplateHtml(
+        project,
+        template,
+        requirements,
+        entities,
+        decisions,
+        metrics
+      );
+      triggerFileDownload(fullHtml, `${sanitizedProjectName}_${sanitizedTitle}.html`, 'text/html;charset=utf-8');
+    } else {
+      triggerFileDownload(generated.fullContent, `${sanitizedProjectName}_${sanitizedTitle}.md`, 'text/markdown;charset=utf-8');
+    }
+  },
+
+  /**
+   * Abre directamente la ventana de impresión nativa del navegador con el documento
+   * estilizado para guardarlo como PDF vectorial de alta fidelidad.
+   */
+  printEnterpriseTemplate(
+    project: Project,
+    template: EnterpriseTemplateDef,
+    requirements: Requirement[],
+    entities: CanvasEntity[],
+    decisions: Decision[],
+    metrics?: ProjectMetrics | null
+  ): void {
+    const fullHtml = this.getEnterpriseTemplateHtml(
+      project,
+      template,
+      requirements,
+      entities,
+      decisions,
+      metrics
+    );
+
+    const printWin = window.open('', '_blank');
+    if (printWin) {
+      printWin.document.open();
+      printWin.document.write(fullHtml);
+      printWin.document.close();
+      printWin.focus();
+      setTimeout(() => {
+        try {
+          printWin.print();
+        } catch (e) {
+          console.error('Error al invocar impresión nativa', e);
+        }
+      }, 350);
     }
   },
 };

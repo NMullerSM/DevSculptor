@@ -36,4 +36,11 @@ aiRouter.post(
   controller.suggestRequirements
 );
 
+// 4. Verificación de conectividad y latencia (Ping Test para BYOK)
+aiRouter.post(
+  '/ping',
+  validateRequest({ params: projectIdParamSchema }),
+  controller.ping
+);
+
 export default aiRouter;

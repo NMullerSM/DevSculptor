@@ -1,4 +1,4 @@
-export type AdminTab = 'vault' | 'stats' | 'audit' | 'users';
+export type AdminTab = 'vault' | 'stats' | 'audit' | 'users' | 'models';
 
 export interface PlatformStats {
   total_projects: number;

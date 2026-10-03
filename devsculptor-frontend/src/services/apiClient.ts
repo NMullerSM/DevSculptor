@@ -26,6 +26,19 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
+    // 3. Inyección transparente de BYOK AI (Zero-Retention)
+    const activeKey = localStorage.getItem('devsculptor_active_ai_key');
+    const activeProvider = localStorage.getItem('devsculptor_active_ai_provider');
+    const activeModel = localStorage.getItem('devsculptor_active_ai_model');
+    const activeEndpoint = localStorage.getItem('devsculptor_active_ai_endpoint');
+
+    if (activeKey && config.headers && config.url && config.url.includes('/ai')) {
+      config.headers['X-User-Ai-Key'] = activeKey;
+      if (activeProvider) config.headers['X-User-Ai-Provider'] = activeProvider;
+      if (activeModel) config.headers['X-User-Ai-Model'] = activeModel;
+      if (activeEndpoint) config.headers['X-User-Ai-Endpoint'] = activeEndpoint;
+    }
+
     return config;
   },
   (error) => Promise.reject(error)

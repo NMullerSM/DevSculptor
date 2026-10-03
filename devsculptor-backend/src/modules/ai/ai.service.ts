@@ -1,7 +1,7 @@
 import { getPool } from '../../config/database';
 import { ProjectsService } from '../projects/projects.service';
 import { AiProviderFactory } from './providers/provider.factory';
-import { AiProjectContext, AiChatResult } from './providers/ai-provider.interface';
+import { AiProjectContext, AiChatResult, UserAiOverride } from './providers/ai-provider.interface';
 import { ChatRequestDto } from './ai.dto';
 import { logger } from '../../config/logger';
 
@@ -87,10 +87,11 @@ export class AiService {
   public async chat(
     userId: string,
     projectId: string,
-    dto: ChatRequestDto
+    dto: ChatRequestDto,
+    override?: UserAiOverride
   ): Promise<AiChatResult> {
     const context = await this.getProjectContext(userId, projectId);
-    const provider = AiProviderFactory.getProvider();
+    const provider = AiProviderFactory.getProvider(override);
 
     logger.info(
       { userId, projectId, provider: provider.name, messagesCount: dto.messages.length },
@@ -113,9 +114,13 @@ export class AiService {
   /**
    * Realiza una auditoría heurística / IA del esquema relacional y 3FN.
    */
-  public async analyzeSchema(userId: string, projectId: string): Promise<AiChatResult> {
+  public async analyzeSchema(
+    userId: string,
+    projectId: string,
+    override?: UserAiOverride
+  ): Promise<AiChatResult> {
     const context = await this.getProjectContext(userId, projectId);
-    const provider = AiProviderFactory.getProvider();
+    const provider = AiProviderFactory.getProvider(override);
 
     logger.info(
       { userId, projectId, provider: provider.name, tablesCount: context.entities.length },
@@ -131,10 +136,11 @@ export class AiService {
   public async suggestRequirements(
     userId: string,
     projectId: string,
-    prompt: string
+    prompt: string,
+    override?: UserAiOverride
   ): Promise<AiChatResult> {
     const context = await this.getProjectContext(userId, projectId);
-    const provider = AiProviderFactory.getProvider();
+    const provider = AiProviderFactory.getProvider(override);
 
     logger.info(
       { userId, projectId, provider: provider.name, promptLength: prompt.length },
@@ -142,5 +148,42 @@ export class AiService {
     );
 
     return provider.suggestRequirements(prompt, context);
+  }
+
+  /**
+   * Prueba rápida de conexión y latencia (Ping Test) para validar una API Key.
+   */
+  public async ping(override?: UserAiOverride): Promise<{
+    success: boolean;
+    latencyMs: number;
+    provider: string;
+    model: string;
+    reply: string;
+  }> {
+    const start = Date.now();
+    const provider = AiProviderFactory.getProvider(override);
+
+    const dummyContext: AiProjectContext = {
+      projectName: 'DevSculptor Ping Verification',
+      architectureStyle: 'Layered MVC',
+      requirements: [],
+      entities: [],
+      decisions: [],
+    };
+
+    const res = await provider.generateChat(
+      [{ role: 'user', content: 'Ping de verificación. Responde únicamente con: "OK - Conectado"' }],
+      dummyContext,
+      { temperature: 0.1 }
+    );
+
+    const latencyMs = Date.now() - start;
+    return {
+      success: true,
+      latencyMs,
+      provider: res.provider,
+      model: res.model,
+      reply: res.content.trim(),
+    };
   }
 }

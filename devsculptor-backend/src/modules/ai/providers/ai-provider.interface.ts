@@ -85,3 +85,11 @@ export interface IAiProvider {
     context: AiProjectContext
   ): Promise<AiChatResult>;
 }
+
+export interface UserAiOverride {
+  apiKey?: string;
+  provider?: string;
+  model?: string;
+  baseUrl?: string;
+}
+

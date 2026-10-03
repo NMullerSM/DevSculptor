@@ -10,6 +10,7 @@ import { ArchitectureStyleModal } from './ArchitectureStyleModal';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { useProjectStore } from '@/stores/useProjectStore';
 import { documentExportService, ExportFormat } from '@/features/export/documentExportService';
+import { ConsolidatedDocumentsView } from '@/features/export/ConsolidatedDocumentsView';
 
 interface DecisionsViewProps {
   projectId: string;
@@ -32,6 +33,7 @@ export const DecisionsView: React.FC<DecisionsViewProps> = ({
   const [verifyingDecision, setVerifyingDecision] = useState<Decision | null>(null);
   const [targetStatus, setTargetStatus] = useState<DecisionStatus | null>(null);
 
+  const [activeSubTab, setActiveSubTab] = useState<'adrs' | 'consolidated'>('adrs');
   const [actionError, setActionError] = useState<string | null>(null);
   const [isExportingAdrs, setIsExportingAdrs] = useState(false);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
@@ -120,9 +122,49 @@ export const DecisionsView: React.FC<DecisionsViewProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full p-2.5 sm:p-4 gap-2.5 sm:gap-3 select-none">
-      {/* Encabezado */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 border-b border-glass-subtle shrink-0 gap-2">
+    <div className="flex-1 flex flex-col h-full p-2.5 sm:p-4 gap-2.5 sm:gap-3 select-none overflow-hidden">
+      {/* Selector de Pestañas: Actas ADR vs Documentos Consolidados */}
+      <div className="flex items-center justify-between pb-1.5 border-b border-glass-subtle shrink-0">
+        <div className="flex items-center gap-1 bg-black/30 p-1 rounded-xl border border-glass-subtle">
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('adrs')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              activeSubTab === 'adrs'
+                ? 'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-500/25'
+                : 'text-secondary hover:text-primary hover:bg-white/5'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[15px]">gavel</span>
+            <span>Actas de Decisión (ADRs)</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-white/10 ml-0.5">
+              {decisions.length}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('consolidated')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              activeSubTab === 'consolidated'
+                ? 'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-500/25'
+                : 'text-secondary hover:text-primary hover:bg-white/5'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[15px]">menu_book</span>
+            <span>Documentos Consolidados (OKF)</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 ml-0.5 border border-emerald-500/30">
+              13 Plantillas
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {activeSubTab === 'consolidated' ? (
+        <ConsolidatedDocumentsView projectId={projectId} />
+      ) : (
+        <>
+          {/* Encabezado */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 border-b border-glass-subtle shrink-0 gap-2">
         <div className="min-w-0">
           <h2 className="text-xs font-semibold text-primary truncate">
             Registro de Decisiones de Arquitectura (ADRs)
@@ -502,16 +544,18 @@ export const DecisionsView: React.FC<DecisionsViewProps> = ({
         onUpdated={() => loadDecisions()}
       />
 
-      {/* Diálogo Confirmar Eliminación */}
-      <ConfirmModal
-        isOpen={!!deletingDecision}
-        onClose={() => setDeletingDecision(null)}
-        onConfirm={handleConfirmDelete}
-        title="Eliminar Acta de Decisión (ADR)"
-        description={`¿Estás seguro de eliminar el acta "${deletingDecision?.code} - ${deletingDecision?.title}"? Esta acción impactará el cálculo de métricas del proyecto.`}
-        confirmText="Eliminar Acta"
-        variant="danger"
-      />
+        {/* Diálogo Confirmar Eliminación */}
+        <ConfirmModal
+          isOpen={!!deletingDecision}
+          onClose={() => setDeletingDecision(null)}
+          onConfirm={handleConfirmDelete}
+          title="Eliminar Acta de Decisión (ADR)"
+          description={`¿Estás seguro de eliminar el acta "${deletingDecision?.code} - ${deletingDecision?.title}"? Esta acción impactará el cálculo de métricas del proyecto.`}
+          confirmText="Eliminar Acta"
+          variant="danger"
+        />
+        </>
+      )}
     </div>
   );
 };

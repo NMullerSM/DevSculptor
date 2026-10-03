@@ -14,6 +14,7 @@ interface AuthState {
   logout: () => void;
   initAuth: () => void;
   clearError: () => void;
+  updateUser: (user: User) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -91,4 +92,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   clearError: () => set({ error: null }),
+
+  updateUser: (updatedUser: User) => {
+    localStorage.setItem('devsculptor_user', JSON.stringify(updatedUser));
+    set({ user: updatedUser });
+  },
 }));

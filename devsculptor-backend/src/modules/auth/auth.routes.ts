@@ -21,9 +21,11 @@ router.post('/forgot-password', validateRequest({ body: forgotPasswordSchema }),
 router.post('/reset-password', validateRequest({ body: resetPasswordSchema }), controller.resetPassword);
 router.post('/mfa/verify', validateRequest({ body: mfaVerifySchema }), controller.verifyMfaLogin);
 
-// Rutas autenticadas de gestión de 2FA / MFA
+// Rutas autenticadas de gestión de 2FA / MFA y perfil
 router.post('/mfa/setup', authenticate, controller.setupMfa);
 router.post('/mfa/enable', authenticate, validateRequest({ body: mfaEnableSchema }), controller.enableMfa);
 router.post('/mfa/disable', authenticate, controller.disableMfa);
+router.put('/profile', authenticate, controller.updateProfile);
+router.put('/change-password', authenticate, controller.changePassword);
 
 export default router;

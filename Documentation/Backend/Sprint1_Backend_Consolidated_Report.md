@@ -52,7 +52,7 @@
 
 ## 2. Trazabilidad de Decisiones Arquitectónicas (ADRs Consolidados)
 
-A lo largo del Sprint 1, se establecieron **8 decisiones estructurales irreversibles** documentadas formalmente en [Sprint1ADRs.md](file:///c:/Users/natha/Documents/Repos/DevSculptor/Documentation/Desicitions/Backend/Sprint1ADRs.md). El siguiente cuadro expone el análisis causa-efecto y sus ventajas:
+A lo largo del Sprint 1, se establecieron **8 decisiones estructurales irreversibles** documentadas formalmente en [Sprint1ADRs.md](file:///c:/Users/natha/Documents/Repos/DevSculptor/Documentation/Backend/Sprint1ADRs.md). El siguiente cuadro expone el análisis causa-efecto y sus ventajas:
 
 ```
                                 ARQUITECTURA DE DECISIONES SPRINT 1

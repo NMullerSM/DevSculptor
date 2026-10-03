@@ -43,37 +43,58 @@ export class OpenAiProvider implements IAiProvider {
       })),
     ];
 
-    const res = await fetch(`${this.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.apiKey}`,
-      },
-      body: JSON.stringify({
-        model: this.model,
-        messages: formattedMessages,
-        temperature: options?.temperature ?? 0.4,
-      }),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(`[${this.name.toUpperCase()} API Error] HTTP ${res.status}: ${errText}`);
+    const reqHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${this.apiKey}`,
+    };
+
+    if (this.name === 'openrouter' || this.baseUrl.includes('openrouter.ai')) {
+      reqHeaders['HTTP-Referer'] = 'https://devsculptor.app';
+      reqHeaders['X-Title'] = 'DevSculptor Enterprise Studio';
     }
 
-    const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
-    const rawText = data.choices?.[0]?.message?.content || 'Sin respuesta.';
-    const { cleanText, suggestedRequirements, suggestedEntities, suggestedDecisions } =
-      parseDevSculptorActions(rawText);
+    try {
+      const res = await fetch(`${this.baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: reqHeaders,
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: this.model,
+          messages: formattedMessages,
+          temperature: options?.temperature ?? 0.4,
+        }),
+      });
 
-    return {
-      content: cleanText,
-      provider: this.name,
-      model: this.model,
-      suggestedRequirements,
-      suggestedEntities,
-      suggestedDecisions,
-    };
+      clearTimeout(timeoutId);
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`[${this.name.toUpperCase()} API Error] HTTP ${res.status}: ${errText}`);
+      }
+
+      const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
+      const rawText = data.choices?.[0]?.message?.content || 'Sin respuesta.';
+      const { cleanText, suggestedRequirements, suggestedEntities, suggestedDecisions } =
+        parseDevSculptorActions(rawText);
+
+      return {
+        content: cleanText,
+        provider: this.name,
+        model: this.model,
+        suggestedRequirements,
+        suggestedEntities,
+        suggestedDecisions,
+      };
+    } catch (err: unknown) {
+      clearTimeout(timeoutId);
+      if (err instanceof Error && err.name === 'AbortError') {
+        throw new Error(`[${this.name.toUpperCase()} Timeout] La API tardó más de 15 segundos en responder.`);
+      }
+      throw err;
+    }
   }
 
   public async analyzeSchema(context: AiProjectContext): Promise<AiChatResult> {

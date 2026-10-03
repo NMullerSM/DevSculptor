@@ -62,11 +62,10 @@ Por ello, el ciclo de vida del frontend se gobierna bajo un flujo estricto de do
 └────────────────────────────────┘       └────────────────────────────────┘       └────────────────────────────────┘
 ```
 
-### Reglas Inmutables de la Carpeta `/Prototype`
-1. **Tecnologías Exclusivas**: Únicamente `.html`, `.css` y `.js` nativo.
-2. **Cero Dependencias**: Prohibido el uso de `npm`, `package.json`, Vite, Webpack o Node.js dentro de `/Prototype`.
-3. **Ejecución Instantánea**: Debe poder abrirse con *Live Server* o doble clic en cualquier navegador web moderno.
-4. **Objetivo Exclusivo**: Experimentar layout, micro-interacciones, arrastre de nodos con transformaciones GPU, cálculo de conectores Bezier SVG, alternancia de temas y ergonomía general antes de abstraerlos a componentes de producción.
+### Estado del Ciclo de Vida: Prototipado Superado y Retirado
+1. **Fase Superada**: La validación inicial en HTML/CSS/JS nativo cumplió su propósito en la fase de concepción de Sprint 2, verificando contraste, fluidez a 60 FPS y física óptica de vidrio.
+2. **Código de Producción Canónico**: El código vivo y único del frontend reside en [`devsculptor-frontend/`](file:///c:/Users/natha/Documents/Repos/DevSculptor/devsculptor-frontend) (React 19 + TypeScript + Vite + Tailwind CSS + Zustand).
+3. **Ergonomía de Producción**: Toda iteración de diseño se gobierna directamente sobre los tokens del sistema de diseño, componentes reutilizables y stores reactivos de la aplicación principal.
 
 ---
 

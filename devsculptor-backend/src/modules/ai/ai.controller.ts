@@ -14,11 +14,22 @@ export class AiController {
     return req.user.id;
   }
 
+  private getOverride(req: Request) {
+    const apiKey = (req.headers['x-user-ai-key'] as string) || undefined;
+    const provider = (req.headers['x-user-ai-provider'] as string) || undefined;
+    const model = (req.headers['x-user-ai-model'] as string) || undefined;
+    const baseUrl = (req.headers['x-user-ai-endpoint'] as string) || undefined;
+
+    if (!apiKey || apiKey.trim().length === 0) return undefined;
+    return { apiKey: apiKey.trim(), provider, model, baseUrl };
+  }
+
   chat = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const userId = this.getUserId(req);
       const { projectId } = req.params;
-      const result = await this.aiService.chat(userId, projectId, req.body as ChatRequestDto);
+      const override = this.getOverride(req);
+      const result = await this.aiService.chat(userId, projectId, req.body as ChatRequestDto, override);
       sendSuccess(res, result, 200);
     } catch (error) {
       next(error);
@@ -29,7 +40,8 @@ export class AiController {
     try {
       const userId = this.getUserId(req);
       const { projectId } = req.params;
-      const result = await this.aiService.analyzeSchema(userId, projectId);
+      const override = this.getOverride(req);
+      const result = await this.aiService.analyzeSchema(userId, projectId, override);
       sendSuccess(res, result, 200);
     } catch (error) {
       next(error);
@@ -41,7 +53,19 @@ export class AiController {
       const userId = this.getUserId(req);
       const { projectId } = req.params;
       const { prompt } = req.body as SuggestRequirementsRequestDto;
-      const result = await this.aiService.suggestRequirements(userId, projectId, prompt);
+      const override = this.getOverride(req);
+      const result = await this.aiService.suggestRequirements(userId, projectId, prompt, override);
+      sendSuccess(res, result, 200);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  ping = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      this.getUserId(req);
+      const override = this.getOverride(req);
+      const result = await this.aiService.ping(override);
       sendSuccess(res, result, 200);
     } catch (error) {
       next(error);

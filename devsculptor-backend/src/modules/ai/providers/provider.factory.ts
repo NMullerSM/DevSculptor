@@ -1,4 +1,4 @@
-import { IAiProvider } from './ai-provider.interface';
+import { IAiProvider, UserAiOverride } from './ai-provider.interface';
 import { GeminiProvider } from './gemini.provider';
 import { OpenAiProvider } from './openai.provider';
 import { MockAiProvider } from './mock.provider';
@@ -8,7 +8,66 @@ import { logger } from '../../../config/logger';
 export class AiProviderFactory {
   private static instance: IAiProvider | null = null;
 
-  public static getProvider(): IAiProvider {
+  public static getProvider(override?: UserAiOverride): IAiProvider {
+    // 1. Si el cliente suministra BYOK (su propia API key)
+    if (override && override.apiKey && override.apiKey.trim().length > 0) {
+      const provider = (override.provider || 'openrouter').toLowerCase();
+      const model = override.model?.trim() || 'openrouter/free';
+
+      logger.info(
+        { provider, model, isCustomEndpoint: Boolean(override.baseUrl) },
+        'Instanciando proveedor BYOK dinámico para el usuario'
+      );
+
+      if (provider === 'gemini') {
+        return new GeminiProvider(override.apiKey, model || env.GEMINI_MODEL);
+      }
+
+      if (provider === 'openrouter') {
+        return new OpenAiProvider(
+          override.apiKey,
+          model,
+          'https://openrouter.ai/api/v1',
+          'openrouter'
+        );
+      }
+
+      if (provider === 'deepseek') {
+        return new OpenAiProvider(
+          override.apiKey,
+          model || 'deepseek-chat',
+          'https://api.deepseek.com/v1',
+          'deepseek'
+        );
+      }
+
+      if (provider === 'openai') {
+        return new OpenAiProvider(
+          override.apiKey,
+          model || 'gpt-4o',
+          'https://api.openai.com/v1',
+          'openai'
+        );
+      }
+
+      if (provider === 'groq') {
+        return new OpenAiProvider(
+          override.apiKey,
+          model || 'llama-3.3-70b-versatile',
+          'https://api.groq.com/openai/v1',
+          'groq'
+        );
+      }
+
+      // Proveedor custom o compatible con OpenAI
+      return new OpenAiProvider(
+        override.apiKey,
+        model,
+        override.baseUrl || 'https://api.openai.com/v1',
+        'custom'
+      );
+    }
+
     if (this.instance) {
       return this.instance;
     }
