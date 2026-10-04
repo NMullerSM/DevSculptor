@@ -31,6 +31,7 @@ Contiene las especificaciones técnicas del servidor, modelos relacionales, regl
 | [`Sprint4_StageB_Master_Admin_RBAC_and_Global_Vault.md`](file:///c:/Users/natha/Documents/Repos/DevSculptor/Documentation/Backend/Sprint4_StageB_Master_Admin_RBAC_and_Global_Vault.md) | Control de acceso basado en roles (RBAC), middleware `requireSuperAdmin` y endpoints de Bóveda Global. |
 | [`Sprint5_Backend_Profile_and_Credential_Management_Specification.md`](file:///c:/Users/natha/Documents/Repos/DevSculptor/Documentation/Backend/Sprint5_Backend_Profile_and_Credential_Management_Specification.md) | Gestión de perfil de usuario (`PUT /auth/profile`), rotación segura de credenciales y auditoría. |
 | [`Supabase_Security_and_Performance_Report.md`](file:///c:/Users/natha/Documents/Repos/DevSculptor/Documentation/Backend/Supabase_Security_and_Performance_Report.md) | Auditoría de seguridad de base de datos PostgreSQL, políticas RLS activadas e indexación optimizada. |
+| [`Render_Deployment_Guide.md`](file:///c:/Users/natha/Documents/Repos/DevSculptor/Documentation/Backend/Render_Deployment_Guide.md) | **Guía de Despliegue en Render**: Instrucciones paso a paso (Blueprint y Manual) para alojar el backend y conectarlo con Vercel y dominio propio. |
 
 ---
 

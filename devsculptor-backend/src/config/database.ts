@@ -6,17 +6,29 @@ let pool: Pool | null = null;
 
 export function getPool(): Pool {
   if (!pool) {
-    pool = new Pool({
-      host: env.DB_HOST,
-      port: env.DB_PORT,
-      user: env.DB_USER,
-      password: env.DB_PASSWORD,
-      database: env.DB_NAME,
-      ssl: env.DB_SSL ? { rejectUnauthorized: false } : undefined,
-      max: 20,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 5000,
-    });
+    const isSsl =
+      env.DB_SSL ||
+      Boolean(env.DATABASE_URL && (env.DATABASE_URL.includes('sslmode=require') || env.DATABASE_URL.includes('supabase.co')));
+
+    pool = env.DATABASE_URL
+      ? new Pool({
+          connectionString: env.DATABASE_URL,
+          ssl: isSsl ? { rejectUnauthorized: false } : undefined,
+          max: 20,
+          idleTimeoutMillis: 30000,
+          connectionTimeoutMillis: 5000,
+        })
+      : new Pool({
+          host: env.DB_HOST,
+          port: env.DB_PORT,
+          user: env.DB_USER,
+          password: env.DB_PASSWORD,
+          database: env.DB_NAME,
+          ssl: env.DB_SSL ? { rejectUnauthorized: false } : undefined,
+          max: 20,
+          idleTimeoutMillis: 30000,
+          connectionTimeoutMillis: 5000,
+        });
 
     pool.on('error', (err: Error) => {
       logger.error({ err }, 'Error inesperado en cliente inactivo del pool de PostgreSQL');
