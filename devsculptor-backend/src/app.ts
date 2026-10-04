@@ -59,7 +59,19 @@ export function createApp(): Express {
   // 6. Logging estructurado HTTP con Pino
   app.use(requestLogger);
 
-  // 7. Ruta de Health Check (pública, sin auth ni logging excesivo)
+  // 7. Ruta Raíz y Health Check (públicas)
+  app.get('/', (_req: Request, res: Response) => {
+    res.status(200).json({
+      success: true,
+      data: {
+        name: 'DevSculptor Core API',
+        version: '1.0.0',
+        status: 'online',
+        healthCheck: '/api/v1/health',
+      },
+    });
+  });
+
   app.get('/api/v1/health', (_req: Request, res: Response) => {
     res.status(200).json({
       success: true,
