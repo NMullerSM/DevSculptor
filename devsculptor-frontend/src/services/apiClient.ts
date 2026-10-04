@@ -1,7 +1,9 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { ApiResponse, ApiErrorResponse } from '@/types/api.types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD ? 'https://api.devsculptor.cl/api/v1' : 'http://localhost:3000/api/v1');
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
