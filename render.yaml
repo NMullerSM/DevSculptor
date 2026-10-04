@@ -1,12 +1,12 @@
 services:
   - type: web
     name: devsculptor-backend
-    runtime: node
+    env: docker
     plan: free
     region: oregon
     rootDir: devsculptor-backend
-    buildCommand: npm install && npm run build
-    startCommand: npm run start
+    dockerfilePath: Dockerfile
+    dockerContext: .
     healthCheckPath: /api/v1/health
     autoDeploy: true
     envVars:

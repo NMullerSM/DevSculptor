@@ -36,9 +36,8 @@ El repositorio incluye un archivo [`render.yaml`](file:///c:/Users/natha/Documen
 4. Render detectará automáticamente `render.yaml` y configurará:
    * **Nombre del servicio:** `devsculptor-backend`
    * **Directorio raíz (`rootDir`):** `devsculptor-backend`
-   * **Entorno de ejecución:** Node
-   * **Comando de construcción (`buildCommand`):** `npm install && npm run build`
-   * **Comando de inicio (`startCommand`):** `npm run start`
+   * **Entorno de ejecución (`env`):** `docker` (Utiliza el Dockerfile multi-etapa con Node 20 LTS)
+   * **Ruta del Dockerfile:** `Dockerfile`
    * **Ruta de verificación de salud (`healthCheckPath`):** `/api/v1/health`
 5. En la pantalla de revisión, Render te solicitará completar las variables secretas que no están sincronizadas:
    * `DATABASE_URL`: La cadena de conexión a tu base de datos Supabase (o `DB_HOST`, `DB_PASSWORD`, etc.).
@@ -63,9 +62,8 @@ Si prefieres configurarlo manualmente desde el panel de Render paso a paso:
 | **Region** | `Oregon (US West)` o la más cercana a tu base de datos Supabase |
 | **Branch** | `main` |
 | **Root Directory** | `devsculptor-backend` |
-| **Runtime** | `Node` |
-| **Build Command** | `npm install && npm run build` |
-| **Start Command** | `npm run start` |
+| **Runtime / Environment** | `Docker` |
+| **Dockerfile Path** | `Dockerfile` |
 | **Instance Type** | `Free` (o el plan que desees) |
 
 ### Paso 2: Configurar la Verificación de Salud (Health Check)
