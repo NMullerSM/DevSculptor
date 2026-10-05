@@ -350,17 +350,37 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
 
     const normalizedColumns = (entity.columns || []).map((col) => {
       const colRecord = col as unknown as Record<string, unknown>;
-      let refTable = (colRecord.referencesTable || colRecord.references_table || colRecord.references) as string | undefined;
+      let refTable = (
+        colRecord.referencesTable ||
+        colRecord.references_table ||
+        colRecord.references ||
+        colRecord.targetTable ||
+        colRecord.target_table ||
+        colRecord.refTable
+      ) as string | undefined;
+
+      if (typeof refTable === 'string') {
+        refTable = refTable.replace(/["'`;]/g, '').trim().split('.').pop() || refTable;
+      }
+
       const isPk = Boolean(colRecord.isPk ?? colRecord.is_pk ?? colRecord.isPrimary ?? (col.name.toLowerCase() === 'id'));
-      let isFk = Boolean(colRecord.isFk ?? colRecord.is_fk);
+      let isFk = Boolean((colRecord.isFk ?? colRecord.is_fk) || refTable);
 
       if (!refTable && col.name && col.name.endsWith('_id') && col.name.toLowerCase() !== 'id') {
         isFk = true;
         const base = col.name.slice(0, -3).toLowerCase();
         const plural = base.endsWith('s') ? base : `${base}s`;
-        refTable = existingEntities.some((e) => e.table_name.toLowerCase() === base)
-          ? base
-          : (base === 'user' ? 'users' : plural);
+        const iesPlural = base.endsWith('y') ? `${base.slice(0, -1)}ies` : '';
+
+        if (existingEntities.some((e) => e.table_name.toLowerCase() === base)) {
+          refTable = base;
+        } else if (existingEntities.some((e) => e.table_name.toLowerCase() === plural)) {
+          refTable = plural;
+        } else if (iesPlural && existingEntities.some((e) => e.table_name.toLowerCase() === iesPlural)) {
+          refTable = iesPlural;
+        } else {
+          refTable = base === 'user' ? 'users' : plural;
+        }
       }
 
       const isNullable =
