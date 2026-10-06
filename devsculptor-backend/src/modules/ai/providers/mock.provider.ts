@@ -45,6 +45,61 @@ export class MockAiProvider implements IAiProvider {
     }
     const adr1 = `ADR-${String(maxAdr + 1).padStart(2, '0')}`;
 
+    // 3. Detección Bimodal (Modo 1 Consultoría vs Modo 2 Formalización)
+    const isExplicitFormalization =
+      lower.includes('formaliz') ||
+      lower.includes('diseña') ||
+      lower.includes('disena') ||
+      lower.includes('genera') ||
+      lower.includes('crea los requisitos') ||
+      lower.includes('estructura los artefactos') ||
+      lower.includes('inyectar') ||
+      lower.includes('inyecta') ||
+      lower.includes('procede');
+
+    const isConsultativeQuestion =
+      !isExplicitFormalization &&
+      (lower.includes('?') ||
+        lower.includes('¿') ||
+        lower.startsWith('cómo') ||
+        lower.startsWith('como') ||
+        lower.startsWith('qué') ||
+        lower.startsWith('que') ||
+        lower.startsWith('cuál') ||
+        lower.startsWith('cual') ||
+        lower.includes('recomiendas') ||
+        lower.includes('opinas') ||
+        lower.includes('alternativa') ||
+        lower.includes('explica') ||
+        lower.includes('trade-off') ||
+        lower.includes('dilema'));
+
+    if (isConsultativeQuestion) {
+      const consultativeReply = `### 🏛️ Asesoría de Arquitectura de Software y Gobernanza Técnica
+
+He evaluado tu consulta técnica para el proyecto **${context.projectName}** (Estilo: *${context.architectureStyle}*).
+
+#### 🔍 Diagnóstico Arquitectónico y Compensaciones (Trade-Offs):
+- **Aislamiento Transaccional vs Concurrencia**: Para dominios con operaciones transaccionales críticas, se recomienda aislar las mutaciones de estado mediante transacciones con locking pesimista (\`SELECT FOR UPDATE\`) o versionado optimista, protegiendo la base relacional de sobrecargas.
+- **Normalización 3FN y Grafos Conexos**: Toda entidad propuesta debe modelarse con claves foráneas explícitas hacia las tablas maestras de cabecera, preservando la tenencia horizontal mediante \`user_id\` con Row-Level Security en PostgreSQL.
+- **Simplicidad y Gobernanza Pre-Código**: Mantener una separación limpia por capas antes de considerar desacoplamientos o microservicios que añadan sobrecoste operativo.
+
+#### ❓ Preguntas Estratégicas de Refinamiento:
+1. **¿Cuál es el volumen pico estimado de operaciones concurrentes?** (Permite calibrar la estrategia de bloqueo transaccional).
+2. **¿Se requieren reglas de compensación, reversión o anulación automática ante fallos de downstream?**
+3. **¿Existen entidades preexistentes adicionales o restricciones de integración externa?**
+
+---
+*💡 Cuando desees que formalice esta arquitectura en tu proyecto, indícame **"Formaliza la propuesta"** o **"Genera los requisitos y tablas"** y generaré la descomposición IEEE-830, el modelo relacional conexo en canvas y las actas ADR correspondientes.*`;
+
+      return {
+        content: consultativeReply,
+        reply: consultativeReply,
+        provider: this.name,
+        model: 'devsculptor-heuristic-architect-v1',
+      };
+    }
+
     // Helper para asignar correlativos continuos a requerimientos dinámicos
     const formatReqs = (
       reqs: Array<{ title: string; type: 'RF' | 'RNF'; priority: 'HIGH' | 'MEDIUM' | 'LOW' | 'CRITICAL'; description: string }>
@@ -66,26 +121,62 @@ export class MockAiProvider implements IAiProvider {
       });
     };
 
+    const conversationHistoryText = messages.map((m) => m.content).join(' ').toLowerCase();
+    const scopeText = `${lower} ${conversationHistoryText} ${(context.projectDescription || '').toLowerCase()} ${context.projectName.toLowerCase()}`;
+
     let reply = '';
 
-    // Dominio 1: E-Commerce / Pedidos / Carrito / Órdenes
+    // Dominio 1: E-Commerce / Pedidos / Carrito / Órdenes / Dark Stores
     if (
-      lower.includes('pedido') ||
-      lower.includes('orden') ||
-      lower.includes('compra') ||
-      lower.includes('carrito') ||
-      lower.includes('cart') ||
-      lower.includes('ecommerce')
+      scopeText.includes('pedido') ||
+      scopeText.includes('orden') ||
+      scopeText.includes('compra') ||
+      scopeText.includes('carrito') ||
+      scopeText.includes('cart') ||
+      scopeText.includes('ecommerce') ||
+      scopeText.includes('dark store') ||
+      scopeText.includes('dark_store') ||
+      scopeText.includes('sobreventa')
     ) {
       const hasOrders = existingTableNames.includes('orders');
 
       if (!hasOrders) {
         const dynamicReqs: Array<{ title: string; type: 'RF' | 'RNF'; priority: 'HIGH' | 'MEDIUM' | 'CRITICAL'; description: string }> = [
           {
-            title: 'Formalización Atómica de Órdenes de Compra',
+            title: 'Ingesta y Validación de Pedidos en Carrito',
             type: 'RF',
             priority: 'HIGH',
-            description: 'Permitir a los clientes componer y registrar pedidos vinculando múltiples productos con cantidades unitarias.',
+            description: 'Verificar en servidor existencias activas, precios unitarios y datos de entrega antes de formalizar la orden.',
+          },
+          {
+            title: 'Reserva Transaccional de Stock con Bloqueo Concurrente',
+            type: 'RF',
+            priority: 'HIGH',
+            description: 'Deducir atómicamente el inventario de la bodega asignada impidiendo sobreventas simultáneas mediante SELECT FOR UPDATE.',
+          },
+          {
+            title: 'Máquina de Estados de Preparación y Despacho',
+            type: 'RF',
+            priority: 'MEDIUM',
+            description: 'Controlar transiciones secuenciales (RECEIVED -> PICKING -> READY -> IN_TRANSIT -> DELIVERED).',
+          },
+          {
+            title: 'Compensación y Reembolso ante Faltantes de Bodega',
+            type: 'RF',
+            priority: 'HIGH',
+            description: 'Revertir automáticamente cargos y notificar al cliente si un producto resulta dañado durante el picking.',
+          },
+          {
+            title: 'Aislamiento Transaccional ACID Serializable',
+            type: 'RNF',
+            priority: 'CRITICAL',
+            description: 'Garantizar aislamiento estricto en la deducción de existencias con latencia p95 menor a 200ms.',
+          },
+          {
+            title: 'Ingesta Desacoplada de Telemetría Logística',
+            type: 'RNF',
+            priority: 'HIGH',
+            description: 'Bufferizar reportes de ubicación de repartidores en caché o memoria sin saturar la base relacional principal.',
           },
         ];
 
@@ -161,16 +252,52 @@ export class MockAiProvider implements IAiProvider {
           description: 'Garantizar que la deducción de inventario y creación de renglones ocurran en una sola transacción atómica sin lecturas fantasma.',
         });
 
-        // Entidades dinámicas del dominio según las necesidades
-        const dynamicEntities: unknown[] = [
+        // Entidades dinámicas del dominio formando un grafo estrictamente conexo
+        const isDarkStoreDomain =
+          scopeText.includes('dark store') ||
+          scopeText.includes('dark_store') ||
+          scopeText.includes('sobreventa') ||
+          scopeText.includes('bodega');
+
+        const dynamicEntities: unknown[] = [];
+
+        if (isDarkStoreDomain && !existingTableNames.includes('dark_stores')) {
+          dynamicEntities.push({
+            tableName: 'dark_stores',
+            columns: [
+              { name: 'id', type: 'UUID', isPk: true },
+              { name: 'name', type: 'VARCHAR(100)', nullable: false },
+              { name: 'address', type: 'VARCHAR(255)', nullable: false },
+              { name: 'is_active', type: 'BOOLEAN', nullable: false },
+              { name: 'created_at', type: 'TIMESTAMP', nullable: false },
+            ],
+          });
+        }
+
+        if (!existingTableNames.includes('products')) {
+          dynamicEntities.push({
+            tableName: 'products',
+            columns: [
+              { name: 'id', type: 'UUID', isPk: true },
+              { name: 'sku', type: 'VARCHAR(50)', unique: true, nullable: false },
+              { name: 'name', type: 'VARCHAR(150)', nullable: false },
+              { name: 'price', type: 'DECIMAL(10,2)', nullable: false },
+              { name: 'created_at', type: 'TIMESTAMP', nullable: false },
+            ],
+          });
+        }
+
+        dynamicEntities.push(
           {
             tableName: 'orders',
             columns: [
               { name: 'id', type: 'UUID', isPk: true },
               { name: 'user_id', type: 'UUID', isFk: true, referencesTable: 'users', cardinality: '1:N', nullable: false },
+              ...(isDarkStoreDomain ? [{ name: 'dark_store_id', type: 'UUID', isFk: true, referencesTable: 'dark_stores', cardinality: '1:N', nullable: false }] : []),
               { name: 'order_number', type: 'VARCHAR(32)', unique: true, nullable: false },
               { name: 'total_amount', type: 'DECIMAL(12,2)', nullable: false },
               { name: 'status', type: 'VARCHAR(20)', nullable: false },
+              { name: 'created_at', type: 'TIMESTAMP', nullable: false },
             ],
           },
           {
@@ -183,8 +310,8 @@ export class MockAiProvider implements IAiProvider {
               { name: 'quantity', type: 'INTEGER', nullable: false },
               { name: 'subtotal', type: 'DECIMAL(12,2)', nullable: false },
             ],
-          },
-        ];
+          }
+        );
 
         if (lower.includes('despacho') || lower.includes('envio') || lower.includes('entrega') || lower.includes('direccion') || lower.includes('logistica')) {
           dynamicEntities.push({
@@ -811,39 +938,57 @@ Aplicando la regla de **no-duplicación**, propongo expandir el dominio hacia el
 
     // Dominio 5: Caso General / Dinámico basado en el sujeto del mensaje
     } else {
-      // Extraer una palabra representativa para crear un dominio coherente
-      const words = lastUserMsg.replace(/[^\w\sáéíóúÁÉÍÓÚñÑ]/g, '').split(/\s+/).filter((w) => w.length > 3);
-      const rawDomain = (words[0] || 'modulo').toLowerCase();
+      // Extraer una palabra representativa para crear un dominio coherente excluyendo stopwords conversacionales
+      const STOPWORDS = new Set([
+        'excelente', 'analisis', 'formaliza', 'propuesta', 'proyecto', 'generando', 'genera',
+        'requisitos', 'modelo', 'relacional', 'canvas', 'actas', 'arquitectura', 'favor',
+        'podrias', 'puedes', 'sistema', 'modulo', 'buenas', 'tardes', 'hola', 'bueno',
+        'gracias', 'procede', 'estructura', 'artefactos', 'tablas', 'entidades', 'acuerdo'
+      ]);
+      const words = scopeText.replace(/[^\w\sáéíóúÁÉÍÓÚñÑ]/g, '').split(/\s+/).filter((w) => w.length > 3 && !STOPWORDS.has(w));
+      const rawDomain = (words[0] || 'recurso').toLowerCase();
       const domainSlug = rawDomain.replace(/[áàä]/g, 'a').replace(/[éèë]/g, 'e').replace(/[íìï]/g, 'i').replace(/[óòö]/g, 'o').replace(/[úùü]/g, 'u').replace(/ñ/g, 'n');
       const domainTable = domainSlug.endsWith('s') ? domainSlug : `${domainSlug}s`;
       const domainDetailTable = `${domainTable}_items`;
 
       const dynamicReqs: Array<{ title: string; type: 'RF' | 'RNF'; priority: 'HIGH' | 'MEDIUM' | 'CRITICAL'; description: string }> = [
         {
-          title: `Gestión Integral y Registro de ${domainTable.toUpperCase()}`,
+          title: `Captura y Validación de Entradas de ${domainTable.toUpperCase()}`,
           type: 'RF',
           priority: 'HIGH',
-          description: `Permitir la creación, consulta y actualización atómica del dominio de ${domainTable} según los lineamientos de negocio.`,
+          description: `Validar pre-condiciones, contratos de datos e integridad referencial antes de registrar registros de ${domainTable}.`,
+        },
+        {
+          title: `Control de Transiciones y Ciclo de Vida de ${domainTable.toUpperCase()}`,
+          type: 'RF',
+          priority: 'HIGH',
+          description: `Implementar máquina de estados determinista para coordinar el ciclo operativo de ${domainTable}.`,
+        },
+        {
+          title: `Transaccionalidad Atómica y Consistencia ACID en ${domainTable.toUpperCase()}`,
+          type: 'RF',
+          priority: 'HIGH',
+          description: `Garantizar que las mutaciones sobre ${domainTable} y sus renglones se ejecuten de forma atómica e indivisible.`,
+        },
+        {
+          title: `Manejo de Excepciones y Compensaciones en ${domainTable.toUpperCase()}`,
+          type: 'RF',
+          priority: 'MEDIUM',
+          description: `Definir acciones compensatorias automáticas ante fallos o cancelaciones en operaciones de ${domainTable}.`,
+        },
+        {
+          title: 'Aislamiento de Persistencia y Prevención de Concurrencia',
+          type: 'RNF',
+          priority: 'HIGH',
+          description: `Controlar accesos concurrentes a ${domainTable} mediante bloqueos transaccionales adecuados o versionado optimista.`,
+        },
+        {
+          title: 'Seguridad Multi-Tenancy Horizontal (RLS) y Auditoría',
+          type: 'RNF',
+          priority: 'HIGH',
+          description: `Aislar las operaciones de ${domainTable} mediante políticas de Row Level Security en PostgreSQL con sellos temporales created_at.`,
         },
       ];
-
-      if (lower.includes('validar') || lower.includes('regla') || lower.includes('condicion') || lower.includes('integridad')) {
-        dynamicReqs.push({
-          title: 'Validación de Integridad y Reglas de Negocio en Runtime',
-          type: 'RF',
-          priority: 'HIGH',
-          description: `Aplicar validación estricta de esquemas Zod en runtime antes de persistir cualquier mutación de ${domainTable}.`,
-        });
-      }
-
-      if (lower.includes('estado') || lower.includes('flujo') || lower.includes('etapa') || lower.includes('fase')) {
-        dynamicReqs.push({
-          title: `Control de Transición de Estados para ${domainTable.toUpperCase()}`,
-          type: 'RF',
-          priority: 'HIGH',
-          description: `Implementar una máquina de estados finita que impida saltos arbitrarios entre fases de ${domainTable}.`,
-        });
-      }
 
       if (lower.includes('consulta') || lower.includes('filtro') || lower.includes('buscar') || lower.includes('reporte')) {
         dynamicReqs.push({

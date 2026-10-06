@@ -19,6 +19,8 @@ interface ConnectorLine {
   cardinality: '1:1' | '1:N' | 'N:M';
   sourceTable: string;
   targetTable: string;
+  sDir: number;
+  tDir: number;
 }
 
 export const BezierConnectors: React.FC<BezierConnectorsProps> = ({ entities, zoom }) => {
@@ -35,11 +37,20 @@ export const BezierConnectors: React.FC<BezierConnectorsProps> = ({ entities, zo
       if (!Array.isArray(source.columns_json)) return;
 
       source.columns_json.forEach((col, colIdx) => {
+        const colRecord = col as unknown as Record<string, unknown>;
         let targetTable = (
           col.referencesTable ||
           col.references_table ||
-          ((col as unknown as Record<string, unknown>).references as string | undefined)
-        )?.toLowerCase()?.trim();
+          colRecord.references ||
+          colRecord.targetTable ||
+          colRecord.target_table ||
+          colRecord.refTable
+        ) as string | undefined;
+
+        // Limpiar formato: remover comillas, acentos graves, espacios y posibles prefijos de schema (ej. public.orders -> orders)
+        if (typeof targetTable === 'string') {
+          targetTable = targetTable.replace(/["'`;]/g, '').trim().split('.').pop()?.toLowerCase();
+        }
 
         // 1. Si no está explícito pero el tipo contiene FK → users o REFERENCES users
         if (!targetTable && col.type) {
@@ -49,11 +60,12 @@ export const BezierConnectors: React.FC<BezierConnectorsProps> = ({ entities, zo
           else if (matchRef) targetTable = matchRef[1].toLowerCase();
         }
 
-        // 2. Inferencia inteligente por convención de nombre de columna (ej. user_id -> users, order_id -> orders)
+        // 2. Inferencia inteligente por convención de nombre de columna (ej. user_id -> users, order_id -> orders, dark_store_id -> dark_stores)
         if (!targetTable && col.name && col.name.endsWith('_id') && col.name.toLowerCase() !== 'id') {
           const baseName = col.name.slice(0, -3).toLowerCase();
           const pluralName = baseName.endsWith('s') ? baseName : `${baseName}s`;
           const esPluralName = `${baseName}es`;
+          const iesPluralName = baseName.endsWith('y') ? `${baseName.slice(0, -1)}ies` : '';
 
           if (entityMap.has(pluralName)) {
             targetTable = pluralName;
@@ -61,15 +73,23 @@ export const BezierConnectors: React.FC<BezierConnectorsProps> = ({ entities, zo
             targetTable = baseName;
           } else if (entityMap.has(esPluralName)) {
             targetTable = esPluralName;
+          } else if (iesPluralName && entityMap.has(iesPluralName)) {
+            targetTable = iesPluralName;
+          } else if (['author_id', 'creator_id', 'owner_id', 'client_id', 'customer_id'].includes(col.name.toLowerCase()) && entityMap.has('users')) {
+            targetTable = 'users';
           }
         }
 
-        // 3. Normalización singular/plural si targetTable difiere ligeramente
+        // 3. Normalización flexible singular/plural si targetTable difiere ligeramente del nombre en el canvas
         if (targetTable && !entityMap.has(targetTable)) {
           if (entityMap.has(`${targetTable}s`)) {
             targetTable = `${targetTable}s`;
           } else if (entityMap.has(`${targetTable}es`)) {
             targetTable = `${targetTable}es`;
+          } else if (targetTable.endsWith('y') && entityMap.has(`${targetTable.slice(0, -1)}ies`)) {
+            targetTable = `${targetTable.slice(0, -1)}ies`;
+          } else if (targetTable.endsWith('ies') && entityMap.has(`${targetTable.slice(0, -3)}y`)) {
+            targetTable = `${targetTable.slice(0, -3)}y`;
           } else if (targetTable.endsWith('s') && entityMap.has(targetTable.slice(0, -1))) {
             targetTable = targetTable.slice(0, -1);
           }
@@ -78,25 +98,56 @@ export const BezierConnectors: React.FC<BezierConnectorsProps> = ({ entities, zo
         if (targetTable && entityMap.has(targetTable) && targetTable !== source.table_name.toLowerCase()) {
           const target = entityMap.get(targetTable)!;
 
-          // Coordenadas de salida del puerto izquierdo o derecho
-          const isTargetOnRight = target.position_x > source.position_x;
+          let startX: number;
+          let endX: number;
+          let cp1x: number;
+          let cp2x: number;
+          let isTargetOnRight: boolean;
+          let sDir: number;
+          let tDir: number;
+          let midX: number;
 
-          const startX = isTargetOnRight
-            ? source.position_x + NODE_WIDTH
-            : source.position_x;
           const startY = source.position_y + NODE_HEADER_HEIGHT + colIdx * ROW_HEIGHT + ROW_HEIGHT / 2;
-
-          const endX = isTargetOnRight ? target.position_x : target.position_x + NODE_WIDTH;
           const endY = target.position_y + NODE_HEADER_HEIGHT + ROW_HEIGHT / 2;
 
-          const dx = Math.abs(endX - startX) * 0.5;
-          const cp1x = isTargetOnRight ? startX + dx : startX - dx;
-          const cp2x = isTargetOnRight ? endX - dx : endX + dx;
+          const isVerticallyStacked = Math.abs(target.position_x - source.position_x) < 50;
+
+          if (isVerticallyStacked) {
+            // Conexión lateral por el borde derecho para nodos en la misma columna
+            startX = source.position_x + NODE_WIDTH;
+            endX = target.position_x + NODE_WIDTH;
+            const curveOffset = 45;
+            cp1x = startX + curveOffset;
+            cp2x = endX + curveOffset;
+            isTargetOnRight = true;
+            sDir = 1;
+            tDir = 1;
+            midX = startX + curveOffset * 0.75;
+          } else if (target.position_x >= source.position_x + 50) {
+            // Destino está claramente a la derecha
+            isTargetOnRight = true;
+            startX = source.position_x + NODE_WIDTH;
+            endX = target.position_x;
+            const dx = Math.max(35, (endX - startX) * 0.5);
+            cp1x = startX + dx;
+            cp2x = endX - dx;
+            sDir = 1;
+            tDir = -1;
+            midX = 0.125 * startX + 0.375 * cp1x + 0.375 * cp2x + 0.125 * endX;
+          } else {
+            // Destino está claramente a la izquierda
+            isTargetOnRight = false;
+            startX = source.position_x;
+            endX = target.position_x + NODE_WIDTH;
+            const dx = Math.max(35, (startX - endX) * 0.5);
+            cp1x = startX - dx;
+            cp2x = endX + dx;
+            sDir = -1;
+            tDir = 1;
+            midX = 0.125 * startX + 0.375 * cp1x + 0.375 * cp2x + 0.125 * endX;
+          }
 
           const pathD = `M ${startX} ${startY} C ${cp1x} ${startY}, ${cp2x} ${endY}, ${endX} ${endY}`;
-
-          // Punto medio de la curva Bézier cúbica en t = 0.5
-          const midX = 0.125 * startX + 0.375 * cp1x + 0.375 * cp2x + 0.125 * endX;
           const midY = 0.5 * startY + 0.5 * endY;
 
           result.push({
@@ -112,6 +163,8 @@ export const BezierConnectors: React.FC<BezierConnectorsProps> = ({ entities, zo
             cardinality: (col.cardinality as '1:1' | '1:N' | 'N:M') || '1:N',
             sourceTable: source.table_name,
             targetTable: target.table_name,
+            sDir,
+            tDir,
           });
         }
       });
@@ -135,15 +188,11 @@ export const BezierConnectors: React.FC<BezierConnectorsProps> = ({ entities, zo
       </defs>
 
       {lines.map((line) => {
-        const { startX, startY, endX, endY, isTargetOnRight, cardinality } = line;
+        const { startX, startY, endX, endY, cardinality, sDir, tDir } = line;
 
         // Determinar símbolos para cada extremo según la notación Crow's Foot (Pata de Gallo)
         const isSourceMany = cardinality === '1:N' || cardinality === 'N:M';
         const isTargetMany = cardinality === 'N:M';
-
-        // Desplazamiento horizontal según la dirección del conector
-        const sDir = isTargetOnRight ? 1 : -1;
-        const tDir = isTargetOnRight ? -1 : 1;
 
         return (
           <g key={line.id} className="connector-group">
