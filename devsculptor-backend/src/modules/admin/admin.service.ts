@@ -223,7 +223,7 @@ export class AdminService {
   async createVaultFile(
     filePath: string,
     content: string,
-    category: 'templates' | 'skills' | 'rules' | 'archetypes',
+    category: 'templates' | 'skills' | 'rules' | 'archetypes' | 'sources' | string,
     title?: string,
     description?: string,
     authorName?: string

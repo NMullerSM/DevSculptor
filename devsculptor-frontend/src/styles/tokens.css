@@ -6,20 +6,24 @@
   /* --- MODO OSCURO (visionOS Crystal Obsidian — Por Defecto) --- */
   --bg-space: #06080d;
   
+  /* Controles Reactivos de Vidrio y Opacidad en Tiempo Real */
+  --glass-blur-val: 20px;
+  --window-opacity-val: 0.85;
+
   /* Superficies de Cristal Ultra-Translúcidas (Transparencia: 20% - 35%) */
   --glass-nav: rgba(10, 14, 25, 0.35);
-  --glass-window: rgba(8, 12, 22, 0.26);
+  --glass-window: rgba(8, 12, 22, var(--window-opacity-val));
   --glass-card: rgba(255, 255, 255, 0.04);
   --glass-card-hover: rgba(255, 255, 255, 0.08);
   --glass-card-selected: rgba(99, 102, 241, 0.20);
-  --glass-elevated: rgba(12, 16, 28, 0.65);
+  --glass-elevated: rgba(12, 16, 28, var(--window-opacity-val));
   --glass-input: rgba(255, 255, 255, 0.05);
   --glass-code: rgba(6, 9, 16, 0.72);
 
   /* Desenfoque Óptico con Saturación de Color */
-  --blur-window: blur(18px) saturate(190%);
-  --blur-card: blur(14px) saturate(170%);
-  --blur-modal: blur(35px) saturate(210%);
+  --blur-window: blur(var(--glass-blur-val)) saturate(190%);
+  --blur-card: blur(calc(var(--glass-blur-val) * 0.7)) saturate(170%);
+  --blur-modal: blur(calc(var(--glass-blur-val) * 1.5)) saturate(210%);
 
   /* Reflejos Especulares Biselados (Colores Puros para compatibilidad con Tailwind border-color) */
   --border-glass-color: rgba(255, 255, 255, 0.20);
@@ -81,11 +85,11 @@ html.light, body.light {
   --bg-space: #dbe3ed;
 
   --glass-nav: rgba(255, 255, 255, 0.55);
-  --glass-window: rgba(255, 255, 255, 0.42);
+  --glass-window: rgba(255, 255, 255, var(--window-opacity-val));
   --glass-card: rgba(255, 255, 255, 0.40);
   --glass-card-hover: rgba(255, 255, 255, 0.65);
   --glass-card-selected: rgba(99, 102, 241, 0.16);
-  --glass-elevated: rgba(255, 255, 255, 0.82);
+  --glass-elevated: rgba(255, 255, 255, var(--window-opacity-val));
   --glass-input: rgba(255, 255, 255, 0.55);
   --glass-code: rgba(248, 250, 252, 0.80);
 

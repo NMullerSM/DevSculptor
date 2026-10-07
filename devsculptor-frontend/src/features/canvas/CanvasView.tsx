@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useCanvasStore, CanvasSubTab } from '@/stores/useCanvasStore';
 import { EntityNode } from './EntityNode';
 import { BezierConnectors } from './BezierConnectors';
@@ -51,12 +51,39 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
   const [isNormalizationOpen, setIsNormalizationOpen] = useState(false);
   const [sqlDialect, setSqlDialect] = useState<SqlDialect>('postgres');
   const [copyFeedback, setCopyFeedback] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (projectId) {
       fetchEntities(projectId);
     }
   }, [projectId, fetchEntities]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!canvasContainerRef.current) return;
+    if (!document.fullscreenElement) {
+      canvasContainerRef.current.requestFullscreen?.().then(() => {
+        setIsFullscreen(true);
+      }).catch(() => {
+        setIsFullscreen((prev) => !prev);
+      });
+    } else {
+      document.exitFullscreen?.().then(() => {
+        setIsFullscreen(false);
+      }).catch(() => {
+        setIsFullscreen(false);
+      });
+    }
+  };
 
   const getCodeContent = () => {
     switch (activeSubTab) {
@@ -72,7 +99,11 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
       case 'py':
         return generatePythonPydantic(entities);
       default:
-        return '';
+        // Si no está en una pestaña de código pero se solicita, compilar DDL del dialecto activo
+        if (sqlDialect === 'mysql') return generateMySqlDdl(entities);
+        if (sqlDialect === 'sqlite') return generateSqliteDdl(entities);
+        if (sqlDialect === 'oracle') return generateOracleDdl(entities);
+        return generatePostgreSqlDdl(entities);
     }
   };
 
@@ -89,10 +120,15 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
   };
 
   const handleDownloadCode = () => {
-    const code = getCodeContent();
-    if (!code) return;
-    const ext = activeSubTab === 'sql' ? 'sql' : activeSubTab === 'ts' ? 'ts' : activeSubTab === 'json' ? 'json' : 'py';
-    const filename = activeSubTab === 'sql' ? `schema_ddl_${sqlDialect}.sql` : `schema_export.${ext}`;
+    let code = getCodeContent();
+    if (!code || code.trim().length === 0) {
+      if (sqlDialect === 'mysql') code = generateMySqlDdl(entities);
+      else if (sqlDialect === 'sqlite') code = generateSqliteDdl(entities);
+      else if (sqlDialect === 'oracle') code = generateOracleDdl(entities);
+      else code = generatePostgreSqlDdl(entities);
+    }
+    const ext = activeSubTab === 'sql' || activeSubTab === 'erd' ? 'sql' : activeSubTab === 'ts' ? 'ts' : activeSubTab === 'json' ? 'json' : 'py';
+    const filename = (activeSubTab === 'sql' || activeSubTab === 'erd') ? `schema_ddl_${sqlDialect}.sql` : `schema_export.${ext}`;
     const blob = new Blob([code], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -101,7 +137,9 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 15000);
   };
 
   const subtabs: { id: CanvasSubTab; label: string; icon: string }[] = [
@@ -114,7 +152,12 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
   ];
 
   return (
-    <div className="flex-1 flex flex-col h-full relative overflow-hidden select-none">
+    <div
+      ref={canvasContainerRef}
+      className={`flex-1 flex flex-col h-full relative overflow-hidden select-none ${
+        isFullscreen ? 'fixed inset-0 z-50 bg-[#06080d] p-3' : ''
+      }`}
+    >
       {/* Barra Superior de Subpestañas */}
       <div className="min-h-10 py-1.5 px-2 sm:px-3 border-b border-glass-subtle flex items-center justify-between gap-2 bg-black/5 dark:bg-black/20 shrink-0 z-20">
         {/* Modo Combobox en Pantallas Pequeñas, Tablets y Laptops (< 2xl) */}
@@ -197,7 +240,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
           )}
 
           {activeSubTab === 'erd' && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <span className="text-[10.5px] font-mono text-muted bg-[var(--glass-card)] px-2 py-0.5 rounded border border-glass-subtle hidden sm:inline-block">
                 {entities.length} {entities.length === 1 ? 'tabla' : 'tablas'}
               </span>
@@ -211,6 +254,16 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
                   Modelado
                 </VisionButton>
               )}
+              <VisionButton
+                size="sm"
+                variant="secondary"
+                icon="download"
+                onClick={handleDownloadCode}
+                title="Descargar DDL SQL del modelo actual"
+              >
+                <span className="hidden xs:inline">Descargar DDL</span>
+                <span className="xs:hidden">DDL</span>
+              </VisionButton>
             </div>
           )}
 
@@ -236,6 +289,18 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
               </VisionButton>
             </div>
           )}
+
+          {/* Botón Universal de Pantalla Completa para el Modelador */}
+          <VisionButton
+            size="sm"
+            variant="secondary"
+            icon={isFullscreen ? 'fullscreen_exit' : 'open_in_full'}
+            onClick={toggleFullscreen}
+            title={isFullscreen ? 'Salir de pantalla completa' : 'Expandir modelador a pantalla completa'}
+            className="!px-2"
+          >
+            <span className="hidden md:inline">{isFullscreen ? 'Salir' : 'Pantalla Completa'}</span>
+          </VisionButton>
         </div>
       </div>
 
@@ -262,17 +327,21 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
             onOpenNormalization={() => setIsNormalizationOpen(true)}
           />
 
-          {/* Conectores Bezier SVG con Badges de Cardinalidad */}
-          <BezierConnectors entities={entities} zoom={zoom} />
-
-          {/* Área de Nodos Arrastrables con Zoom */}
+          {/* Contenedor Unificado de Mundo Virtual con Zoom y Coordenadas Compartidas */}
           <div
-            className="absolute inset-0 w-full h-full origin-top-left"
+            id="canvas-world-transform"
+            className="absolute inset-0 origin-top-left pointer-events-auto"
             style={{
               transform: `scale(${zoom})`,
               transformOrigin: '0 0',
+              width: '100%',
+              height: '100%',
             }}
           >
+            {/* Conectores Bezier SVG con Badges de Cardinalidad */}
+            <BezierConnectors entities={entities} zoom={zoom} />
+
+            {/* Nodos de Entidades */}
             {entities.map((entity) => (
               <EntityNode
                 key={entity.id}

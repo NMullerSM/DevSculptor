@@ -254,7 +254,7 @@ export const AuthPortal: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setIsForgotPasswordOpen(true)}
-                      className="text-[10.5px] font-mono text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer"
+                      className="text-[11px] font-mono font-medium text-cyan-300 hover:text-cyan-100 dark:text-cyan-300 dark:hover:text-cyan-100 hover:underline transition-colors cursor-pointer drop-shadow-sm"
                     >
                       ¿Olvidaste tu contraseña?
                     </button>

@@ -1032,6 +1032,9 @@ export function buildUniversalHtmlDocument(params: {
  * Dispara la descarga directa de un archivo en el navegador del cliente.
  */
 export function triggerFileDownload(content: string, filename: string, mimeType: string = 'text/html;charset=utf-8'): void {
+  if (!content || content.trim().length === 0) {
+    console.warn(`[triggerFileDownload] Intento de descarga de archivo vacío: ${filename}`);
+  }
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -1040,7 +1043,9 @@ export function triggerFileDownload(content: string, filename: string, mimeType:
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 15000);
 }
 
 /**

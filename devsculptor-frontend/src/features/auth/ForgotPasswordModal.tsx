@@ -159,7 +159,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setStep('reset')}
-                  className="text-xs text-indigo-400 hover:text-indigo-300 underline font-mono cursor-pointer"
+                  className="text-xs text-cyan-300 hover:text-cyan-100 dark:text-cyan-300 dark:hover:text-cyan-100 underline font-mono font-medium cursor-pointer"
                 >
                   ¿Ya tienes un token? Ingresarlo
                 </button>

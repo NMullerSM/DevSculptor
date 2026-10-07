@@ -9,7 +9,17 @@ export const saveVaultFileSchema = z.object({
 export const createVaultFileSchema = z.object({
   path: z.string().min(1, 'La ruta canónica del archivo es requerida'),
   content: z.string(),
-  category: z.enum(['manifest', 'documentation', 'database', 'skills', 'context', 'templates', 'rules', 'archetypes']),
+  category: z.enum([
+    'manifest',
+    'documentation',
+    'database',
+    'skills',
+    'context',
+    'templates',
+    'rules',
+    'archetypes',
+    'sources',
+  ]),
   description: z.string().optional(),
 });
 

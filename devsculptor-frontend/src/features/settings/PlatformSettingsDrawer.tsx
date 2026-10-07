@@ -17,6 +17,8 @@ export const PlatformSettingsDrawer: React.FC<PlatformSettingsDrawerProps> = ({
   const {
     glassBlur,
     setGlassBlur,
+    windowOpacity,
+    setWindowOpacity,
     currentWallpaperUrl: settingsWallpaper,
     setWallpaper,
     strict3FN,
@@ -26,7 +28,6 @@ export const PlatformSettingsDrawer: React.FC<PlatformSettingsDrawerProps> = ({
   } = useSettingsStore();
 
   const [customWallpaperInput, setCustomWallpaperInput] = useState('');
-  const [windowOpacity, setWindowOpacity] = useState(85);
 
   if (!isOpen) return null;
 
@@ -49,19 +50,11 @@ export const PlatformSettingsDrawer: React.FC<PlatformSettingsDrawerProps> = ({
     e.preventDefault();
     if (!customWallpaperInput.trim()) return;
     setWallpaper(customWallpaperInput.trim());
-    // Sincronizar también con tema
-    useThemeStore.setState({ currentWallpaperUrl: customWallpaperInput.trim() });
     setCustomWallpaperInput('');
   };
 
   const handleSelectPreset = (url: string) => {
     setWallpaper(url);
-    useThemeStore.setState({ currentWallpaperUrl: url });
-  };
-
-  const handleOpacityChange = (val: number) => {
-    setWindowOpacity(val);
-    document.documentElement.style.setProperty('--window-opacity', `${val / 100}`);
   };
 
   const activeWallpaper = settingsWallpaper || currentWallpaperUrl;
@@ -283,7 +276,7 @@ export const PlatformSettingsDrawer: React.FC<PlatformSettingsDrawerProps> = ({
                 max="98"
                 step="2"
                 value={windowOpacity}
-                onChange={(e) => handleOpacityChange(Number(e.target.value))}
+                onChange={(e) => setWindowOpacity(Number(e.target.value))}
                 className="w-full accent-indigo-500 cursor-pointer"
               />
               <div className="flex justify-between text-[9px] font-mono text-muted">
