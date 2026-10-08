@@ -10,13 +10,15 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-336791?logo=postgresql)](https://www.postgresql.org/)
 [![Supabase](https://img.shields.io/badge/Supabase-Cloud-3ecf8e?logo=supabase)](https://supabase.com/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38bdf8?logo=tailwind-css)](https://tailwindcss.com/)
+[![Tests](https://img.shields.io/badge/Vitest-25%2F25%20Passing-brightgreen?logo=vitest)](Documentation/Backend/Security_Hardening_and_Audit_Remediation_Report.md)
+[![Security](https://img.shields.io/badge/Security-0%20Advisories%20(100%25%20RLS)-success?logo=security)](Documentation/Backend/Supabase_Security_and_Performance_Report.md)
 [![Status](https://img.shields.io/badge/Status-Release%20Candidate%20(Sprint%201--5)-success)](Documentation/Consolidated/DevSculptor_Master_Technical_Architecture_and_Specifications.md)
 
 <p align="center">
   <b>Mitigando el fenómeno del <i>"vibe coding"</i> mediante disciplina de diseño de software, trazabilidad inmutable y especificaciones deterministas para agentes de IA.</b>
 </p>
 
-[📚 Catálogo de Documentación](Documentation/README.md) • [📐 Especificación Técnica Maestra](Documentation/Consolidated/DevSculptor_Master_Technical_Architecture_and_Specifications.md) • [📸 Galería de Capturas](Documentation/screenshots/) • [🧪 Plan Integral de Pruebas](Documentation/Consolidated/Plan_de_Pruebas_Integral_DevSculptor.md)
+[📚 Catálogo de Documentación](Documentation/README.md) • [📐 Especificación Técnica Maestra](Documentation/Consolidated/DevSculptor_Master_Technical_Architecture_and_Specifications.md) • [🛡️ Informe de Seguridad](Documentation/Backend/Security_Hardening_and_Audit_Remediation_Report.md) • [📸 Galería de Capturas](Documentation/screenshots/) • [🧪 Plan Integral de Pruebas](Documentation/Consolidated/Plan_de_Pruebas_Integral_DevSculptor.md)
 
 </div>
 
@@ -73,21 +75,27 @@ El sistema implementa una arquitectura desacoplada pero de alta cohesión:
 │  ├── Sistema de Diseño visionOS Liquid Glassmorphism (Modo Claro/Oscuro)   │
 │  ├── Barra Superior Minimalista (TopBar) & Portales Laterales (Drawers)    │
 │  ├── Lienzo Relacional ERD con Conectores Bezier SVG & Auditor 3FN          │
-│  ├── Motor Visualizador Vectorial Mermaid SVG & Compilador MMD             │
-│  └── Bóveda Local de Claves (BYOK) para Proveedores de IA                   │
+│  ├── Motor Visualizador Vectorial Mermaid SVG (Strict Mode) & Compilador MMD│
+│  ├── Sanitización Estricta contra XSS mediante DOMPurify                    │
+│  └── Bóveda Local de Claves (BYOK Scoped) para Proveedores de IA            │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  BACKEND (API REST) - Node.js 20+ con Express & Monolito Modular Layered MVC│
-│  ├── Controladores (HTTP Validation Zod)                                   │
+│  ├── Controladores (HTTP Validation Zod & Middleware de Rate Limiting)      │
 │  ├── Servicios (Lógica de Negocio, Criptografía SHA-256 & Transacciones)   │
-│  ├── Repositorios (Consultas Parametrizadas SQL)                           │
-│  ├── Motor de Consultoría IA (Google Gemini 2.5 Flash / OpenAI GPT-4o)     │
-│  ├── Seguridad Transversal (Argon2id, JWT Stateless, TOTP 2FA RFC 6238)    │
-│  └── Fail-Safe 404 RBAC para Consola de Superadministrador                 │
+│  ├── Repositorios (Consultas Parametrizadas SQL & Multi-Dialecto)           │
+│  ├── Motor de Consultoría IA (Google Gemini 2.0 Flash / OpenAI & Fallbacks) │
+│  ├── Seguridad Transversal (Bcrypt Dummy Timing Defense, JWT Typings, 2FA)  │
+│  ├── Cifrado Simétrico Autenticado AES-256-GCM para Secretos MFA & Vault   │
+│  ├── Revocación de Sesiones en Vivo mediante token_version                  │
+│  ├── Validador DNS Anti-SSRF (safeUrl.ts) con Bloqueo de Redes Privadas     │
+│  └── Suite Automatizada de Pruebas con Vitest & Supertest (25/25 Passing)   │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  PERSISTENCIA & STORAGE - PostgreSQL 15+ en Supabase Cloud                 │
+│  ├── Cobertura 100% de Row Level Security (RLS) en las 11 Tablas           │
 │  ├── Procedimiento Almacenado de Madurez (sp_calculate_project_maturity)   │
-│  ├── Disparadores y Políticas de Seguridad Row Level Security (RLS)        │
-│  └── Buckets Privados de Documentos OKF con Cifrado en Reposo              │
+│  ├── Disparadores de Auditoría y Triggers de Trazabilidad Histórica        │
+│  ├── Cero Advertencias y Cero Errores en Supabase Security Advisors         │
+│  └── Buckets Privados de Documentos OKF con Aislamiento auth.uid()         │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -141,24 +149,43 @@ npm run dev
 # Frontend activo en http://localhost:5173
 ```
 
+### 4. Pruebas Automatizadas y Verificación de Calidad
+```bash
+cd ../devsculptor-backend
+
+# Ejecutar suite completa de 25 pruebas con Vitest
+npm run test
+
+# Verificar adherencia a reglas de linting (ESLint 9 Flat Config)
+npm run lint
+
+# Validar tipado TypeScript y compilar assets
+npm run build
+```
+
 ---
 
 ## 📁 Estructura del Repositorio
 
 ```
 DevSculptor/
+├── .github/                          # Pipelines de Integración Continua (CI GitHub Actions)
+│   └── workflows/ci.yml              # Test runner, typecheck y linter automatizado
 ├── Documentation/                    # Catálogo maestro de documentación técnica
 │   ├── README.md                     # Índice general de documentación
-│   ├── Backend/                      # Convenciones, ADRs, guías MVC y auditoría DB
-│   ├── Frontend/                     # Sistema de diseño visionOS, UX/UI y specs cliente
+│   ├── Backend/                      # Convenciones, ADRs, guías MVC, RLS y seguridad
+│   ├── Frontend/                     # Sistema visionOS, UX/UI, specs cliente y sanitización
 │   ├── Consolidated/                 # Especificación técnica maestra, informes de sprint y QA
 │   └── screenshots/                  # Galería completa de capturas de pantalla del sistema
 ├── devsculptor-backend/              # Servidor API REST Monolito Modular Layered MVC
 │   ├── src/
 │   │   ├── config/                   # Base de datos, variables de entorno y logger Pino
-│   │   ├── middlewares/              # Autenticación JWT, RBAC Fail-Safe 404, CORS y errores
+│   │   ├── middlewares/              # Autenticación JWT, Rate Limiting, RBAC y errores
 │   │   ├── modules/                  # Módulos: auth, projects, requirements, decisions, canvas, ai, admin, okf
-│   │   └── shared/                   # Excepciones tipadas AppError y respuestas API estándar
+│   │   ├── shared/                   # Excepciones tipadas, safeUrl anti-SSRF, cifrado AES-256-GCM
+│   │   └── test/                     # Suites de pruebas de integración y seguridad Vitest
+│   ├── vitest.config.mts             # Configuración del test runner Vitest
+│   ├── eslint.config.mjs             # Configuración ESLint 9 Flat Config
 │   └── package.json
 ├── devsculptor-frontend/             # Cliente SPA React 19 + TypeScript + Vite
 │   ├── src/
@@ -166,7 +193,8 @@ DevSculptor/
 │   │   ├── features/                 # Módulos: auth, studio, requirements, decisions, canvas, settings, export
 │   │   ├── services/                 # Clientes API tipados Axios (auth, projects, ai, decisions, etc.)
 │   │   ├── stores/                   # Manejadores de estado reactivo Zustand
-│   │   └── styles/                   # Tokens de vidrio líquido, micro-animaciones y Tailwind
+│   │   ├── styles/                   # Tokens de vidrio líquido, micro-animaciones y Tailwind
+│   │   └── utils/                    # Sanitización DOMPurify (sanitizeHtml.ts)
 │   └── package.json
 └── README.md                         # Este documento maestro
 ```
@@ -178,6 +206,10 @@ DevSculptor/
 Para una revisión detallada de la arquitectura, consulte los documentos en [`Documentation/`](Documentation/README.md):
 
 * **[Especificación Técnica Maestra](Documentation/Consolidated/DevSculptor_Master_Technical_Architecture_and_Specifications.md)**: Documento exhaustivo con detalles de diseño, DDL relacionales y protocolos de IA.
+* **[Informe de Hardening de Seguridad Backend](Documentation/Backend/Security_Hardening_and_Audit_Remediation_Report.md)**: Auditoría integral de seguridad, mitigación de vulnerabilidades OWASP, tipado JWT, anti-SSRF y cifrado AES-256-GCM.
+* **[Informe de Hardening y Sanitización Frontend](Documentation/Frontend/Security_Hardening_and_DOM_Sanitization_Report.md)**: Sanitización con DOMPurify, Mermaid strict mode y scoping estricto de credenciales BYOK.
+* **[Auditoría de Seguridad y Rendimiento Supabase](Documentation/Backend/Supabase_Security_and_Performance_Report.md)**: Cobertura RLS al 100% y resolución oficial de 0 advertencias en Security Advisors.
+* **[Informe Consolidado de Avance por Sprints](Documentation/Consolidated/Project_Sprints_Consolidated_Progress_Report.md)**: Estado integral de madurez del proyecto por fases y matriz DoD cumplida al 100%.
 * **[Plan Integral de Pruebas (QA)](Documentation/Consolidated/Plan_de_Pruebas_Integral_DevSculptor.md)**: Matriz completa de casos de prueba unitarios, de integración y end-to-end.
 * **[Convenciones de Backend](Documentation/Backend/Backend_Conventions_and_Architecture_Guidelines.md)**: Guía metodológica de ingeniería del servidor.
 * **[Convenciones de Frontend & UX/UI](Documentation/Frontend/Frontend_Conventions_and_UX_UI_Guidelines.md)**: Guía de tokens de diseño y ergonomía visual.
