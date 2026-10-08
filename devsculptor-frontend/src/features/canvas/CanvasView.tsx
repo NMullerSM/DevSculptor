@@ -9,6 +9,7 @@ import { CanvasDrawer } from './CanvasDrawer';
 import { SqlImportModal } from './SqlImportModal';
 import { NormalizationCheckerModal } from './NormalizationCheckerModal';
 import { VisionButton } from '@/components/ui/VisionButton';
+import { VisionCombobox } from '@/components/ui/VisionCombobox';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { CanvasEntity } from '@/types/canvas.types';
 import {
@@ -153,34 +154,24 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
     >
       {/* Barra Superior de Subpestañas */}
       <div className="min-h-10 py-1.5 px-2 sm:px-3 border-b border-glass-subtle flex items-center justify-between gap-2 bg-black/5 dark:bg-black/20 shrink-0 z-20">
-        {/* Modo Combobox en Pantallas Pequeñas, Tablets y Laptops (< 2xl) */}
-        <div className="2xl:hidden flex items-center gap-1.5 flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 bg-[var(--glass-card)] border border-glass-subtle rounded-lg px-2 py-1 w-full max-w-[220px] sm:max-w-[240px]">
-            <span className="material-symbols-outlined text-[15px] text-cyan-400 shrink-0">
-              {subtabs.find((t) => t.id === activeSubTab)?.icon || 'schema'}
-            </span>
-            <select
-              value={activeSubTab}
-              onChange={(e) => setActiveSubTab(e.target.value as CanvasSubTab)}
-              className="bg-transparent text-primary text-xs font-medium focus:outline-none w-full cursor-pointer truncate"
-              aria-label="Seleccionar vista de canvas"
-            >
-              {subtabs.map((tab) => (
-                <option key={tab.id} value={tab.id} className="bg-slate-900 text-white dark:bg-slate-900">
-                  {tab.label}
-                </option>
-              ))}
-            </select>
-          </div>
+        {/* Modo Combobox en Pantallas Pequeñas y Tablets (< xl) */}
+        <div className="xl:hidden flex items-center gap-1.5 flex-1 min-w-0">
+          <VisionCombobox
+            value={activeSubTab}
+            options={subtabs}
+            onChange={(val) => setActiveSubTab(val as CanvasSubTab)}
+            className="w-full max-w-[220px] sm:max-w-[240px]"
+            ariaLabel="Seleccionar vista de canvas"
+          />
         </div>
 
-        {/* Modo Botones Desplegados en Monitores Grandes y Ultra-Wide (>= 2xl) */}
-        <div className="hidden 2xl:flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+        {/* Modo Botones Desplegados en Pantallas Laptop, Desktop y Ultra-Wide (>= xl) */}
+        <div className="hidden xl:flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
           {subtabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveSubTab(tab.id)}
-              className={`vision-btn !py-1 !px-2.5 text-[11px] shrink-0 ${
+              className={`vision-btn !py-1 !px-2.5 text-[11px] shrink-0 cursor-pointer ${
                 activeSubTab === tab.id ? 'vision-btn-primary' : ''
               }`}
             >
@@ -195,31 +186,30 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
           {/* Selector de Dialecto Multi-Motor cuando está en SQL */}
           {activeSubTab === 'sql' && (
             <>
-              {/* Combobox de Motor en móvil, tablet y laptops (< 2xl) */}
-              <div className="2xl:hidden flex items-center gap-1 bg-[var(--glass-card)] border border-glass-subtle rounded-lg px-2 py-1 font-mono text-[11px]">
-                <span className="text-muted text-[10px]">Motor:</span>
-                <select
+              {/* Combobox de Motor en móvil y tablet (< xl) */}
+              <div className="xl:hidden">
+                <VisionCombobox
                   value={sqlDialect}
-                  onChange={(e) => setSqlDialect(e.target.value as SqlDialect)}
-                  className="bg-transparent text-cyan-600 dark:text-cyan-300 font-bold focus:outline-none capitalize text-xs cursor-pointer"
-                  aria-label="Seleccionar motor de base de datos"
-                >
-                  {(['postgres', 'mysql', 'sqlite', 'oracle'] as SqlDialect[]).map((d) => (
-                    <option key={d} value={d} className="bg-slate-900 text-white dark:bg-slate-900 capitalize">
-                      {d}
-                    </option>
-                  ))}
-                </select>
+                  labelPrefix="Motor: "
+                  options={[
+                    { id: 'postgres', label: 'PostgreSQL' },
+                    { id: 'mysql', label: 'MySQL' },
+                    { id: 'sqlite', label: 'SQLite' },
+                    { id: 'oracle', label: 'Oracle 21c' },
+                  ]}
+                  onChange={(d) => setSqlDialect(d as SqlDialect)}
+                  ariaLabel="Seleccionar motor de base de datos"
+                />
               </div>
 
-              {/* Botones Desplegados de Motor en pantallas ultra-grandes (>= 2xl) */}
-              <div className="hidden 2xl:flex items-center gap-1 bg-[var(--glass-card)] border border-glass-subtle rounded-lg p-0.5 font-mono text-[10.5px]">
+              {/* Botones Desplegados de Motor en laptops y pantallas grandes (>= xl) */}
+              <div className="hidden xl:flex items-center gap-1 bg-[var(--glass-card)] border border-glass-subtle rounded-lg p-0.5 font-mono text-[10.5px]">
                 <span className="text-muted px-1 text-[10px]">Motor:</span>
                 {(['postgres', 'mysql', 'sqlite', 'oracle'] as SqlDialect[]).map((d) => (
                   <button
                     key={d}
                     onClick={() => setSqlDialect(d)}
-                    className={`px-2 py-0.5 rounded capitalize transition-colors ${
+                    className={`px-2 py-0.5 rounded capitalize transition-colors cursor-pointer ${
                       sqlDialect === d
                         ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 font-bold border border-cyan-500/40'
                         : 'text-muted hover:text-primary'

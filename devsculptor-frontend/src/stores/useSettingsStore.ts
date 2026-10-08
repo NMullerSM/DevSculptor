@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { apiClient } from '@/services/apiClient';
-import { useThemeStore } from './useThemeStore';
+import { useThemeStore, WALLPAPERS } from './useThemeStore';
 
 export type AiProvider = 'openrouter' | 'gemini' | 'openai' | 'deepseek' | 'anthropic' | 'groq' | 'custom';
 
@@ -172,32 +172,12 @@ export const DEFAULT_AI_MODELS: RegisteredAiModel[] = [
   },
 ];
 
-export const WALLPAPER_PRESETS = [
-  {
-    id: 'silicon-sunset',
-    name: 'Silicon Valley Sunset',
-    url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop',
-    thumbnail: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=300&auto=format&fit=crop',
-  },
-  {
-    id: 'neon-architecture',
-    name: 'Neon Glass Flow',
-    url: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2564&auto=format&fit=crop',
-    thumbnail: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=300&auto=format&fit=crop',
-  },
-  {
-    id: 'dark-horizon',
-    name: 'Dark Horizon Minimal',
-    url: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?q=80&w=2564&auto=format&fit=crop',
-    thumbnail: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?q=80&w=300&auto=format&fit=crop',
-  },
-  {
-    id: 'deep-space-glass',
-    name: 'Deep Obsidian Void',
-    url: 'https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?q=80&w=2564&auto=format&fit=crop',
-    thumbnail: 'https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?q=80&w=300&auto=format&fit=crop',
-  },
-];
+export const WALLPAPER_PRESETS = WALLPAPERS.map((wp) => ({
+  id: wp.id,
+  name: wp.name,
+  url: wp.url,
+  thumbnail: wp.url,
+}));
 
 interface SettingsState {
   // BYOK & IA
