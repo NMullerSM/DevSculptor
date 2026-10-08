@@ -147,11 +147,50 @@ export class AdminService {
 
     const updateQuery = `
       UPDATE users 
-      SET role = $1 
+      SET role = $1,
+          token_version = token_version + 1,
+          updated_at = CURRENT_TIMESTAMP
       WHERE id = $2 
       RETURNING id, email, full_name, role, is_active, created_at;
     `;
     const result = await this.pool.query(updateQuery, [newRole, targetUserId]);
+    const updated = result.rows[0];
+
+    return {
+      id: updated.id,
+      email: updated.email,
+      full_name: updated.full_name,
+      role: updated.role,
+      is_active: updated.is_active,
+      projects_count: 0,
+      created_at: updated.created_at,
+    };
+  }
+
+  /**
+   * Actualiza el estado de activación de un usuario (SEC-03).
+   * Al suspender o reactivar, incrementa token_version para revocar sesiones existentes.
+   */
+  async updateUserStatus(targetUserId: string, isActive: boolean, actorId: string): Promise<AdminUserItem> {
+    if (targetUserId === actorId) {
+      throw new ValidationError('No puedes modificar tu propio estado de activación.');
+    }
+
+    const checkQuery = `SELECT * FROM users WHERE id = $1;`;
+    const checkRes = await this.pool.query(checkQuery, [targetUserId]);
+    if (checkRes.rowCount === 0) {
+      throw new NotFoundError('Usuario');
+    }
+
+    const updateQuery = `
+      UPDATE users 
+      SET is_active = $1,
+          token_version = token_version + 1,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = $2 
+      RETURNING id, email, full_name, role, is_active, created_at;
+    `;
+    const result = await this.pool.query(updateQuery, [isActive, targetUserId]);
     const updated = result.rows[0];
 
     return {
@@ -293,6 +332,37 @@ export class AdminService {
       params.push(limit, offset);
     } else {
       query += ` ORDER BY a.created_at DESC LIMIT $1 OFFSET $2;`;
+      params.push(limit, offset);
+    }
+
+    const result = await this.pool.query(query, params);
+    return result.rows;
+  }
+
+  /**
+   * Consulta el registro histórico de eventos de seguridad (SEC-10).
+   */
+  async getSecurityEvents(limit: number = 50, offset: number = 0, eventType?: string): Promise<unknown[]> {
+    let query = `
+      SELECT 
+        s.id, 
+        s.user_id, 
+        u.email AS user_email,
+        s.event_type, 
+        s.ip, 
+        s.user_agent, 
+        s.metadata, 
+        s.created_at
+      FROM security_events s
+      LEFT JOIN users u ON u.id = s.user_id
+    `;
+
+    const params: unknown[] = [];
+    if (eventType) {
+      query += ` WHERE s.event_type = $1 ORDER BY s.created_at DESC LIMIT $2 OFFSET $3;`;
+      params.push(eventType, limit, offset);
+    } else {
+      query += ` ORDER BY s.created_at DESC LIMIT $1 OFFSET $2;`;
       params.push(limit, offset);
     }
 

@@ -6,6 +6,7 @@ import { IngestSourceModal } from '../components/IngestSourceModal';
 import { GlobalVaultFile } from '@/types/admin.types';
 import { adminService } from '@/services/admin.service';
 import { convertMarkdownToHtml } from '@/features/export/documentExportService';
+import { sanitizeHtml } from '@/utils/sanitizeHtml';
 import { MermaidVisualizer } from '@/components/diagrams/MermaidVisualizer';
 import { VisionButton } from '@/components/ui/VisionButton';
 
@@ -184,10 +185,11 @@ export const GlobalVaultTab: React.FC = () => {
     );
   }, [fileContentBuffer]);
 
-  // Conversión HTML ejecutiva del archivo activo
+  // Conversión HTML ejecutiva del archivo activo con sanitización estricta anti-XSS
   const renderedExecutiveHtml = useMemo(() => {
     if (!fileContentBuffer) return '';
-    return convertMarkdownToHtml(fileContentBuffer);
+    const rawHtml = convertMarkdownToHtml(fileContentBuffer);
+    return sanitizeHtml(rawHtml);
   }, [fileContentBuffer]);
 
   const handleCopyContent = async () => {

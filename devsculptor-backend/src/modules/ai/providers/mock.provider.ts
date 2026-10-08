@@ -124,7 +124,7 @@ He evaluado tu consulta técnica para el proyecto **${context.projectName}** (Es
     const conversationHistoryText = messages.map((m) => m.content).join(' ').toLowerCase();
     const scopeText = `${lower} ${conversationHistoryText} ${(context.projectDescription || '').toLowerCase()} ${context.projectName.toLowerCase()}`;
 
-    let reply = '';
+    let reply: string;
 
     // Dominio 1: E-Commerce / Pedidos / Carrito / Órdenes / Dark Stores
     if (

@@ -150,5 +150,34 @@ Una re-ejecución de los asesores de seguridad y rendimiento de Supabase confirm
 
 1. **Aislamiento Total del API Web:** La activación de RLS asegura que nadie pueda acceder ni alterar la base de datos a través de los endpoints REST públicos generados automáticamente por Supabase, forzando que todo el tráfico transite exclusivamente a través del backend Express donde residen las reglas de negocio, validaciones Zod y auditoría.
 2. **Eficiencia en Mutaciones:** Al eliminar el índice duplicado y añadir el índice a `audit_logs.user_id`, se optimizan tanto las escrituras de usuarios como la integridad referencial en eventos de baja.
-3. **Inclusión en el Repositorio:** Este script se incorpora formalmente como la migración [`003_security_and_performance_fixes.sql`](file:///c:/Users/natha/Documents/Repos/DevSculptor/devsculptor-backend/src/database/migrations/003_security_and_performance_fixes.sql) para que cualquier nuevo entorno local o de CI/CD incorpore estas mejoras automáticamente.
+3. **Inclusión en el Repositorio:** Este script se incorpora formalmente como la migración `003_security_and_performance_fixes.sql` para que cualquier nuevo entorno local o de CI/CD incorpore estas mejoras automáticamente.
+
+---
+
+## 7. Fase 2: Hardening Pre-Producción y Auditoría Global (Octubre 2026)
+
+Con la incorporación de nuevos módulos en los Sprints 4 y 5 (Bóveda Documental OKF, Administración Maestra, MFA y Gestión de Sesiones), se ejecutó una segunda auditoría completa con los **Supabase Advisors**.
+
+### 7.1 Nuevos Objetos Auditados y Remediados
+1. **Extensión de RLS a Nuevas Tablas (Migraciones `010_rls_hardening.sql` y `011_security_events.sql`):**  
+   Se activó RLS obligatorio en:
+   - `public.password_resets`
+   - `public.global_vault_templates`
+   - `public._migrations`
+   - `public.security_events`
+   - `public.okf_documents`  
+   Adicionalmente, se revocaron formalmente todos los permisos de acceso directo para los roles `anon` y `authenticated`.
+
+2. **Inmutabilización de Esquemas en Funciones (Migración `013_supabase_security_advisors_hardening.sql`):**  
+   - Se fijó `SET search_path = public, pg_temp` en `is_superadmin()`, `sp_calculate_project_metrics()` y `fn_audit_canvas_entities()`.
+   - Se revocó el permiso `EXECUTE` sobre `is_superadmin()` a `PUBLIC`, `anon` y `authenticated`.
+
+3. **Alineación de Restricciones CHECK (Migración `012_align_global_vault_categories.sql`):**  
+   - Se amplió la restricción `CHECK` de `global_vault_templates(category)` para cubrir los 9 tipos soportados formalmente por el catálogo (`manifest`, `documentation`, `database`, `skills`, `context`, `templates`, `rules`, `archetypes`, `sources`).
+
+### 7.2 Estado Final del Supabase Database Linter
+- **Errores:** 0
+- **Advertencias:** 0
+- **Informativos:** 11 avisos esperados `rls_enabled_no_policy` correspondientes al 100% de las tablas del esquema público (bloqueo total a PostgREST sin bypass para clientes externos).
+
 

@@ -26,7 +26,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [simulatedToken, setSimulatedToken] = useState<string | null>(null);
+  const [devTokenNotice, setDevTokenNotice] = useState(false);
 
   const handleRequestToken = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,13 +35,17 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
     setIsLoading(true);
     setError(null);
     setSuccessMsg(null);
+    setDevTokenNotice(false);
 
     try {
       const data = await authService.forgotPassword(email.trim());
-      setSuccessMsg(data.message);
+      setSuccessMsg(
+        data.message ||
+          'Si la cuenta se encuentra registrada, se ha enviado un correo con instrucciones para restablecer tu contraseña.'
+      );
       if (data.resetToken) {
-        setSimulatedToken(data.resetToken);
         setToken(data.resetToken);
+        setDevTokenNotice(true);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al solicitar recuperación de contraseña';
@@ -133,15 +137,15 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
               />
             </div>
 
-            {simulatedToken && (
-              <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/30 space-y-2">
-                <div className="text-[10.5px] font-mono text-indigo-300 font-semibold flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[14px]">key</span>
-                  <span>Token de Recuperación Emitido</span>
-                </div>
-                <div className="p-2 bg-black/30 rounded font-mono text-[10px] text-slate-300 break-all select-all">
-                  {simulatedToken}
-                </div>
+            {devTokenNotice && (
+              <div className="p-2.5 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-[11px] font-mono flex items-center gap-2">
+                <span className="material-symbols-outlined text-sm shrink-0">developer_mode</span>
+                <span>Modo desarrollo activo: Token de recuperación pre-cargado para pruebas locales.</span>
+              </div>
+            )}
+
+            {successMsg ? (
+              <div className="pt-2">
                 <VisionButton
                   type="button"
                   variant="primary"
@@ -149,12 +153,10 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                   onClick={() => setStep('reset')}
                   className="w-full"
                 >
-                  Continuar a Cambiar Contraseña &rarr;
+                  Continuar e Ingresar Token Recibido &rarr;
                 </VisionButton>
               </div>
-            )}
-
-            {!simulatedToken && (
+            ) : (
               <div className="flex items-center justify-between pt-2">
                 <button
                   type="button"
@@ -170,7 +172,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                   isLoading={isLoading}
                   disabled={!email.trim() || isLoading}
                 >
-                  Verificar y Continuar
+                  Enviar Instrucciones
                 </VisionButton>
               </div>
             )}

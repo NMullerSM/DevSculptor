@@ -2,8 +2,14 @@ import fs from 'fs';
 import path from 'path';
 import { getPool, closePool } from '../../config/database';
 import { logger } from '../../config/logger';
+import { env } from '../../config/env';
 
 async function runSeed() {
+  if (env.NODE_ENV === 'production') {
+    logger.fatal('El script de seeds de desarrollo está estrictamente prohibido en entorno de producción.');
+    process.exit(1);
+  }
+
   const pool = getPool();
   const client = await pool.connect();
 

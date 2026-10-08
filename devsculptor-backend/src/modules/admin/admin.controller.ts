@@ -4,6 +4,7 @@ import {
   saveVaultFileSchema,
   createVaultFileSchema,
   updateUserRoleSchema,
+  updateUserStatusSchema,
   queryAuditLogsSchema,
 } from './admin.schemas';
 import { sendSuccess, sendCreated } from '../../shared/responses/apiResponse';
@@ -36,6 +37,19 @@ export class AdminController {
       const actorId = req.user!.id;
 
       const updated = await this.adminService.updateUserRole(id, role, actorId);
+      sendSuccess(res, updated);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  updateUserStatus = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const { is_active } = updateUserStatusSchema.parse(req.body);
+      const actorId = req.user!.id;
+
+      const updated = await this.adminService.updateUserStatus(id, is_active, actorId);
       sendSuccess(res, updated);
     } catch (error) {
       next(error);
@@ -93,7 +107,7 @@ export class AdminController {
         description,
         author
       );
-      sendSuccess(res, file, 201);
+      sendCreated(res, file);
     } catch (error) {
       next(error);
     }
@@ -121,6 +135,19 @@ export class AdminController {
       const query = queryAuditLogsSchema.parse(req.query);
       const logs = await this.adminService.getGlobalAuditLogs(query.limit, query.offset, query.entity);
       sendSuccess(res, logs);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getSecurityEvents = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const limit = Math.min(Number(req.query.limit) || 50, 200);
+      const offset = Number(req.query.offset) || 0;
+      const eventType = typeof req.query.eventType === 'string' ? req.query.eventType : undefined;
+
+      const events = await this.adminService.getSecurityEvents(limit, offset, eventType);
+      sendSuccess(res, events);
     } catch (error) {
       next(error);
     }

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useId } from 'react';
 import mermaid from 'mermaid';
+import { sanitizeSvg } from '@/utils/sanitizeHtml';
 import { VisionButton } from '@/components/ui/VisionButton';
 
 // Inicializar Mermaid una sola vez con tema oscuro y tipografía moderna
@@ -10,7 +11,7 @@ function ensureMermaidInitialized() {
   mermaid.initialize({
     startOnLoad: false,
     theme: 'dark',
-    securityLevel: 'loose',
+    securityLevel: 'strict',
     fontFamily: 'JetBrains Mono, Inter, ui-sans-serif, system-ui',
     themeVariables: {
       darkMode: true,
@@ -109,10 +110,11 @@ export const MermaidVisualizer: React.FC<MermaidVisualizerProps> = ({
       setError(null);
 
       try {
-        // Renderizado determinista mediante mermaid.render
+        // Renderizado determinista mediante mermaid.render con sanitización DOMPurify (perfil SVG)
         const renderResult = await mermaid.render(diagramId, cleanDiagramCode);
         if (!isCancelled) {
-          setSvgContent(renderResult.svg);
+          const sanitized = sanitizeSvg(renderResult.svg);
+          setSvgContent(sanitized);
           setIsLoading(false);
         }
       } catch (err: unknown) {

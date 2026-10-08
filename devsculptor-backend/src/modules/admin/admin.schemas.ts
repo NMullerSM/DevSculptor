@@ -29,6 +29,12 @@ export const updateUserRoleSchema = z.object({
   }),
 });
 
+export const updateUserStatusSchema = z.object({
+  is_active: z.boolean({
+    required_error: 'El campo is_active es requerido',
+  }),
+});
+
 export const queryAuditLogsSchema = z.object({
   limit: z.coerce.number().min(1).max(200).default(50),
   offset: z.coerce.number().min(0).default(0),
@@ -38,4 +44,5 @@ export const queryAuditLogsSchema = z.object({
 export type SaveVaultFileDto = z.infer<typeof saveVaultFileSchema>;
 export type CreateVaultFileDto = z.infer<typeof createVaultFileSchema>;
 export type UpdateUserRoleDto = z.infer<typeof updateUserRoleSchema>;
+export type UpdateUserStatusDto = z.infer<typeof updateUserStatusSchema>;
 export type QueryAuditLogsDto = z.infer<typeof queryAuditLogsSchema>;

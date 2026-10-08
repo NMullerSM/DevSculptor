@@ -4,6 +4,9 @@ import {
   AiChatResult,
 } from './ai-provider.interface';
 import { buildSystemInstruction, parseDevSculptorActions } from '../ai.prompts';
+import { ExternalServiceError } from '../../../shared/exceptions';
+import { logger } from '../../../config/logger';
+import { env } from '../../../config/env';
 
 /**
  * Proveedor compatible con OpenAI / DeepSeek API (Arquitectura Abierta a Futuro).
@@ -44,7 +47,7 @@ export class OpenAiProvider implements IAiProvider {
     ];
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const timeoutId = setTimeout(() => controller.abort(), env.AI_TIMEOUT_MS);
 
     const reqHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -61,6 +64,7 @@ export class OpenAiProvider implements IAiProvider {
         method: 'POST',
         headers: reqHeaders,
         signal: controller.signal,
+        redirect: 'error',
         body: JSON.stringify({
           model: this.model,
           messages: formattedMessages,
@@ -72,7 +76,13 @@ export class OpenAiProvider implements IAiProvider {
 
       if (!res.ok) {
         const errText = await res.text();
-        throw new Error(`[${this.name.toUpperCase()} API Error] HTTP ${res.status}: ${errText}`);
+        logger.error(
+          { provider: this.name, model: this.model, status: res.status, errText },
+          'Respuesta de error recibida desde el proveedor de IA ascendente'
+        );
+        throw new ExternalServiceError(
+          `[${this.name.toUpperCase()} API Error] HTTP ${res.status}: ${res.statusText || 'Error del proveedor externo'}`
+        );
       }
 
       const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
@@ -90,10 +100,23 @@ export class OpenAiProvider implements IAiProvider {
       };
     } catch (err: unknown) {
       clearTimeout(timeoutId);
-      if (err instanceof Error && err.name === 'AbortError') {
-        throw new Error(`[${this.name.toUpperCase()} Timeout] La API tardó más de 15 segundos en responder.`);
+      if (err instanceof ExternalServiceError) {
+        throw err;
       }
-      throw err;
+      if (err instanceof Error && err.name === 'AbortError') {
+        throw new ExternalServiceError(
+          `[${this.name.toUpperCase()} Timeout] La API tardó más de ${Math.round(env.AI_TIMEOUT_MS / 1000)} segundos en responder.`,
+          { cause: err }
+        );
+      }
+      logger.error(
+        { err, provider: this.name, model: this.model },
+        'Fallo de comunicación con la API del proveedor de IA'
+      );
+      throw new ExternalServiceError(
+        `Error de comunicación con el proveedor ${this.name.toUpperCase()}`,
+        { cause: err }
+      );
     }
   }
 

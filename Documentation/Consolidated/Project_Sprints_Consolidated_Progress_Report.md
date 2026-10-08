@@ -1,12 +1,12 @@
-# DevSculptor — Informe Consolidado de Avance de Proyecto por Sprints (Sprint 1, 2 y 3 Completados - 100%)
+# DevSculptor — Informe Consolidado de Avance de Proyecto por Sprints (Sprints 1 al 5 y Hardening de Seguridad Pre-Producción — 100% Culminados)
 
 **Proyecto:** DevSculptor — Technical Governance & AI-Assisted Documentation  
 **Asignatura / Portafolio:** Taller de Integración de Software (PTY4479)  
 **Autor:** Nathaniel Muller San Martin  
-**Estado de Avance:** Sprint 1 (100%), Sprint 2 (100%), Sprint 3 (100% — Épicas A, B y C Culminadas)  
-**Fecha de Emisión:** Septiembre 2026  
+**Estado de Avance:** Sprint 1 (100%), Sprint 2 (100%), Sprint 3 (100%), Sprint 4 (100%), Sprint 5 (100% — Etapas A y B Culminadas, Hardening y Auditoría Pre-Producción)  
+**Fecha de Emisión:** Octubre 2026  
 **Rama Activa:** `develop`  
-**Repositorios / Directorios:** [`devsculptor-backend/`](file:///c:/Users/natha/Documents/Repos/DevSculptor/devsculptor-backend) | [`devsculptor-frontend/`](file:///c:/Users/natha/Documents/Repos/DevSculptor/devsculptor-frontend)
+**Repositorios / Directorios:** [`devsculptor-backend/`](../../devsculptor-backend) | [`devsculptor-frontend/`](../../devsculptor-frontend)
 
 ---
 
@@ -19,8 +19,10 @@
    - 4.1. [Épica A: Canvas Avanzado, Modelado Relacional y DDL Multi-Dialecto (100%)](#41-épica-a-canvas-avanzado-modelado-relacional-y-ddl-multi-dialecto-100)
    - 4.2. [Épica B: Motor de Consultoría IA y Copiloto de Arquitectura en Tiempo Real (100%)](#42-épica-b-motor-de-consultoría-ia-y-copiloto-de-arquitectura-en-tiempo-real-100)
    - 4.3. [Épica C: Gobernanza Arquitectónica Progresiva, Selección Canónica en ADRs y Protocolo Human-in-the-Loop (100%)](#43-épica-c-gobernanza-arquitectónica-progresiva-selección-canónica-en-adrs-y-protocolo-human-in-the-loop-100)
-5. [Sprint 4 & Sprint 5: Roadmap Futuro y Cierre](#5-sprint-4--sprint-5-roadmap-futuro-y-cierre)
-6. [Matriz de Cumplimiento de la Definición de Terminado (DoD)](#6-matriz-de-cumplimiento-de-la-definición-de-terminado-dod)
+5. [Sprint 4: Arquitectura OKF Vault, Compilación Dinámica y Freshness Engine (100%)](#5-sprint-4-arquitectura-okf-vault-compilación-dinámica-y-freshness-engine-etapa-a--100)
+6. [Sprint 5: Refactorización UX/UI, Identidad, Bóveda BYOK y Plantillas Enterprise (100%)](#6-sprint-5-refactorización-uxui-configuración-de-plataforma-identidad-y-bóveda-byok-etapa-a--100)
+7. [Sprint 5 — Etapa B: Hardening de Seguridad, Auditoría Técnica y Suite de Pruebas Automatizadas (100%)](#7-sprint-5--etapa-b-hardening-de-seguridad-auditoría-técnica-y-suite-de-pruebas-automatizadas-100)
+8. [Matriz de Cumplimiento de la Definición de Terminado (DoD)](#8-matriz-de-cumplimiento-de-la-definición-de-terminado-dod)
 
 ---
 
@@ -28,22 +30,24 @@
 
 **DevSculptor** es una plataforma de ingeniería de software orientada a la **gobernanza técnica pre-código y mitigación del *"vibe coding"***. Permite a arquitectos y desarrolladores capturar formalmente requisitos (IEEE-830), registrar decisiones técnicas inmutables (ADRs), modelar bases de datos relacionales interactivas bajo la teoría de 3FN, interactuar con un Copiloto de Arquitectura conectado al contexto real del proyecto y generar especificaciones deterministas (Open Knowledge Format - OKF) para inyectar en agentes de IA como Cursor o Claude.
 
-### Métricas Globales de Completitud (Culminación de Sprint 3):
+### Métricas Globales de Completitud (Culminación Integral de Sprints 1 a 5 y Hardening):
 - **Sprint 1 (Backend Core & DB):** 100% ✅ (Completado y blindado).
 - **Sprint 2 (Frontend Base & Integración):** 100% ✅ (Completado e integrado).
-- **Sprint 3 — Épica A (Canvas Avanzado & DDL):** 100% ✅ (Completado).
-- **Sprint 3 — Épica B (Motor IA Gemini & Copiloto):** 100% ✅ (Completado con Strategy Pattern, Mock Fallback y 1-Click Injection).
-- **Avance Ponderado Global:** ~**85% del ciclo total de desarrollo**.
+- **Sprint 3 (Canvas Avanzado, DDL & Motor IA):** 100% ✅ (Completado con Strategy Pattern, Mock Fallback y 1-Click Injection).
+- **Sprint 4 (OKF Vault, Dynamic Packaging & Storage RLS):** 100% ✅ (Completado).
+- **Sprint 5 — Etapa A (UX/UI Refactor, Settings, Identity & BYOK):** 100% ✅ (Completado).
+- **Sprint 5 — Etapa B (Security Hardening, Testing Suite & Pre-Prod Audit):** 100% ✅ (Completado — 25/25 tests passing, 0 lint errors, 0 Supabase advisor warnings).
+- **Avance Ponderado Global:** **100% del ciclo de desarrollo y hardening pre-producción**.
 
 ```
-PROGRESO GENERAL DE SPRINTS
-┌────────────────────────┬────────────────────────┬────────────────────────┬────────────────────────┐
-│   SPRINT 1 (100%)      │   SPRINT 2 (100%)      │   SPRINT 3 (100%)      │   SPRINT 4 & 5 (0%)    │
-│  - Monolito Modular    │  - React 18 + Vite     │  - Épica A: Canvas DDL │  - OKF Dinámico        │
-│  - Supabase PG + RLS   │  - visionOS Glass      │  - Épica B: Motor IA   │  - Pruebas E2E         │
-│  - Triggers & SP       │  - Studio Tripartito   │    (Gemini Oficial +   │  - Hardening Final     │
-│  - Zod + Pino + Envel. │  - Axios + Zustand     │     Mock Heurístico)   │  - Deploy Producción   │
-└────────────────────────┴────────────────────────┴────────────────────────┴────────────────────────┘
+PROGRESO GENERAL DE SPRINTS Y HARDENING TÉCNICO
+┌───────────────────┬───────────────────┬───────────────────┬───────────────────┬───────────────────┐
+│  SPRINT 1 (100%)  │  SPRINT 2 (100%)  │  SPRINT 3 (100%)  │  SPRINT 4 (100%)  │  SPRINT 5 (100%)  │
+│ - Monolito Mod.   │ - React 19 + Vite │ - Canvas DDL      │ - OKF Dynamic     │ - BYOK & Identity │
+│ - Supabase PG RLS │ - visionOS Glass  │ - Motor IA Gemini │ - Supabase Storage│ - Security Audit  │
+│ - Triggers & SP   │ - Studio Tripart. │ - Mock Offline    │ - 13 Plantillas   │ - Vitest Suite    │
+│ - Zod + Pino      │ - Axios + Zustand │ - Human-in-Loop   │ - SHA-256 Hash    │ - 0 Advisors Warn │
+└───────────────────┴───────────────────┴───────────────────┴───────────────────┴───────────────────┘
 ```
 
 ---
@@ -310,11 +314,78 @@ El Sprint 5 aborda la separación arquitectónica de dominios de configuración,
 
 ---
 
-## 7. Sprint 5: Hardening de Seguridad Final y Despliegue (Etapa B — Roadmap)
+## 7. Sprint 5 — Etapa B: Hardening de Seguridad, Auditoría Técnica y Suite de Pruebas Automatizadas (100%)
 
-- **Auditoría de Seguridad Final**: Rate limiting granular, políticas CSP estrictas y sanitización contra inyecciones.
-- **Contenerización y CI/CD**: Empaquetado Docker multicapa para backend y frontend con despliegue Cloud automatizado.
-- **Consolidación Documental PTY4479**: Manual de usuario final, informe de arquitectura de software para titulación y video demostrativo de gobernanza técnica pre-código.
+Esta etapa ejecutó la remediación integral de vulnerabilidades, auditoría de gobernanza arquitectónica y establecimiento de salvaguardas de nivel bancario/empresarial:
+
+### 7.1. Fase 0: Infraestructura de Pruebas Automatizadas y Calidad de Código
+1. **Suite de Pruebas Vitest & Supertest**:
+   - Integración nativa de **Vitest** en `devsculptor-backend` para ejecución ultrarrápida en memoria con resolución de paths TypeScript (`vite-tsconfig-paths`).
+   - 25 pruebas automatizadas pasando al 100% (cero fallos) distribuidas en 4 suites especializadas:
+     - `auth.integration.test.ts`: Pruebas de integración de registro, login, token typing, mitigación de enumeración y rechazo de payloads inválidos.
+     - `safeUrl.test.ts`: 12 vectores de prueba anti-SSRF (bloqueo de IPv4/IPv6 loopback, rangos RFC 1918 privados, DNS multi-IP y resolución segura).
+     - `crypto.test.ts`: Cifrado y descifrado simétrico autenticado AES-256-GCM para secretos TOTP y Bóvedas.
+     - `rateLimiter.test.ts`: Control de flujo en memoria y headers estándar IETF (`RateLimit-Limit`, `RateLimit-Remaining`).
+2. **Gobernanza de Linting Flat Config**:
+   - Migración de ESLint a formato Flat Config (`eslint.config.mjs`) compatible con ESLint 9+ y `@typescript-eslint`.
+   - Cero errores y cero advertencias en la totalidad del backend (`0 errors, 0 warnings`).
+3. **Pipeline de Integración Continua (CI)**:
+   - Configuración del flujo de GitHub Actions en `.github/workflows/ci.yml` ejecutando verificación de tipos (`tsc --noEmit`), linting y suite de pruebas en cada push o pull request.
+
+### 7.2. Fase 1: Autenticación, MFA, Gestión Criptográfica y Ciclo de Sesiones
+1. **Tipado Estricto de JWT y Desacoplamiento de Flujo MFA**:
+   - Adición del atributo `type: 'access' | 'mfa_pending'` en el payload firmado del token JWT.
+   - El middleware `authenticate` rechaza de inmediato tokens intermedios `mfa_pending` para proteger endpoints operativos, eliminando el riesgo de escalada de privilegios o bypass de 2FA.
+2. **Revocación de Sesiones en Tiempo Real (`token_version`)**:
+   - Adición de la columna `token_version INT DEFAULT 1` a la tabla `users` mediante migración DDL `009_auth_security_hardening.sql`.
+   - El middleware de autenticación valida en cada request que el `token_version` del JWT coincida exactamente con la base de datos.
+   - Cualquier cambio de credenciales (`PUT /auth/change-password`) o desactivación de 2FA incrementa atómicamente el contador, invalidando todas las sesiones y tokens en circulación de manera instantánea.
+3. **Mitigación de Enumeración de Cuentas y Comparación Ficticia**:
+   - Unificación de mensajes de error de autenticación: *"Credenciales de acceso inválidas"* tanto para cuentas inexistentes como contraseñas incorrectas.
+   - En caso de usuario inexistente, se ejecuta un hash ficticio `bcrypt.compare` con un salt precalculado para igualar el tiempo de cómputo y neutralizar ataques de temporización (timing attacks).
+4. **Cifrado Simétrico Autenticado AES-256-GCM para Secretos MFA**:
+   - Los secretos TOTP ya no se almacenan en texto claro: se cifran mediante AES-256-GCM utilizando un vector de inicialización (IV) de 12 bytes aleatorio por registro y tag de autenticación de 16 bytes.
+   - Algoritmo inmune a manipulaciones de bits y resistente a fugas de base de datos.
+5. **Mitigación de Replay Attacks en Códigos TOTP (RFC 6238)**:
+   - Persistencia de `last_totp_step` en la tabla `users`.
+   - Se prohíbe reutilizar el mismo código OTP dentro de la misma ventana de tiempo de 30 segundos.
+6. **Limitadores de Tasa Especializados (Rate Limiters)**:
+   - `authLimiter`: 10 peticiones cada 15 minutos en rutas sensibles de login y registro.
+   - `aiLimiter`: 20 consultas por minuto por usuario para evitar agotamiento de cuotas y ataques de denegación de servicio.
+   - `mfaVerifyLimiter`: 5 intentos por ventana de 5 minutos para prevenir ataques de fuerza bruta en códigos TOTP.
+
+### 7.3. Fase 2: Mitigación de Amenazas Outbound (SSRF) y Gobernanza RLS Supabase
+1. **Validador DNS Anti-SSRF (`safeUrl.ts`)**:
+   - Verificación de URLs antes de enviar solicitudes HTTP a endpoints externos de inferencia de IA.
+   - Resolución DNS previa y filtrado riguroso de direcciones IP privadas y reservadas: IPv4 (`127.0.0.0/8`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `169.254.0.0/16`) e IPv6 (`::1`, `fc00::/7`, `fe80::/10`).
+   - Política estricta `redirect: 'error'` en `fetch` para impedir que un servidor malicioso redirija hacia la red interna de la nube.
+   - Manejo de excepciones con código HTTP 502 `ExternalServiceError` en caso de fallos de conectividad con proveedores de IA.
+   - Timeout unificado de 45 segundos en llamadas a modelos de lenguaje en el backend.
+2. **Gobernanza de Seguridad en Supabase (Migraciones 009 a 013)**:
+   - Migraciones DDL desplegadas y auditadas en la base de datos cloud:
+     - `009_auth_security_hardening.sql`: Columnas `token_version` y `last_totp_step`.
+     - `010_database_rls_hardening.sql`: Activación de RLS en `app_settings` y funciones con `SET search_path = public`.
+     - `011_storage_objects_rls_hardening.sql`: Aislamiento RLS en almacenamiento de archivos.
+     - `012_system_logs_and_vault_rls.sql`: Aislamiento en registros del sistema y bóveda global.
+     - `013_supabase_security_advisors_hardening.sql`: Corrección final de advertencias del Security Advisor de Supabase.
+   - **Resultado Oficial Supabase Advisors**: **0 errores y 0 advertencias**. 100% de las 11 tablas del sistema protegidas con Row Level Security.
+   - Restricción estricta de ejecución de funciones sensibles: `REVOKE EXECUTE ON FUNCTION public.is_superadmin(UUID) FROM PUBLIC, anon, authenticated;`, limitando el uso exclusivamente al rol de servicio del backend.
+
+### 7.4. Fase 3: Hardening Frontend, Sanitización DOM y DevOps Contenerizado
+1. **Sanitización Estricta de Renderizado DOM (`DOMPurify`)**:
+   - Incorporación de `dompurify` en `devsculptor-frontend` para limpiar cualquier contenido HTML dinámico antes de inyectarlo en el DOM (`dangerouslySetInnerHTML`), neutralizando vectores de Cross-Site Scripting (XSS).
+   - Modo de seguridad estricto en Mermaid (`securityLevel: 'strict'`), escapando etiquetas peligrosas antes de generar el renderizado vectorial SVG.
+2. **Scoping Estricto de Cabeceras BYOK**:
+   - El interceptor de Axios en `api.ts` ahora restringe el envío de las cabeceras `X-User-OpenAI-Key`, `X-User-DeepSeek-Key`, etc. **exclusivamente a las rutas de inferencia del proyecto** (`^/projects/[0-9a-f-]{36}/ai/`), impidiendo que credenciales privadas del usuario se transmitan inadvertidamente en peticiones REST convencionales.
+3. **Flujo Seguro de Códigos de Recuperación MFA**:
+   - Modal dedicado para el despliegue único de códigos de recuperación tras la activación de 2FA, con opción de descarga de archivo `.txt` y copiado seguro.
+4. **Políticas de Seguridad en Cabeceras (CSP)**:
+   - Configuración de cabeceras de Content Security Policy (CSP), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff` y `Referrer-Policy: strict-origin-when-cross-origin` en `vercel.json` y plantillas de exportación.
+5. **DevOps y Empaquetado Docker Producción**:
+   - Script de compilación `build:assets` para sincronizar los scripts SQL de migración hacia `dist/database/migrations`.
+   - Script automatizado `migrate:prod` para ejecutar migraciones en contenedores de producción sin requerir herramientas de desarrollo.
+   - Directiva `HEALTHCHECK` nativa en Node.js dentro del `Dockerfile` para orquestadores Kubernetes / Render.
+   - Manejadores globales de `uncaughtException` y `unhandledRejection` en `server.ts` con parada ordenada (Graceful Shutdown) y registro estructurado en Pino Logger.
 
 ---
 
@@ -323,6 +394,17 @@ El Sprint 5 aborda la separación arquitectónica de dominios de configuración,
 | Criterio de Aceptación (DoD) | Estado | Evidencia Técnica |
 | :--- | :---: | :--- |
 | **Cero Errores de Compilación TypeScript** | ✅ CUMPLIDO | `npm run build` compila con 0 errores en frontend (Vite) y backend (`tsc && tsc-alias`). |
+| **Gobernanza de Linting sin Errores** | ✅ CUMPLIDO | `npm run lint` finaliza con 0 errores y 0 advertencias bajo ESLint 9 Flat Config. |
+| **Suite de Pruebas Automatizadas** | ✅ CUMPLIDO | 25/25 pruebas unitarias y de integración pasando con Vitest y Supertest. |
+| **Gobernanza Supabase Advisors** | ✅ CUMPLIDO | **0 advertencias, 0 errores** en Supabase Security Advisors (100% de tablas protegidas con RLS). |
+| **Tipado y Desacoplamiento de JWT** | ✅ CUMPLIDO | Discriminación estricta entre tokens `access` y `mfa_pending`. |
+| **Revocación de Sesiones en Vivo** | ✅ CUMPLIDO | Invalidación de tokens mediante `token_version` en rotación de contraseñas y MFA. |
+| **Protección contra Ataques de Temporización** | ✅ CUMPLIDO | Comparación ficticia `bcrypt.compare` ante usuarios inexistentes para evitar enumeración. |
+| **Cifrado Simétrico de Secretos MFA** | ✅ CUMPLIDO | Secretos TOTP cifrados con AES-256-GCM y autenticación de integridad (Auth Tag). |
+| **Protección contra Replay en TOTP** | ✅ CUMPLIDO | Validación RFC 6238 con persistencia de paso temporal (`last_totp_step`). |
+| **Mitigación Anti-SSRF en Inferencia IA** | ✅ CUMPLIDO | Validador `safeUrl.ts` bloquea rangos de IP loopback, privadas y metadatos de nube; `redirect: 'error'`. |
+| **Sanitización DOM contra XSS** | ✅ CUMPLIDO | Sanitización con `DOMPurify` y Mermaid en nivel de seguridad `strict`. |
+| **Aislamiento de Cabeceras BYOK** | ✅ CUMPLIDO | Envío de credenciales restringido por regex exclusivamente a endpoints `/projects/:id/ai/*`. |
 | **Arquitectura de IA Provider-Agnostic** | ✅ CUMPLIDO | Patrón Strategy/Adapter implementado (`IAiProvider`, `GeminiProvider`, `MockAiProvider`, `OpenAiProvider`). |
 | **Protección de Credenciales de IA** | ✅ CUMPLIDO | API keys aisladas al 100% en backend `.env`; cero exposición en cliente o git. |
 | **Bóveda Local BYOK (Bring Your Own Key)** | ✅ CUMPLIDO | Almacenamiento local en cliente (cero retención en BD), soporte multi-proveedor y ping test. |
@@ -338,6 +420,7 @@ El Sprint 5 aborda la separación arquitectónica de dominios de configuración,
 | **Bóveda de Documentación OKF (13 Plantillas)**| ✅ CUMPLIDO | Compilación de 13 artefactos normalizados con YAML frontmatter y SHA-256 state hashing. |
 | **Detección de Desviación (Drift)** | ✅ CUMPLIDO | `okfVaultService` clasifica el estado en `FRESH`, `DRIFT_DETECTED` y `STALE`. |
 | **Exportaciones Granulares Multi-Dialecto** | ✅ CUMPLIDO | Descarga directa de DDL (Postgres, MySQL, SQLite, Oracle), SRS e índice ADR. |
+| **Contenerización y DevOps Listos** | ✅ CUMPLIDO | Dockerfile con multi-stage, `migrate:prod`, `build:assets` y `HEALTHCHECK` activo. |
 | **Trazabilidad Git en `develop` y `main`** | ✅ CUMPLIDO | Commits atómicos bilingües con convención Conventional Commits y sincronización controlada. |
 
 
