@@ -8,7 +8,6 @@ import {
 import { ProjectsService } from '../projects/projects.service';
 import { PaginationParams, PaginatedResult } from '../../shared/types/pagination';
 import { NotFoundError } from '../../shared/exceptions/NotFoundError';
-import { ValidationError } from '../../shared/exceptions/ValidationError';
 import { logger } from '../../config/logger';
 
 export class DecisionsService {

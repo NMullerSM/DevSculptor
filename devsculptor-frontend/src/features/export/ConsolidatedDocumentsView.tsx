@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useProjectStore } from '@/stores/useProjectStore';
 import { requirementsService } from '@/services/requirements.service';
 import { decisionsService } from '@/services/decisions.service';
@@ -32,6 +32,36 @@ export const ConsolidatedDocumentsView: React.FC<ConsolidatedDocumentsViewProps>
   const [searchQuery, setSearchQuery] = useState('');
   const [previewMode, setPreviewMode] = useState<PreviewMode>('executive');
   const [hasCopied, setHasCopied] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = async () => {
+    try {
+      if (!isFullscreen) {
+        if (containerRef.current) {
+          if (containerRef.current.requestFullscreen) {
+            await containerRef.current.requestFullscreen();
+          }
+        }
+      } else {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        }
+      }
+    } catch (err) {
+      console.warn('Error alternando pantalla completa en visor documental:', err);
+    }
+  };
 
   // Cargar datos sincronizados del proyecto
   useEffect(() => {
@@ -176,6 +206,23 @@ export const ConsolidatedDocumentsView: React.FC<ConsolidatedDocumentsViewProps>
     );
   };
 
+  // Contadores dinámicos por categoría
+  const categoryCounts = useMemo(() => {
+    const counts = {
+      all: ENTERPRISE_TEMPLATES.length,
+      requirements: 0,
+      architecture: 0,
+      diagrams: 0,
+      quality: 0,
+    };
+    ENTERPRISE_TEMPLATES.forEach((t) => {
+      if (t.category in counts) {
+        counts[t.category as keyof typeof counts] += 1;
+      }
+    });
+    return counts;
+  }, []);
+
   if (!activeProject) {
     return (
       <div className="flex-1 flex items-center justify-center p-8 text-center text-secondary">
@@ -185,16 +232,33 @@ export const ConsolidatedDocumentsView: React.FC<ConsolidatedDocumentsViewProps>
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden select-none">
+    <div
+      ref={containerRef}
+      className={`flex-1 flex flex-col h-full overflow-hidden select-none transition-colors ${
+        isFullscreen ? 'bg-[#080d1a] fixed inset-0 z-50' : ''
+      }`}
+    >
       {/* Barra Superior con Métricas y Filtros de Categoría */}
-      <div className="px-3 sm:px-4 py-2 border-b border-glass-subtle bg-black/15 flex flex-wrap items-center justify-between gap-2 shrink-0">
+      <div className="px-3 sm:px-4 py-2 border-b border-glass-subtle bg-black/20 flex flex-wrap items-center justify-between gap-2 shrink-0">
         <div className="flex items-center gap-2">
+          {/* Botón para colapsar/expandir el catálogo lateral */}
+          <button
+            type="button"
+            onClick={() => setIsSidebarCollapsed((prev) => !prev)}
+            className="p-1 rounded-md bg-white/5 hover:bg-white/10 text-secondary hover:text-primary transition-all border border-glass-subtle flex items-center justify-center"
+            title={isSidebarCollapsed ? 'Mostrar catálogo de plantillas' : 'Colapsar catálogo para pantalla ancha'}
+          >
+            <span className="material-symbols-outlined text-[16px]">
+              {isSidebarCollapsed ? 'right_panel_open' : 'left_panel_close'}
+            </span>
+          </button>
+
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           <span className="text-[11px] font-semibold text-primary">
             Espacio de Documentos Consolidados (OKF Enterprise)
           </span>
           <span className="text-[9.5px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-            13 PLANTILLAS FORMALES
+            {ENTERPRISE_TEMPLATES.length} PLANTILLAS FORMALES
           </span>
         </div>
 
@@ -202,11 +266,11 @@ export const ConsolidatedDocumentsView: React.FC<ConsolidatedDocumentsViewProps>
         <div className="flex items-center gap-1 overflow-x-auto py-0.5 max-w-full">
           {(
             [
-              { id: 'all', label: 'Todos (13)' },
-              { id: 'requirements', label: 'Requisitos (3)' },
-              { id: 'architecture', label: 'Arquitectura (1)' },
-              { id: 'diagrams', label: 'Diagramas UML (7)' },
-              { id: 'quality', label: 'Calidad & APIs (2)' },
+              { id: 'all', label: `Todos (${categoryCounts.all})` },
+              { id: 'requirements', label: `Requisitos (${categoryCounts.requirements})` },
+              { id: 'architecture', label: `Arquitectura (${categoryCounts.architecture})` },
+              { id: 'diagrams', label: `Diagramas UML (${categoryCounts.diagrams})` },
+              { id: 'quality', label: `Calidad & APIs (${categoryCounts.quality})` },
             ] as const
           ).map((cat) => (
             <button
@@ -227,32 +291,41 @@ export const ConsolidatedDocumentsView: React.FC<ConsolidatedDocumentsViewProps>
 
       {/* Cuerpo Principal Dividido: Lista Lateral de Plantillas + Visor Activo */}
       <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
-        {/* Panel Lateral: Catálogo de Plantillas */}
-        <div className="w-full md:w-80 lg:w-96 border-b md:border-b-0 md:border-r border-glass-subtle flex flex-col shrink-0 bg-black/10">
-          {/* Barra de búsqueda */}
-          <div className="p-2.5 border-b border-glass-subtle">
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-2 top-2 text-[15px] text-muted pointer-events-none">
-                search
-              </span>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar por estándar, título, tag..."
-                className="vision-input !pl-7 !py-1 !text-xs w-full"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-1.5 text-muted hover:text-primary text-xs"
-                >
-                  ✕
-                </button>
-              )}
+        {/* Panel Lateral: Catálogo de Plantillas (Colapsable) */}
+        {!isSidebarCollapsed && (
+          <div className="w-full md:w-80 lg:w-96 border-b md:border-b-0 md:border-r border-glass-subtle flex flex-col shrink-0 bg-black/15 transition-all animate-fadeIn">
+            {/* Barra de búsqueda */}
+            <div className="p-2.5 border-b border-glass-subtle flex items-center justify-between gap-2">
+              <div className="relative flex-1">
+                <span className="material-symbols-outlined absolute left-2 top-2 text-[15px] text-muted pointer-events-none">
+                  search
+                </span>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Buscar por estándar, título, tag..."
+                  className="vision-input !pl-7 !py-1 !text-xs w-full"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2 top-1.5 text-muted hover:text-primary text-xs"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSidebarCollapsed(true)}
+                className="hidden md:flex p-1 rounded hover:bg-white/10 text-muted hover:text-primary transition-colors"
+                title="Colapsar panel"
+              >
+                <span className="material-symbols-outlined text-[16px]">chevron_left</span>
+              </button>
             </div>
-          </div>
 
           {/* Lista scrollable de plantillas */}
           <div className="flex-1 overflow-y-auto p-2 space-y-1.5 custom-scrollbar">
@@ -317,37 +390,41 @@ export const ConsolidatedDocumentsView: React.FC<ConsolidatedDocumentsViewProps>
             )}
           </div>
         </div>
+      )}
 
-        {/* Panel Central: Visor del Documento Consolidado */}
+      {/* Panel Central: Visor del Documento Consolidado */}
         <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-black/5">
-          {/* Cabecera del Documento Activo */}
-          <div className="p-3 border-b border-glass-subtle bg-white/[0.01] flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 shrink-0">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-xs sm:text-sm font-bold text-primary truncate">
-                  {selectedTemplate.title}
-                </h3>
-                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/25 shrink-0">
-                  {selectedTemplate.standard}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted font-mono truncate">
-                <span>Ruta: {selectedTemplate.canonicalPath}</span>
-                <span>•</span>
-                <span className="text-emerald-400">Vinculado a Bóveda OKF</span>
+          {/* Cabecera del Documento Activo (Diseño de 2 filas para legibilidad total) */}
+          <div className="p-3 border-b border-glass-subtle bg-white/[0.01] flex flex-col gap-2 shrink-0">
+            {/* Fila 1: Título completo y metadatos sin colisión */}
+            <div className="flex items-start justify-between gap-2 min-w-0">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-xs sm:text-sm font-bold text-primary">
+                    {selectedTemplate.title}
+                  </h3>
+                  <span className="text-[9.5px] font-mono px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 shrink-0 font-semibold">
+                    {selectedTemplate.standard}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-0.5 text-[10.5px] text-muted font-mono truncate">
+                  <span>Ruta: {selectedTemplate.canonicalPath}</span>
+                  <span>•</span>
+                  <span className="text-emerald-400">Vinculado a Bóveda OKF</span>
+                </div>
               </div>
             </div>
 
-            {/* Acciones de Exportación & Impresión */}
-            <div className="flex items-center gap-1.5 flex-wrap shrink-0">
+            {/* Fila 2: Selector de Modo a la izquierda y Acciones de Exportación a la derecha */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-white/[0.04]">
               {/* Selector de Modo de Vista */}
-              <div className="flex items-center bg-black/40 p-0.5 rounded-lg border border-glass-subtle mr-1">
+              <div className="flex items-center bg-black/40 p-0.5 rounded-lg border border-glass-subtle">
                 <button
                   type="button"
                   onClick={() => setPreviewMode('executive')}
-                  className={`px-2 py-1 text-[10px] rounded font-medium transition-all ${
+                  className={`px-2.5 py-1 text-[10.5px] rounded-md font-medium transition-all ${
                     previewMode === 'executive'
-                      ? 'bg-indigo-600 text-white font-semibold shadow'
+                      ? 'bg-indigo-600 text-white font-semibold shadow-sm'
                       : 'text-secondary hover:text-primary'
                   }`}
                   title="Vista ejecutiva renderizada con estilos de alta fidelidad, código y diagramas"
@@ -359,9 +436,9 @@ export const ConsolidatedDocumentsView: React.FC<ConsolidatedDocumentsViewProps>
                   <button
                     type="button"
                     onClick={() => setPreviewMode('diagram')}
-                    className={`px-2 py-1 text-[10px] rounded font-medium transition-all ${
+                    className={`px-2.5 py-1 text-[10.5px] rounded-md font-medium transition-all ${
                       previewMode === 'diagram'
-                        ? 'bg-indigo-600 text-white font-semibold shadow'
+                        ? 'bg-indigo-600 text-white font-semibold shadow-sm'
                         : 'text-secondary hover:text-primary'
                     }`}
                     title="Lienzo interactivo React con zoom y renderizado vectorial de arquitectura"
@@ -373,9 +450,9 @@ export const ConsolidatedDocumentsView: React.FC<ConsolidatedDocumentsViewProps>
                 <button
                   type="button"
                   onClick={() => setPreviewMode('source')}
-                  className={`px-2 py-1 text-[10px] rounded font-medium transition-all ${
+                  className={`px-2.5 py-1 text-[10.5px] rounded-md font-medium transition-all ${
                     previewMode === 'source'
-                      ? 'bg-indigo-600 text-white font-semibold shadow'
+                      ? 'bg-indigo-600 text-white font-semibold shadow-sm'
                       : 'text-secondary hover:text-primary'
                   }`}
                   title="Markdown con YAML Frontmatter puro para IA o Git"
@@ -383,6 +460,9 @@ export const ConsolidatedDocumentsView: React.FC<ConsolidatedDocumentsViewProps>
                   YAML & Markdown
                 </button>
               </div>
+
+              {/* Acciones de Exportación & Impresión */}
+              <div className="flex items-center gap-1.5 flex-wrap">
 
               {/* Botón Copiar */}
               <VisionButton
@@ -445,11 +525,24 @@ export const ConsolidatedDocumentsView: React.FC<ConsolidatedDocumentsViewProps>
               >
                 PDF / Imprimir
               </VisionButton>
+
+              {/* Alternar Pantalla Completa Inmersiva */}
+              <VisionButton
+                variant="secondary"
+                size="sm"
+                icon={isFullscreen ? 'fullscreen_exit' : 'fullscreen'}
+                onClick={toggleFullscreen}
+                title={isFullscreen ? 'Salir de pantalla completa' : 'Expandir a pantalla completa inmersiva'}
+                className="!text-xs text-indigo-300 hover:text-white border-indigo-500/30"
+              >
+                {isFullscreen ? 'Salir' : 'Pantalla Completa'}
+              </VisionButton>
             </div>
           </div>
+        </div>
 
-          {/* Área de Visualización */}
-          <div className="flex-1 min-h-0 relative overflow-hidden">
+        {/* Área de Visualización */}
+        <div className="flex-1 min-h-0 relative overflow-hidden">
             {previewMode === 'diagram' && selectedTemplate.category === 'diagrams' ? (
               <div className="w-full h-full overflow-y-auto p-4 custom-scrollbar bg-[#070b16]">
                 <div className="max-w-5xl mx-auto">

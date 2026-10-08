@@ -14,9 +14,10 @@ export class AppError extends Error {
     message: string,
     statusCode: number = 500,
     errorCode: string = 'INTERNAL_ERROR',
-    details: ErrorDetail[] = []
+    details: ErrorDetail[] = [],
+    options?: { cause?: unknown }
   ) {
-    super(message);
+    super(message, options);
     this.statusCode = statusCode;
     this.errorCode = errorCode;
     this.isOperational = true;

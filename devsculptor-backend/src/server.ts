@@ -57,6 +57,15 @@ async function bootstrap() {
 
   process.on('SIGTERM', () => shutdown('SIGTERM'));
   process.on('SIGINT', () => shutdown('SIGINT'));
+
+  process.on('uncaughtException', (err: Error) => {
+    logger.fatal({ err }, 'Excepción no controlada (uncaughtException). Iniciando apagado de emergencia.');
+    shutdown('uncaughtException');
+  });
+
+  process.on('unhandledRejection', (reason: unknown) => {
+    logger.fatal({ reason }, 'Promesa rechazada no manejada (unhandledRejection).');
+  });
 }
 
 bootstrap().catch((err) => {

@@ -4,6 +4,7 @@ import { OpenAiProvider } from './openai.provider';
 import { MockAiProvider } from './mock.provider';
 import { env } from '../../../config/env';
 import { logger } from '../../../config/logger';
+import { ExternalServiceError } from '../../../shared/exceptions';
 
 export class AiProviderFactory {
   private static instance: IAiProvider | null = null;
@@ -85,8 +86,14 @@ export class AiProviderFactory {
           return this.instance;
         }
 
+        if (env.NODE_ENV === 'production') {
+          throw new ExternalServiceError(
+            'El proveedor de IA Google Gemini no cuenta con GEMINI_API_KEY configurada en producción.'
+          );
+        }
+
         logger.warn(
-          'GEMINI_API_KEY no detectada en .env. Activando MockAiProvider (simulador heurístico de alta fidelidad para desarrollo seguro).'
+          'GEMINI_API_KEY no detectada en .env. Activando MockAiProvider (simulador heurístico de desarrollo).'
         );
         this.instance = new MockAiProvider();
         return this.instance;
@@ -99,7 +106,13 @@ export class AiProviderFactory {
           return this.instance;
         }
 
-        logger.warn('OPENAI_API_KEY no detectada. Recurriendo a MockAiProvider.');
+        if (env.NODE_ENV === 'production') {
+          throw new ExternalServiceError(
+            'El proveedor de IA OpenAI no cuenta con OPENAI_API_KEY configurada en producción.'
+          );
+        }
+
+        logger.warn('OPENAI_API_KEY no detectada. Recurriendo a MockAiProvider en desarrollo.');
         this.instance = new MockAiProvider();
         return this.instance;
       }
@@ -116,13 +129,24 @@ export class AiProviderFactory {
           return this.instance;
         }
 
-        logger.warn('DEEPSEEK_API_KEY no detectada. Recurriendo a MockAiProvider.');
+        if (env.NODE_ENV === 'production') {
+          throw new ExternalServiceError(
+            'El proveedor de IA DeepSeek no cuenta con DEEPSEEK_API_KEY configurada en producción.'
+          );
+        }
+
+        logger.warn('DEEPSEEK_API_KEY no detectada. Recurriendo a MockAiProvider en desarrollo.');
         this.instance = new MockAiProvider();
         return this.instance;
       }
 
       case 'mock':
       default: {
+        if (env.NODE_ENV === 'production' && providerType !== 'mock') {
+          throw new ExternalServiceError(
+            'Proveedor de IA no válido o no configurado en entorno de producción.'
+          );
+        }
         logger.info('Activando MockAiProvider por configuración explícita');
         this.instance = new MockAiProvider();
         return this.instance;

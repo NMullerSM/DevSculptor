@@ -178,7 +178,6 @@ export class OkfRepository extends BaseRepository<OkfDocumentRecord> {
     if (filters?.search) {
       whereClauses.push(`(title ILIKE $${paramIndex} OR canonical_path ILIKE $${paramIndex})`);
       values.push(`%${filters.search}%`);
-      paramIndex++;
     }
 
     const query = `

@@ -1,12 +1,15 @@
-import express, { Express, Request, Response } from 'express';
+import express, { Express, Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import { env } from './config/env';
+import { getPool } from './config/database';
 import { requestId } from './middlewares/requestId';
 import { requestLogger } from './middlewares/requestLogger';
 import { rateLimiter } from './middlewares/rateLimiter';
 import { notFoundHandler } from './middlewares/notFoundHandler';
 import { errorHandler } from './middlewares/errorHandler';
+import { sendSuccess } from './shared/responses/apiResponse';
+import { ForbiddenError } from './shared/exceptions';
 
 // Importación de rutas de módulos
 import authRoutes from './modules/auth/auth.routes';
@@ -21,6 +24,9 @@ import adminRoutes from './modules/admin/admin.routes';
 
 export function createApp(): Express {
   const app = express();
+
+  // 0. Configuración de reverse proxy confiable para lectura precisa de IP y headers de rate limiting
+  app.set('trust proxy', env.TRUST_PROXY_HOPS);
 
   // 1. Headers de seguridad con Helmet
   app.use(helmet());
@@ -40,7 +46,7 @@ export function createApp(): Express {
         ) {
           callback(null, true);
         } else {
-          callback(new Error('Bloqueado por política CORS'));
+          callback(new ForbiddenError('Bloqueado por política CORS'));
         }
       },
       credentials: true,
@@ -61,26 +67,35 @@ export function createApp(): Express {
 
   // 7. Ruta Raíz y Health Check (públicas)
   app.get('/', (_req: Request, res: Response) => {
-    res.status(200).json({
-      success: true,
-      data: {
-        name: 'DevSculptor Core API',
-        version: '1.0.0',
-        status: 'online',
-        healthCheck: '/api/v1/health',
-      },
+    sendSuccess(res, {
+      name: 'DevSculptor Core API',
+      version: '1.0.0',
+      status: 'online',
+      healthCheck: '/api/v1/health',
+      readyCheck: '/api/v1/health/ready',
     });
   });
 
   app.get('/api/v1/health', (_req: Request, res: Response) => {
-    res.status(200).json({
-      success: true,
-      data: {
-        status: 'ok',
-        environment: env.NODE_ENV,
-        timestamp: new Date().toISOString(),
-      },
+    sendSuccess(res, {
+      status: 'ok',
+      environment: env.NODE_ENV,
+      timestamp: new Date().toISOString(),
     });
+  });
+
+  app.get('/api/v1/health/ready', async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      const pool = getPool();
+      await pool.query('SELECT 1');
+      sendSuccess(res, {
+        status: 'ready',
+        database: 'connected',
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err) {
+      next(err);
+    }
   });
 
   // 8. Rutas públicas de Autenticación

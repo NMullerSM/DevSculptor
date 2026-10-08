@@ -1,8 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
 import { AiService } from './ai.service';
-import { ChatRequestDto, SuggestRequirementsRequestDto } from './ai.dto';
+import {
+  ChatRequestDto,
+  SuggestRequirementsRequestDto,
+  userAiHeadersSchema,
+} from './ai.dto';
 import { sendSuccess } from '../../shared/responses/apiResponse';
 import { UnauthorizedError } from '../../shared/exceptions/UnauthorizedError';
+import { ValidationError } from '../../shared/exceptions/ValidationError';
+import { assertSafeOutboundUrl } from '../../shared/utils/safeUrl';
+import { env } from '../../config/env';
 
 export class AiController {
   constructor(private readonly aiService: AiService = new AiService()) {}
@@ -14,21 +21,41 @@ export class AiController {
     return req.user.id;
   }
 
-  private getOverride(req: Request) {
-    const apiKey = (req.headers['x-user-ai-key'] as string) || undefined;
-    const provider = (req.headers['x-user-ai-provider'] as string) || undefined;
-    const model = (req.headers['x-user-ai-model'] as string) || undefined;
-    const baseUrl = (req.headers['x-user-ai-endpoint'] as string) || undefined;
+  private async getOverride(req: Request) {
+    const rawKey = req.headers['x-user-ai-key'] as string | undefined;
+    if (!rawKey || rawKey.trim().length === 0) return undefined;
 
-    if (!apiKey || apiKey.trim().length === 0) return undefined;
-    return { apiKey: apiKey.trim(), provider, model, baseUrl };
+    const parsed = userAiHeadersSchema.parse({
+      apiKey: rawKey.trim(),
+      provider: req.headers['x-user-ai-provider'],
+      model: req.headers['x-user-ai-model'],
+      endpoint: req.headers['x-user-ai-endpoint'],
+    });
+
+    let safeEndpoint: string | undefined = undefined;
+    if (parsed.endpoint) {
+      if (env.NODE_ENV === 'production' && !env.ALLOW_CUSTOM_AI_ENDPOINTS) {
+        throw new ValidationError(
+          'Endpoints personalizados de IA deshabilitados por políticas de seguridad.'
+        );
+      }
+      const safeUrl = await assertSafeOutboundUrl(parsed.endpoint);
+      safeEndpoint = safeUrl.toString().replace(/\/+$/, '');
+    }
+
+    return {
+      apiKey: parsed.apiKey,
+      provider: parsed.provider,
+      model: parsed.model,
+      baseUrl: safeEndpoint,
+    };
   }
 
   chat = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const userId = this.getUserId(req);
       const { projectId } = req.params;
-      const override = this.getOverride(req);
+      const override = await this.getOverride(req);
       const result = await this.aiService.chat(userId, projectId, req.body as ChatRequestDto, override);
       sendSuccess(res, result, 200);
     } catch (error) {
@@ -40,7 +67,7 @@ export class AiController {
     try {
       const userId = this.getUserId(req);
       const { projectId } = req.params;
-      const override = this.getOverride(req);
+      const override = await this.getOverride(req);
       const result = await this.aiService.analyzeSchema(userId, projectId, override);
       sendSuccess(res, result, 200);
     } catch (error) {
@@ -53,7 +80,7 @@ export class AiController {
       const userId = this.getUserId(req);
       const { projectId } = req.params;
       const { prompt } = req.body as SuggestRequirementsRequestDto;
-      const override = this.getOverride(req);
+      const override = await this.getOverride(req);
       const result = await this.aiService.suggestRequirements(userId, projectId, prompt, override);
       sendSuccess(res, result, 200);
     } catch (error) {
@@ -64,7 +91,7 @@ export class AiController {
   ping = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       this.getUserId(req);
-      const override = this.getOverride(req);
+      const override = await this.getOverride(req);
       const result = await this.aiService.ping(override);
       sendSuccess(res, result, 200);
     } catch (error) {

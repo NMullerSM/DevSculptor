@@ -14,6 +14,7 @@ interface ThemeState {
 
   toggleTheme: () => void;
   setTheme: (theme: 'dark' | 'light') => void;
+  setWallpaperUrl: (url: string) => void;
   nextWallpaper: () => void;
   initTheme: () => void;
 }
@@ -25,8 +26,10 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
 
   initTheme: () => {
     const savedTheme = (localStorage.getItem('ds_theme') as 'dark' | 'light') || 'dark';
+    const savedWallpaperUrl = localStorage.getItem('ds_wallpaper_url');
     const savedWallpaperIdx = parseInt(localStorage.getItem('ds_wallpaper_idx') || '0', 10);
     const validIdx = isNaN(savedWallpaperIdx) ? 0 : savedWallpaperIdx % WALLPAPERS.length;
+    const finalWallpaperUrl = savedWallpaperUrl || WALLPAPERS[validIdx].url;
 
     const html = document.documentElement;
     if (savedTheme === 'light') {
@@ -40,7 +43,7 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
     set({
       theme: savedTheme,
       wallpaperIndex: validIdx,
-      currentWallpaperUrl: WALLPAPERS[validIdx].url,
+      currentWallpaperUrl: finalWallpaperUrl,
     });
   },
 
@@ -57,6 +60,11 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
     set({ theme: newTheme });
   },
 
+  setWallpaperUrl: (url: string) => {
+    localStorage.setItem('ds_wallpaper_url', url);
+    set({ currentWallpaperUrl: url });
+  },
+
   toggleTheme: () => {
     const nextTheme = get().theme === 'dark' ? 'light' : 'dark';
     get().setTheme(nextTheme);
@@ -64,10 +72,12 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
 
   nextWallpaper: () => {
     const nextIdx = (get().wallpaperIndex + 1) % WALLPAPERS.length;
+    const nextUrl = WALLPAPERS[nextIdx].url;
     localStorage.setItem('ds_wallpaper_idx', nextIdx.toString());
+    localStorage.setItem('ds_wallpaper_url', nextUrl);
     set({
       wallpaperIndex: nextIdx,
-      currentWallpaperUrl: WALLPAPERS[nextIdx].url,
+      currentWallpaperUrl: nextUrl,
     });
   },
 }));

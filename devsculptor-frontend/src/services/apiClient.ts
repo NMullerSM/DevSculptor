@@ -34,7 +34,15 @@ apiClient.interceptors.request.use(
     const activeModel = localStorage.getItem('devsculptor_active_ai_model');
     const activeEndpoint = localStorage.getItem('devsculptor_active_ai_endpoint');
 
-    if (activeKey && config.headers && config.url && config.url.includes('/ai')) {
+    const isAiEndpoint = Boolean(
+      config.url && /^\/?projects\/[0-9a-f-]{36}\/ai(\/|$)/i.test(config.url)
+    );
+
+    if (isAiEndpoint) {
+      config.timeout = 60000;
+    }
+
+    if (activeKey && config.headers && isAiEndpoint) {
       config.headers['X-User-Ai-Key'] = activeKey;
       if (activeProvider) config.headers['X-User-Ai-Provider'] = activeProvider;
       if (activeModel) config.headers['X-User-Ai-Model'] = activeModel;

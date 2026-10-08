@@ -7,11 +7,22 @@ import {
   ResetPasswordDto,
   MfaEnableDto,
   MfaVerifyDto,
+  DisableMfaDto,
+  UpdateProfileDto,
+  ChangePasswordDto,
 } from './auth.dto';
 import { sendCreated, sendSuccess } from '../../shared/responses/apiResponse';
+import { UnauthorizedError } from '../../shared/exceptions/UnauthorizedError';
 
 export class AuthController {
   constructor(private readonly authService: AuthService = new AuthService()) {}
+
+  private getAuthUserId(req: Request): string {
+    if (!req.user?.id) {
+      throw new UnauthorizedError('Usuario no autenticado.');
+    }
+    return req.user.id;
+  }
 
   register = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -51,11 +62,7 @@ export class AuthController {
 
   setupMfa = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
-        res.status(401).json({ success: false, message: 'Usuario no autenticado' });
-        return;
-      }
+      const userId = this.getAuthUserId(req);
       const result = await this.authService.setupMfa(userId);
       sendSuccess(res, result, 200);
     } catch (error) {
@@ -65,11 +72,7 @@ export class AuthController {
 
   enableMfa = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
-        res.status(401).json({ success: false, message: 'Usuario no autenticado' });
-        return;
-      }
+      const userId = this.getAuthUserId(req);
       const result = await this.authService.enableMfa(userId, req.body as MfaEnableDto);
       sendSuccess(res, result, 200);
     } catch (error) {
@@ -88,13 +91,8 @@ export class AuthController {
 
   disableMfa = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
-        res.status(401).json({ success: false, message: 'Usuario no autenticado' });
-        return;
-      }
-      const code = req.body?.code;
-      const result = await this.authService.disableMfa(userId, code);
+      const userId = this.getAuthUserId(req);
+      const result = await this.authService.disableMfa(userId, req.body as DisableMfaDto);
       sendSuccess(res, result, 200);
     } catch (error) {
       next(error);
@@ -103,13 +101,9 @@ export class AuthController {
 
   updateProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
-        res.status(401).json({ success: false, message: 'Usuario no autenticado' });
-        return;
-      }
-      const fullName = req.body?.full_name;
-      const result = await this.authService.updateProfile(userId, fullName);
+      const userId = this.getAuthUserId(req);
+      const dto = req.body as UpdateProfileDto;
+      const result = await this.authService.updateProfile(userId, dto.full_name);
       sendSuccess(res, result, 200);
     } catch (error) {
       next(error);
@@ -118,13 +112,8 @@ export class AuthController {
 
   changePassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
-        res.status(401).json({ success: false, message: 'Usuario no autenticado' });
-        return;
-      }
-      const { currentPassword, newPassword } = req.body;
-      const result = await this.authService.changePassword(userId, currentPassword, newPassword);
+      const userId = this.getAuthUserId(req);
+      const result = await this.authService.changePassword(userId, req.body as ChangePasswordDto);
       sendSuccess(res, result, 200);
     } catch (error) {
       next(error);

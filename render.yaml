@@ -31,7 +31,15 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRES_IN
-        value: 24h
+        value: 8h
+      - key: MFA_ENCRYPTION_KEY
+        generateValue: true
+      - key: FRONTEND_URL
+        value: https://temporary-zippy-nitrogen-3e2182f.vercel.app
+      - key: TRUST_PROXY_HOPS
+        value: 1
+      - key: MAIL_PROVIDER
+        value: console
       - key: CORS_ORIGINS
         value: https://temporary-zippy-nitrogen-3e2182f.vercel.app,http://localhost:5173
       - key: AI_PROVIDER

@@ -13,7 +13,7 @@ export const CreateVaultFileDialog: React.FC<CreateVaultFileDialogProps> = ({
 }) => {
   const { createVaultFile, isSaving } = useAdminStore();
 
-  const [category, setCategory] = useState<'templates' | 'skills' | 'rules' | 'archetypes'>('templates');
+  const [category, setCategory] = useState<'templates' | 'skills' | 'rules' | 'archetypes' | 'sources'>('templates');
   const [title, setTitle] = useState('');
   const [filename, setFilename] = useState('');
   const [description, setDescription] = useState('');
@@ -82,13 +82,14 @@ export const CreateVaultFileDialog: React.FC<CreateVaultFileDialogProps> = ({
             <label className="text-[11px] text-muted font-mono font-medium">Categoría Canónica</label>
             <select
               value={category}
-              onChange={(e) => setCategory(e.target.value as 'templates' | 'skills' | 'rules' | 'archetypes')}
+              onChange={(e) => setCategory(e.target.value as 'templates' | 'skills' | 'rules' | 'archetypes' | 'sources')}
               className="vision-btn !justify-start !text-left bg-black/20 dark:bg-white/[0.05] border border-glass-subtle py-1.5 px-2.5 text-xs text-primary rounded-[6px] outline-none"
             >
               <option value="templates" className="bg-[#12141a] text-white">templates (Plantillas de Requerimientos, ADR, DB)</option>
               <option value="skills" className="bg-[#12141a] text-white">skills (Habilidades de IA para Agentes)</option>
               <option value="rules" className="bg-[#12141a] text-white">rules (Reglas de Desarrollo: Cursor, Claude, etc.)</option>
               <option value="archetypes" className="bg-[#12141a] text-white">archetypes (Arquetipos Arquitecturales)</option>
+              <option value="sources" className="bg-[#12141a] text-white">sources (Fuentes Técnicas: Arquitectura, PDFs, MD)</option>
             </select>
           </div>
 

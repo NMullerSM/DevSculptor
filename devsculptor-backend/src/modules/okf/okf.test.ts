@@ -1,5 +1,4 @@
-import { describe, it } from 'node:test';
-import assert from 'node:assert/strict';
+import { describe, it, expect } from 'vitest';
 import crypto from 'crypto';
 import {
   syncVaultSchema,
@@ -17,8 +16,8 @@ describe('OKF Module & Document Converter (Sprint 4 DoD)', () => {
       const hash1 = crypto.createHash('sha256').update(content.trim()).digest('hex');
       const hash2 = crypto.createHash('sha256').update(content.trim()).digest('hex');
 
-      assert.equal(hash1, hash2);
-      assert.equal(hash1.length, 64);
+      expect(hash1).toBe(hash2);
+      expect(hash1.length).toBe(64);
     });
 
     it('debe detectar drift si el contenido cambia aunque sea un solo caracter', () => {
@@ -28,7 +27,7 @@ describe('OKF Module & Document Converter (Sprint 4 DoD)', () => {
       const hashOriginal = crypto.createHash('sha256').update(original.trim()).digest('hex');
       const hashModified = crypto.createHash('sha256').update(modified.trim()).digest('hex');
 
-      assert.notEqual(hashOriginal, hashModified);
+      expect(hashOriginal).not.toBe(hashModified);
     });
   });
 
@@ -46,15 +45,15 @@ describe('OKF Module & Document Converter (Sprint 4 DoD)', () => {
       ];
 
       validTypes.forEach((t) => {
-        assert.equal(okfDocumentTypeSchema.safeParse(t).success, true);
+        expect(okfDocumentTypeSchema.safeParse(t).success).toBe(true);
       });
     });
 
     it('debe soportar los estados de vigencia FRESH, STALE y DRIFT_DETECTED', () => {
-      assert.equal(freshnessStatusSchema.safeParse('FRESH').success, true);
-      assert.equal(freshnessStatusSchema.safeParse('STALE').success, true);
-      assert.equal(freshnessStatusSchema.safeParse('DRIFT_DETECTED').success, true);
-      assert.equal(freshnessStatusSchema.safeParse('UNKNOWN').success, false);
+      expect(freshnessStatusSchema.safeParse('FRESH').success).toBe(true);
+      expect(freshnessStatusSchema.safeParse('STALE').success).toBe(true);
+      expect(freshnessStatusSchema.safeParse('DRIFT_DETECTED').success).toBe(true);
+      expect(freshnessStatusSchema.safeParse('UNKNOWN').success).toBe(false);
     });
   });
 
@@ -76,13 +75,13 @@ describe('OKF Module & Document Converter (Sprint 4 DoD)', () => {
       };
 
       const parsed = syncVaultSchema.safeParse(payload);
-      assert.equal(parsed.success, true);
+      expect(parsed.success).toBe(true);
     });
 
     it('debe rechazar una sincronización con lista vacía de documentos', () => {
       const emptyPayload = { documents: [] };
       const parsed = syncVaultSchema.safeParse(emptyPayload);
-      assert.equal(parsed.success, false);
+      expect(parsed.success).toBe(false);
     });
 
     it('debe validar un payload para conversión mecánica de papers', () => {
@@ -95,7 +94,7 @@ describe('OKF Module & Document Converter (Sprint 4 DoD)', () => {
       };
 
       const parsed = convertDocumentSchema.safeParse(payload);
-      assert.equal(parsed.success, true);
+      expect(parsed.success).toBe(true);
     });
 
     it('debe validar un payload para conversión asistida por IA', () => {
@@ -107,7 +106,7 @@ describe('OKF Module & Document Converter (Sprint 4 DoD)', () => {
       };
 
       const parsed = aiConvertDocumentSchema.safeParse(payload);
-      assert.equal(parsed.success, true);
+      expect(parsed.success).toBe(true);
     });
 
     it('debe validar la ratificación de documento por el arquitecto', () => {
@@ -118,7 +117,7 @@ describe('OKF Module & Document Converter (Sprint 4 DoD)', () => {
       };
 
       const parsed = verifyDocumentSchema.safeParse(payload);
-      assert.equal(parsed.success, true);
+      expect(parsed.success).toBe(true);
     });
   });
 });

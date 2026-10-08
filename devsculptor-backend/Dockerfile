@@ -57,5 +57,9 @@ USER node
 # Puerto expuesto por defecto (Render y Railway mapean PORT automáticamente)
 EXPOSE 3000
 
-# Comando de inicio del servidor
-CMD ["node", "dist/server.js"]
+# Verificación de salud periódica mediante probe nativo Node.js
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 3000) + '/api/v1/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"
+
+# Comando de inicio del servidor con ejecución segura de migraciones pendientes
+CMD ["sh", "-c", "node dist/database/migrate.js && node dist/server.js"]

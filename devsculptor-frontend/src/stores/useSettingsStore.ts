@@ -211,6 +211,7 @@ interface SettingsState {
   currentWallpaperUrl: string;
   customWallpaperUrl: string;
   glassBlur: number;
+  windowOpacity: number;
 
   // Gobernanza
   reqCodePrefix: 'RF' | 'REQ' | 'US';
@@ -228,6 +229,7 @@ interface SettingsState {
   setWallpaper: (url: string) => void;
   setCustomWallpaper: (url: string) => void;
   setGlassBlur: (blur: number) => void;
+  setWindowOpacity: (opacity: number) => void;
   setGovernancePrefix: (prefix: 'RF' | 'REQ' | 'US') => void;
   setStrict3FN: (strict: boolean) => void;
 
@@ -276,6 +278,15 @@ const syncByokToLocalStorage = (
 
 const persisted = loadPersistedSettings();
 
+const applyVisualEffectsToDom = (blur: number, opacity: number) => {
+  if (typeof document !== 'undefined') {
+    document.documentElement.style.setProperty('--glass-blur-val', `${blur}px`);
+    document.documentElement.style.setProperty('--window-opacity-val', `${opacity / 100}`);
+  }
+};
+
+applyVisualEffectsToDom(persisted?.glassBlur || 20, persisted?.windowOpacity || 85);
+
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   provider: persisted?.provider || 'gemini',
   apiKeys: persisted?.apiKeys || {},
@@ -286,6 +297,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   currentWallpaperUrl: persisted?.currentWallpaperUrl || WALLPAPER_PRESETS[0].url,
   customWallpaperUrl: persisted?.customWallpaperUrl || '',
   glassBlur: persisted?.glassBlur || 20,
+  windowOpacity: persisted?.windowOpacity || 85,
 
   reqCodePrefix: persisted?.reqCodePrefix || 'RF',
   strict3FN: persisted?.strict3FN ?? true,
@@ -361,7 +373,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     set((state) => {
       const next = { ...state, currentWallpaperUrl: url };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      useThemeStore.setState({ currentWallpaperUrl: url });
+      useThemeStore.getState().setWallpaperUrl(url);
       return next;
     });
   },
@@ -370,7 +382,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     set((state) => {
       const next = { ...state, customWallpaperUrl: url, currentWallpaperUrl: url };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      useThemeStore.setState({ currentWallpaperUrl: url });
+      useThemeStore.getState().setWallpaperUrl(url);
       return next;
     });
   },
@@ -379,6 +391,16 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     set((state) => {
       const next = { ...state, glassBlur: blur };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      applyVisualEffectsToDom(blur, state.windowOpacity);
+      return next;
+    });
+  },
+
+  setWindowOpacity: (opacity) => {
+    set((state) => {
+      const next = { ...state, windowOpacity: opacity };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      applyVisualEffectsToDom(state.glassBlur, opacity);
       return next;
     });
   },

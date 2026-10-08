@@ -15,6 +15,7 @@ router.get('/stats', controller.getStats);
 // 2. Gestión de Usuarios y Roles
 router.get('/users', controller.getUsers);
 router.patch('/users/:id/role', controller.updateUserRole);
+router.patch('/users/:id/status', controller.updateUserStatus);
 
 // 3. Gestión y Editor In-Situ de la Bóveda Global (_global/)
 router.get('/vault/global', controller.getGlobalVaultFiles);
@@ -23,7 +24,8 @@ router.put('/vault/file', controller.saveVaultFile);
 router.post('/vault/file', controller.createVaultFile);
 router.delete('/vault/file', controller.deleteVaultFile);
 
-// 4. Registro Transversal de Auditoría
+// 4. Registro Transversal de Auditoría y Eventos de Seguridad (SEC-10)
 router.get('/audit-logs', controller.getAuditLogs);
+router.get('/security-events', controller.getSecurityEvents);
 
 export default router;

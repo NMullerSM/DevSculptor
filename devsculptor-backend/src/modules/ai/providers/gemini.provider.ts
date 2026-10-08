@@ -7,8 +7,9 @@ import {
 import { buildSystemInstruction, parseDevSculptorActions } from '../ai.prompts';
 import { MockAiProvider } from './mock.provider';
 import { logger } from '../../../config/logger';
+import { env } from '../../../config/env';
 
-async function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 30000): Promise<T> {
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number = env.AI_TIMEOUT_MS): Promise<T> {
   let timeoutHandle: NodeJS.Timeout;
   const timeoutPromise = new Promise<never>((_, reject) => {
     timeoutHandle = setTimeout(() => {
@@ -55,7 +56,7 @@ export class GeminiProvider implements IAiProvider {
             temperature: options?.temperature ?? 0.4,
           },
         }),
-        30000
+        env.AI_TIMEOUT_MS
       );
 
       const rawText = response.text || 'Sin respuesta del modelo.';
@@ -108,7 +109,7 @@ Entrega un resumen ejecutivo de recomendaciones y, si detectas tablas faltantes 
             temperature: 0.2,
           },
         }),
-        30000
+        env.AI_TIMEOUT_MS
       );
 
       const rawText = response.text || 'Auditoría completada sin observaciones.';
@@ -159,7 +160,7 @@ Debes estructurarlos en el bloque json:devsculptor-actions con campos: code, tit
             temperature: 0.3,
           },
         }),
-        30000
+        env.AI_TIMEOUT_MS
       );
 
       const rawText = response.text || '';

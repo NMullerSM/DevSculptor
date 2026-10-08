@@ -116,7 +116,7 @@ export function convertMarkdownToHtml(markdown: string): string {
       <span class="render-badge">Renderizado Visual</span>
     </div>
     <div class="diagram-render-container">
-      <div class="mermaid">${rawCode}</div>
+      <div class="mermaid">${escaped}</div>
     </div>
   </div>
 </div>
@@ -267,6 +267,7 @@ export function buildUniversalHtmlDocument(params: {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob:;">
   <title>${title} — DevSculptor</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -985,7 +986,7 @@ export function buildUniversalHtmlDocument(params: {
   </div>
 
   <!-- Mermaid Architecture Diagram Engine -->
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js" crossorigin="anonymous"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       if (typeof mermaid !== 'undefined') {
@@ -993,7 +994,7 @@ export function buildUniversalHtmlDocument(params: {
           mermaid.initialize({
             startOnLoad: true,
             theme: 'dark',
-            securityLevel: 'loose',
+            securityLevel: 'strict',
             fontFamily: 'JetBrains Mono, Inter, ui-sans-serif, system-ui',
             themeVariables: {
               darkMode: true,
@@ -1032,6 +1033,9 @@ export function buildUniversalHtmlDocument(params: {
  * Dispara la descarga directa de un archivo en el navegador del cliente.
  */
 export function triggerFileDownload(content: string, filename: string, mimeType: string = 'text/html;charset=utf-8'): void {
+  if (!content || content.trim().length === 0) {
+    console.warn(`[triggerFileDownload] Intento de descarga de archivo vacío: ${filename}`);
+  }
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -1040,7 +1044,9 @@ export function triggerFileDownload(content: string, filename: string, mimeType:
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 15000);
 }
 
 /**

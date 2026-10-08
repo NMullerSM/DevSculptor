@@ -69,9 +69,6 @@ export const FlowSidebar: React.FC<FlowSidebarProps> = ({
           <span className="text-[10px] font-mono uppercase tracking-wider text-white font-semibold">
             Flujo de Trabajo
           </span>
-          <VisionPill variant="indigo" className="text-[8.5px]">
-            4 PASOS
-          </VisionPill>
         </div>
 
         {onClose && (

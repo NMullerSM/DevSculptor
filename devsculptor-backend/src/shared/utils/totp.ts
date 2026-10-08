@@ -100,20 +100,49 @@ export function generateTotpCode(secret: string, timeStepWindow: number = 30, fo
 }
 
 /**
- * Valida un token TOTP de 6 dígitos con una ventana de tolerancia de ±1 paso (±30 segundos).
+ * Valida un token TOTP de 6 dígitos con protección contra ataques de tiempo (timing-safe)
+ * y protección estricta contra repetición (anti-replay).
  */
-export function verifyTotpToken(secret: string, token: string, toleranceSteps: number = 1): boolean {
-  if (!token || token.trim().length !== 6) return false;
+export function verifyTotpTokenWithStep(
+  secret: string,
+  token: string,
+  toleranceSteps: number = 1,
+  lastUsedStep?: number | null
+): { valid: boolean; step?: number } {
+  if (!token || token.trim().length !== 6) return { valid: false };
   const cleanToken = token.trim();
-  const timeStep = 30 * 1000;
-  const now = Date.now();
+  const timeStep = 30;
+  const currentStep = Math.floor(Date.now() / 1000 / timeStep);
+  const tokenBuffer = Buffer.from(cleanToken);
 
-  for (let step = -toleranceSteps; step <= toleranceSteps; step++) {
-    const calculated = generateTotpCode(secret, 30, now + step * timeStep);
-    if (calculated === cleanToken) {
-      return true;
+  for (let s = -toleranceSteps; s <= toleranceSteps; s++) {
+    const step = currentStep + s;
+    if (lastUsedStep != null && step <= lastUsedStep) {
+      // Rechazar código si pertenece a un paso ya utilizado (previene ataque de retransmisión)
+      continue;
+    }
+
+    const calculated = generateTotpCode(secret, 30, step * timeStep * 1000);
+    const calculatedBuffer = Buffer.from(calculated);
+
+    if (
+      tokenBuffer.length === calculatedBuffer.length &&
+      crypto.timingSafeEqual(tokenBuffer, calculatedBuffer)
+    ) {
+      return { valid: true, step };
     }
   }
 
-  return false;
+  return { valid: false };
+}
+
+/**
+ * Valida un token TOTP de 6 dígitos con ventana de tolerancia de ±1 paso (±30 segundos).
+ */
+export function verifyTotpToken(
+  secret: string,
+  token: string,
+  toleranceSteps: number = 1
+): boolean {
+  return verifyTotpTokenWithStep(secret, token, toleranceSteps).valid;
 }

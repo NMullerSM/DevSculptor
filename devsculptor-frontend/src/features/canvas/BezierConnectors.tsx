@@ -3,7 +3,7 @@ import { CanvasEntity } from '@/types/canvas.types';
 
 interface BezierConnectorsProps {
   entities: CanvasEntity[];
-  zoom: number;
+  zoom?: number;
 }
 
 interface ConnectorLine {
@@ -23,10 +23,10 @@ interface ConnectorLine {
   tDir: number;
 }
 
-export const BezierConnectors: React.FC<BezierConnectorsProps> = ({ entities, zoom }) => {
+export const BezierConnectors: React.FC<BezierConnectorsProps> = ({ entities }) => {
   const NODE_WIDTH = 220;
-  const NODE_HEADER_HEIGHT = 28;
-  const ROW_HEIGHT = 22;
+  const NODE_HEADER_HEIGHT = 32;
+  const ROW_HEIGHT = 24;
 
   const lines = useMemo<ConnectorLine[]>(() => {
     const result: ConnectorLine[] = [];
@@ -175,10 +175,11 @@ export const BezierConnectors: React.FC<BezierConnectorsProps> = ({ entities, zo
 
   return (
     <svg
-      className="absolute inset-0 w-full h-full pointer-events-none z-0 origin-top-left"
+      className="absolute inset-0 pointer-events-none z-0"
       style={{
-        transform: `scale(${zoom})`,
-        transformOrigin: '0 0',
+        width: '100%',
+        height: '100%',
+        overflow: 'visible',
       }}
     >
       <defs>

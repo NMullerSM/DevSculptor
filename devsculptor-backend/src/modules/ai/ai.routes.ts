@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { AiController } from './ai.controller';
 import { authenticate } from '../../middlewares/authenticate';
 import { validateRequest } from '../../middlewares/validateRequest';
+import { aiLimiter } from '../../middlewares/rateLimiter';
 import { projectIdParamSchema } from '../projects/projects.dto';
 import {
   chatRequestDtoSchema,
@@ -12,8 +13,8 @@ import {
 const aiRouter = Router({ mergeParams: true });
 const controller = new AiController();
 
-// Protección mediante JWT
-aiRouter.use(authenticate);
+// Protección mediante JWT y control de cuotas/rate limit de IA
+aiRouter.use(authenticate, aiLimiter);
 
 // 1. Chat interactivo con el consultor de arquitectura
 aiRouter.post(
