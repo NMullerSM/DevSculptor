@@ -120,15 +120,10 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
   };
 
   const handleDownloadCode = () => {
-    let code = getCodeContent();
-    if (!code || code.trim().length === 0) {
-      if (sqlDialect === 'mysql') code = generateMySqlDdl(entities);
-      else if (sqlDialect === 'sqlite') code = generateSqliteDdl(entities);
-      else if (sqlDialect === 'oracle') code = generateOracleDdl(entities);
-      else code = generatePostgreSqlDdl(entities);
-    }
-    const ext = activeSubTab === 'sql' || activeSubTab === 'erd' ? 'sql' : activeSubTab === 'ts' ? 'ts' : activeSubTab === 'json' ? 'json' : 'py';
-    const filename = (activeSubTab === 'sql' || activeSubTab === 'erd') ? `schema_ddl_${sqlDialect}.sql` : `schema_export.${ext}`;
+    const code = getCodeContent();
+    if (!code) return;
+    const ext = activeSubTab === 'sql' ? 'sql' : activeSubTab === 'ts' ? 'ts' : activeSubTab === 'json' ? 'json' : 'py';
+    const filename = activeSubTab === 'sql' ? `schema_ddl_${sqlDialect}.sql` : `schema_export.${ext}`;
     const blob = new Blob([code], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -137,9 +132,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    setTimeout(() => {
-      URL.revokeObjectURL(url);
-    }, 15000);
+    URL.revokeObjectURL(url);
   };
 
   const subtabs: { id: CanvasSubTab; label: string; icon: string }[] = [
@@ -254,16 +247,6 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ projectId }) => {
                   Modelado
                 </VisionButton>
               )}
-              <VisionButton
-                size="sm"
-                variant="secondary"
-                icon="download"
-                onClick={handleDownloadCode}
-                title="Descargar DDL SQL del modelo actual"
-              >
-                <span className="hidden xs:inline">Descargar DDL</span>
-                <span className="xs:hidden">DDL</span>
-              </VisionButton>
             </div>
           )}
 

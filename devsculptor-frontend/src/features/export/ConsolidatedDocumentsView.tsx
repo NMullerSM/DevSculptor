@@ -394,34 +394,37 @@ export const ConsolidatedDocumentsView: React.FC<ConsolidatedDocumentsViewProps>
 
       {/* Panel Central: Visor del Documento Consolidado */}
         <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-black/5">
-          {/* Cabecera del Documento Activo */}
-          <div className="p-3 border-b border-glass-subtle bg-white/[0.01] flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 shrink-0">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-xs sm:text-sm font-bold text-primary truncate">
-                  {selectedTemplate.title}
-                </h3>
-                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/25 shrink-0">
-                  {selectedTemplate.standard}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted font-mono truncate">
-                <span>Ruta: {selectedTemplate.canonicalPath}</span>
-                <span>•</span>
-                <span className="text-emerald-400">Vinculado a Bóveda OKF</span>
+          {/* Cabecera del Documento Activo (Diseño de 2 filas para legibilidad total) */}
+          <div className="p-3 border-b border-glass-subtle bg-white/[0.01] flex flex-col gap-2 shrink-0">
+            {/* Fila 1: Título completo y metadatos sin colisión */}
+            <div className="flex items-start justify-between gap-2 min-w-0">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-xs sm:text-sm font-bold text-primary">
+                    {selectedTemplate.title}
+                  </h3>
+                  <span className="text-[9.5px] font-mono px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 shrink-0 font-semibold">
+                    {selectedTemplate.standard}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-0.5 text-[10.5px] text-muted font-mono truncate">
+                  <span>Ruta: {selectedTemplate.canonicalPath}</span>
+                  <span>•</span>
+                  <span className="text-emerald-400">Vinculado a Bóveda OKF</span>
+                </div>
               </div>
             </div>
 
-            {/* Acciones de Exportación & Impresión */}
-            <div className="flex items-center gap-1.5 flex-wrap shrink-0">
+            {/* Fila 2: Selector de Modo a la izquierda y Acciones de Exportación a la derecha */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-white/[0.04]">
               {/* Selector de Modo de Vista */}
-              <div className="flex items-center bg-black/40 p-0.5 rounded-lg border border-glass-subtle mr-1">
+              <div className="flex items-center bg-black/40 p-0.5 rounded-lg border border-glass-subtle">
                 <button
                   type="button"
                   onClick={() => setPreviewMode('executive')}
-                  className={`px-2 py-1 text-[10px] rounded font-medium transition-all ${
+                  className={`px-2.5 py-1 text-[10.5px] rounded-md font-medium transition-all ${
                     previewMode === 'executive'
-                      ? 'bg-indigo-600 text-white font-semibold shadow'
+                      ? 'bg-indigo-600 text-white font-semibold shadow-sm'
                       : 'text-secondary hover:text-primary'
                   }`}
                   title="Vista ejecutiva renderizada con estilos de alta fidelidad, código y diagramas"
@@ -433,9 +436,9 @@ export const ConsolidatedDocumentsView: React.FC<ConsolidatedDocumentsViewProps>
                   <button
                     type="button"
                     onClick={() => setPreviewMode('diagram')}
-                    className={`px-2 py-1 text-[10px] rounded font-medium transition-all ${
+                    className={`px-2.5 py-1 text-[10.5px] rounded-md font-medium transition-all ${
                       previewMode === 'diagram'
-                        ? 'bg-indigo-600 text-white font-semibold shadow'
+                        ? 'bg-indigo-600 text-white font-semibold shadow-sm'
                         : 'text-secondary hover:text-primary'
                     }`}
                     title="Lienzo interactivo React con zoom y renderizado vectorial de arquitectura"
@@ -447,9 +450,9 @@ export const ConsolidatedDocumentsView: React.FC<ConsolidatedDocumentsViewProps>
                 <button
                   type="button"
                   onClick={() => setPreviewMode('source')}
-                  className={`px-2 py-1 text-[10px] rounded font-medium transition-all ${
+                  className={`px-2.5 py-1 text-[10.5px] rounded-md font-medium transition-all ${
                     previewMode === 'source'
-                      ? 'bg-indigo-600 text-white font-semibold shadow'
+                      ? 'bg-indigo-600 text-white font-semibold shadow-sm'
                       : 'text-secondary hover:text-primary'
                   }`}
                   title="Markdown con YAML Frontmatter puro para IA o Git"
@@ -457,6 +460,9 @@ export const ConsolidatedDocumentsView: React.FC<ConsolidatedDocumentsViewProps>
                   YAML & Markdown
                 </button>
               </div>
+
+              {/* Acciones de Exportación & Impresión */}
+              <div className="flex items-center gap-1.5 flex-wrap">
 
               {/* Botón Copiar */}
               <VisionButton
@@ -533,9 +539,10 @@ export const ConsolidatedDocumentsView: React.FC<ConsolidatedDocumentsViewProps>
               </VisionButton>
             </div>
           </div>
+        </div>
 
-          {/* Área de Visualización */}
-          <div className="flex-1 min-h-0 relative overflow-hidden">
+        {/* Área de Visualización */}
+        <div className="flex-1 min-h-0 relative overflow-hidden">
             {previewMode === 'diagram' && selectedTemplate.category === 'diagrams' ? (
               <div className="w-full h-full overflow-y-auto p-4 custom-scrollbar bg-[#070b16]">
                 <div className="max-w-5xl mx-auto">
