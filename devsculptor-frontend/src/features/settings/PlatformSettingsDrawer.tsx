@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useThemeStore, WALLPAPERS } from '@/stores/useThemeStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
@@ -28,23 +28,16 @@ export const PlatformSettingsDrawer: React.FC<PlatformSettingsDrawerProps> = ({
   } = useSettingsStore();
 
   const [customWallpaperInput, setCustomWallpaperInput] = useState('');
+  const [draftBlur, setDraftBlur] = useState(glassBlur);
+  const [draftOpacity, setDraftOpacity] = useState(windowOpacity);
+  const [isAppliedFeedback, setIsAppliedFeedback] = useState(false);
+
+  useEffect(() => {
+    setDraftBlur(glassBlur);
+    setDraftOpacity(windowOpacity);
+  }, [glassBlur, windowOpacity, isOpen]);
 
   if (!isOpen) return null;
-
-  // Lista ampliada de fondos de alta resolución
-  const extendedWallpapers = [
-    ...WALLPAPERS,
-    {
-      id: 'yosemite',
-      name: 'Yosemite Twilight',
-      url: 'https://images.unsplash.com/photo-1426604966848-d7adac402bff?q=80&w=2560&auto=format&fit=crop',
-    },
-    {
-      id: 'desert',
-      name: 'Mojave Night',
-      url: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?q=80&w=2560&auto=format&fit=crop',
-    },
-  ];
 
   const handleApplyCustomWallpaper = (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,6 +48,15 @@ export const PlatformSettingsDrawer: React.FC<PlatformSettingsDrawerProps> = ({
 
   const handleSelectPreset = (url: string) => {
     setWallpaper(url);
+  };
+
+  const hasVisualChanges = draftBlur !== glassBlur || draftOpacity !== windowOpacity;
+
+  const handleApplyVisualEffects = () => {
+    setGlassBlur(draftBlur);
+    setWindowOpacity(draftOpacity);
+    setIsAppliedFeedback(true);
+    setTimeout(() => setIsAppliedFeedback(false), 2000);
   };
 
   const activeWallpaper = settingsWallpaper || currentWallpaperUrl;
@@ -168,14 +170,14 @@ export const PlatformSettingsDrawer: React.FC<PlatformSettingsDrawerProps> = ({
 
             {/* Cuadrícula de Fondos */}
             <div className="grid grid-cols-2 gap-2 pt-1">
-              {extendedWallpapers.map((wp) => {
+              {WALLPAPERS.map((wp) => {
                 const isSelected = activeWallpaper === wp.url;
                 return (
                   <button
                     key={wp.id}
                     type="button"
                     onClick={() => handleSelectPreset(wp.url)}
-                    className={`relative rounded-xl overflow-hidden border text-left group transition-all aspect-video ${
+                    className={`relative rounded-xl overflow-hidden border text-left group transition-all aspect-video cursor-pointer ${
                       isSelected
                         ? 'border-indigo-500 ring-2 ring-indigo-500/50 shadow-md'
                         : 'border-white/10 hover:border-white/30'
@@ -246,16 +248,21 @@ export const PlatformSettingsDrawer: React.FC<PlatformSettingsDrawerProps> = ({
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-secondary">Intensidad de Desenfoque (Blur)</span>
-                <span className="font-mono text-indigo-400 font-bold">{glassBlur}px</span>
+                <div className="flex items-center gap-1.5 font-mono">
+                  <span className="text-indigo-400 font-bold">{draftBlur}px</span>
+                  {draftBlur !== glassBlur && (
+                    <span className="text-[9.5px] text-amber-400 font-normal">(sin aplicar)</span>
+                  )}
+                </div>
               </div>
               <input
                 type="range"
                 min="5"
                 max="45"
                 step="5"
-                value={glassBlur}
-                onChange={(e) => setGlassBlur(Number(e.target.value))}
-                className="w-full accent-indigo-500 cursor-pointer"
+                value={draftBlur}
+                onChange={(e) => setDraftBlur(Number(e.target.value))}
+                className="w-full accent-indigo-500 cursor-pointer select-auto"
               />
               <div className="flex justify-between text-[9px] font-mono text-muted">
                 <span>Sutil (5px)</span>
@@ -268,22 +275,46 @@ export const PlatformSettingsDrawer: React.FC<PlatformSettingsDrawerProps> = ({
             <div className="space-y-1.5 pt-2 border-t border-glass-subtle">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-secondary">Opacidad de las Ventanas</span>
-                <span className="font-mono text-indigo-400 font-bold">{windowOpacity}%</span>
+                <div className="flex items-center gap-1.5 font-mono">
+                  <span className="text-indigo-400 font-bold">{draftOpacity}%</span>
+                  {draftOpacity !== windowOpacity && (
+                    <span className="text-[9.5px] text-amber-400 font-normal">(sin aplicar)</span>
+                  )}
+                </div>
               </div>
               <input
                 type="range"
                 min="50"
                 max="98"
                 step="2"
-                value={windowOpacity}
-                onChange={(e) => setWindowOpacity(Number(e.target.value))}
-                className="w-full accent-indigo-500 cursor-pointer"
+                value={draftOpacity}
+                onChange={(e) => setDraftOpacity(Number(e.target.value))}
+                className="w-full accent-indigo-500 cursor-pointer select-auto"
               />
               <div className="flex justify-between text-[9px] font-mono text-muted">
                 <span>Translúcido (50%)</span>
                 <span>Equilibrado (85%)</span>
                 <span>Sólido (98%)</span>
               </div>
+            </div>
+
+            {/* Botón Explícito para Aplicar Efectos Visuales */}
+            <div className="pt-2 border-t border-glass-subtle">
+              <VisionButton
+                type="button"
+                variant={hasVisualChanges ? 'primary' : 'secondary'}
+                size="sm"
+                onClick={handleApplyVisualEffects}
+                disabled={!hasVisualChanges && !isAppliedFeedback}
+                className="w-full justify-center !py-2 text-xs font-semibold cursor-pointer"
+                icon={isAppliedFeedback ? 'done' : 'check_circle'}
+              >
+                {isAppliedFeedback
+                  ? '✓ Efectos Aplicados'
+                  : hasVisualChanges
+                  ? 'Aplicar Cambios'
+                  : 'Ajustes Aplicados'}
+              </VisionButton>
             </div>
           </div>
 

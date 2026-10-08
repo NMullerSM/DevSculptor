@@ -5,6 +5,8 @@ export const WALLPAPERS = [
   { id: 'lake', name: 'Lago Glaciar', url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2560&auto=format&fit=crop' },
   { id: 'forest', name: 'Niebla Nórdica', url: 'https://images.unsplash.com/photo-1448375240586-882707db888b?q=80&w=2560&auto=format&fit=crop' },
   { id: 'aurora', name: 'Aurora Espacial', url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=2560&auto=format&fit=crop' },
+  { id: 'yosemite', name: 'Yosemite Twilight', url: 'https://images.unsplash.com/photo-1426604966848-d7adac402bff?q=80&w=2560&auto=format&fit=crop' },
+  { id: 'desert', name: 'Mojave Night', url: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?q=80&w=2560&auto=format&fit=crop' },
 ];
 
 interface ThemeState {
