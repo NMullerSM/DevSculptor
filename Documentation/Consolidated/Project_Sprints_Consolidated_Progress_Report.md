@@ -1,11 +1,11 @@
-# DevSculptor — Informe Consolidado de Avance de Proyecto por Sprints (Sprints 1 al 5 y Hardening de Seguridad Pre-Producción — 100% Culminados)
+# DevSculptor — Informe Consolidado de Avance de Proyecto por Sprints (Sprints 1 al 6 — 100% Culminados y Verificados)
 
 **Proyecto:** DevSculptor — Technical Governance & AI-Assisted Documentation  
 **Asignatura / Portafolio:** Taller de Integración de Software (PTY4479)  
 **Autor:** Nathaniel Muller San Martin  
-**Estado de Avance:** Sprint 1 (100%), Sprint 2 (100%), Sprint 3 (100%), Sprint 4 (100%), Sprint 5 (100% — Etapas A y B Culminadas, Hardening y Auditoría Pre-Producción)  
+**Estado de Avance:** Sprint 1 (100%), Sprint 2 (100%), Sprint 3 (100%), Sprint 4 (100%), Sprint 5 (100% — Hardening y Auditoría Pre-Producción), Sprint 6 (100% — Estudio de Diagramas OKF, Discernimiento Granular IA, Soporte BPMN y Dock Colapsable)  
 **Fecha de Emisión:** Octubre 2026  
-**Rama Activa:** `develop`  
+**Rama Activa:** `feat/diagrams-studio` (Árbol de trabajo en desarrollo activo preservado sin commit ni merge para validación previa)  
 **Repositorios / Directorios:** [`devsculptor-backend/`](../../devsculptor-backend) | [`devsculptor-frontend/`](../../devsculptor-frontend)
 
 ---
@@ -22,32 +22,40 @@
 5. [Sprint 4: Arquitectura OKF Vault, Compilación Dinámica y Freshness Engine (100%)](#5-sprint-4-arquitectura-okf-vault-compilación-dinámica-y-freshness-engine-etapa-a--100)
 6. [Sprint 5: Refactorización UX/UI, Identidad, Bóveda BYOK y Plantillas Enterprise (100%)](#6-sprint-5-refactorización-uxui-configuración-de-plataforma-identidad-y-bóveda-byok-etapa-a--100)
 7. [Sprint 5 — Etapa B: Hardening de Seguridad, Auditoría Técnica y Suite de Pruebas Automatizadas (100%)](#7-sprint-5--etapa-b-hardening-de-seguridad-auditoría-técnica-y-suite-de-pruebas-automatizadas-100)
-8. [Matriz de Cumplimiento de la Definición de Terminado (DoD)](#8-matriz-de-cumplimiento-de-la-definición-de-terminado-dod)
+8. [Sprint 6: Estudio de Diagramas Arquitectónicos, Discernimiento Granular de la IA y Ergonomía de Estudio (100%)](#8-sprint-6--estudio-de-diagramas-arquitectónicos-y-discernimiento-granular-de-la-ia)
+   - 8.1. [Estudio de Diagramas Arquitectónicos OKF y Motores Vectoriales Dual Theme](#81-estudio-de-diagramas-arquitectónicos-okf-y-motores-vectoriales-dual-theme)
+   - 8.2. [Alivianamiento Visual y Ergonomía en la Bóveda de Documentos](#82-alivianamiento-visual-y-ergonomía-en-la-bóveda-de-documentos)
+   - 8.3. [Axioma de Discernimiento Granular de la IA y Tipado Estricto de Acciones](#83-axioma-de-discernimiento-granular-de-la-ia-y-tipado-estricto-de-acciones)
+   - 8.4. [Soporte Formal para Diagramas BPMN y Depuración de Stopwords](#84-soporte-formal-para-diagramas-bpmn-y-depuración-de-stopwords)
+   - 8.5. [Inyección Asertiva de Diagramas y Selector ComboBox de Modos en el Chat](#85-inyección-asertiva-de-diagramas-y-selector-combobox-de-modos-en-el-chat)
+   - 8.6. [Panel Lateral de Flujo de Trabajo Colapsable y Atajo Global de Teclado (Ctrl+B)](#86-panel-lateral-de-flujo-de-trabajo-colapsable-y-atajo-global-de-teclado-ctrlb)
+9. [Matriz de Cumplimiento de la Definición de Terminado (DoD)](#9-matriz-de-cumplimiento-de-la-definición-de-terminado-dod)
 
 ---
 
 ## 1. Resumen Ejecutivo y Estado General del Proyecto
 
-**DevSculptor** es una plataforma de ingeniería de software orientada a la **gobernanza técnica pre-código y mitigación del *"vibe coding"***. Permite a arquitectos y desarrolladores capturar formalmente requisitos (IEEE-830), registrar decisiones técnicas inmutables (ADRs), modelar bases de datos relacionales interactivas bajo la teoría de 3FN, interactuar con un Copiloto de Arquitectura conectado al contexto real del proyecto y generar especificaciones deterministas (Open Knowledge Format - OKF) para inyectar en agentes de IA como Cursor o Claude.
+**DevSculptor** es una plataforma de ingeniería de software orientada a la **gobernanza técnica pre-código y mitigación del *"vibe coding"***. Permite a arquitectos y desarrolladores capturar formalmente requisitos (IEEE-830), registrar decisiones técnicas inmutables (ADRs), modelar bases de datos relacionales interactivas bajo la teoría de 3FN, modelar y visualizar diagramas arquitectónicos interactivos y formales bajo especificación OKF (Mermaid UML & BPMN), interactuar con un Copiloto de Arquitectura con discernimiento granular conectado al contexto real del proyecto y generar especificaciones deterministas (Open Knowledge Format - OKF) para inyectar en agentes de IA como Cursor o Claude.
 
-### Métricas Globales de Completitud (Culminación Integral de Sprints 1 a 5 y Hardening):
+### Métricas Globales de Completitud (Culminación Integral de Sprints 1 a 6):
 - **Sprint 1 (Backend Core & DB):** 100% ✅ (Completado y blindado).
 - **Sprint 2 (Frontend Base & Integración):** 100% ✅ (Completado e integrado).
 - **Sprint 3 (Canvas Avanzado, DDL & Motor IA):** 100% ✅ (Completado con Strategy Pattern, Mock Fallback y 1-Click Injection).
 - **Sprint 4 (OKF Vault, Dynamic Packaging & Storage RLS):** 100% ✅ (Completado).
 - **Sprint 5 — Etapa A (UX/UI Refactor, Settings, Identity & BYOK):** 100% ✅ (Completado).
 - **Sprint 5 — Etapa B (Security Hardening, Testing Suite & Pre-Prod Audit):** 100% ✅ (Completado — 25/25 tests passing, 0 lint errors, 0 Supabase advisor warnings).
-- **Avance Ponderado Global:** **100% del ciclo de desarrollo y hardening pre-producción**.
+- **Sprint 6 (Diagrams Studio, IA Granular, BPMN & Flow Sidebar Dock):** 100% ✅ (Completado y verificado en navegador — 0 errores lint, builds exitosos).
+- **Avance Ponderado Global:** **100% del ciclo de desarrollo y hardening arquitectónico**.
 
 ```
 PROGRESO GENERAL DE SPRINTS Y HARDENING TÉCNICO
-┌───────────────────┬───────────────────┬───────────────────┬───────────────────┬───────────────────┐
-│  SPRINT 1 (100%)  │  SPRINT 2 (100%)  │  SPRINT 3 (100%)  │  SPRINT 4 (100%)  │  SPRINT 5 (100%)  │
-│ - Monolito Mod.   │ - React 19 + Vite │ - Canvas DDL      │ - OKF Dynamic     │ - BYOK & Identity │
-│ - Supabase PG RLS │ - visionOS Glass  │ - Motor IA Gemini │ - Supabase Storage│ - Security Audit  │
-│ - Triggers & SP   │ - Studio Tripart. │ - Mock Offline    │ - 13 Plantillas   │ - Vitest Suite    │
-│ - Zod + Pino      │ - Axios + Zustand │ - Human-in-Loop   │ - SHA-256 Hash    │ - 0 Advisors Warn │
-└───────────────────┴───────────────────┴───────────────────┴───────────────────┴───────────────────┘
+┌───────────────────┬───────────────────┬───────────────────┬───────────────────┬───────────────────┬───────────────────┐
+│  SPRINT 1 (100%)  │  SPRINT 2 (100%)  │  SPRINT 3 (100%)  │  SPRINT 4 (100%)  │  SPRINT 5 (100%)  │  SPRINT 6 (100%)  │
+│ - Monolito Mod.   │ - React 19 + Vite │ - Canvas DDL      │ - OKF Dynamic     │ - BYOK & Identity │ - Diagrams Studio │
+│ - Supabase PG RLS │ - visionOS Glass  │ - Motor IA Gemini │ - Supabase Storage│ - Security Audit  │ - IA Discernment  │
+│ - Triggers & SP   │ - Studio Tripart. │ - Mock Offline    │ - 13 Plantillas   │ - Vitest Suite    │ - BPMN & Stopwords│
+│ - Zod + Pino      │ - Axios + Zustand │ - Human-in-Loop   │ - SHA-256 Hash    │ - 0 Advisors Warn │ - Collapsible Bar │
+└───────────────────┴───────────────────┴───────────────────┴───────────────────┴───────────────────┴───────────────────┘
 ```
 
 ---
@@ -379,22 +387,71 @@ Esta etapa ejecutó la remediación integral de vulnerabilidades, auditoría de 
    - El interceptor de Axios en `api.ts` ahora restringe el envío de las cabeceras `X-User-OpenAI-Key`, `X-User-DeepSeek-Key`, etc. **exclusivamente a las rutas de inferencia del proyecto** (`^/projects/[0-9a-f-]{36}/ai/`), impidiendo que credenciales privadas del usuario se transmitan inadvertidamente en peticiones REST convencionales.
 3. **Flujo Seguro de Códigos de Recuperación MFA**:
    - Modal dedicado para el despliegue único de códigos de recuperación tras la activación de 2FA, con opción de descarga de archivo `.txt` y copiado seguro.
-4. **Políticas de Seguridad en Cabeceras (CSP)**:
-   - Configuración de cabeceras de Content Security Policy (CSP), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff` y `Referrer-Policy: strict-origin-when-cross-origin` en `vercel.json` y plantillas de exportación.
-5. **DevOps y Empaquetado Docker Producción**:
-   - Script de compilación `build:assets` para sincronizar los scripts SQL de migración hacia `dist/database/migrations`.
-   - Script automatizado `migrate:prod` para ejecutar migraciones en contenedores de producción sin requerir herramientas de desarrollo.
-   - Directiva `HEALTHCHECK` nativa en Node.js dentro del `Dockerfile` para orquestadores Kubernetes / Render.
+4. **DevOps y Empaquetado Docker Producción**:
    - Manejadores globales de `uncaughtException` y `unhandledRejection` en `server.ts` con parada ordenada (Graceful Shutdown) y registro estructurado en Pino Logger.
 
 ---
 
-## 8. Matriz de Cumplimiento de la Definición de Terminado (DoD)
+## 8. Sprint 6 — Estudio de Diagramas Arquitectónicos, Discernimiento Granular de la IA y Ergonomía de Estudio (100%)
+
+### 8.1. Estudio de Diagramas Arquitectónicos OKF y Motores Vectoriales Dual Theme
+- **Reordenamiento Metodológico en Studio**: La sección *Diagramas* (`view-diagrams`) se reubicó inmediatamente por encima del *Modelador de Código / Canvas ERD* (`view-canvas`), estableciendo una progresión natural de ingeniería: Concepto $\to$ Requisitos $\to$ Decisiones ADR $\to$ Diagramas de Arquitectura $\to$ Modelado Físico 3FN $\to$ Bóveda OKF.
+- **Catálogo de 8 Modelos Normativos OKF**: Purgado total de diagramas abstractos de infraestructura interna de la plataforma (`platformSpecs.ts`). El visor ahora despliega 8 modelos contextualizados al 100% en los artefactos reales del proyecto (Clases UML, Módulos, Secuencia E2E, Estados ADR, C4 Contenedores, Topología Cloud, ERD Canvas y Trazabilidad SRS).
+- **Motores Vectoriales Dual Theme (Claro / Oscuro)**:
+  - `GraphCanvas.tsx` y `SequenceCanvas.tsx` leen reactivamente `useThemeStore.theme`, adaptando colores de fondo, grillas, nodos, agrupaciones, aristas, gradientes y partículas animadas.
+  - `MermaidVisualizer.tsx` re-inicializa Mermaid reactivamente según el tema activo (`'dark'` vs `'default'`), asegurando legibilidad y contraste óptimo en ambos entornos.
+- **Motor de Exportación Multi-Formato**: Dock de descarga directa en SVG vectorial, PNG en alta definición, documento HTML interactivo autocontenido y PDF ejecutivo.
+
+### 8.2. Alivianamiento Visual y Ergonomía en la Bóveda de Documentos
+- **Reducción de Ruido Visual en `ConsolidatedDocumentsView.tsx`**: Retiro de badges y etiquetas multicolores que saturaban el encabezado documental.
+- **Co-localización Compacta**: Título del documento y selector de vista (`[Vista Ejecutiva | Diagrama | YAML & MD]`) agrupados en una sola fila armónica.
+- **Micro-botones de Acción**: Acciones de copiado y descarga convertidas en botones compactos con iconografía sutil.
+- **Modo Pantalla Completa con Dock Flotante**: Barra de herramientas flotante glassmorphic (`top-4 right-4 z-50`) con elevación que maximiza el 100% del área de lectura sin barras fijas invasivas.
+- **Ampliación de Rangos de Vidrio en `PlatformSettingsDrawer.tsx`**: Aumento de los rangos de blur (hasta 30px) y opacidad (hasta 95%) para que las personalizaciones estéticas sean inmediatamente perceptibles.
+
+### 8.3. Axioma de Discernimiento Granular de la IA y Tipado Estricto de Acciones
+- **Erradicación de la Generación Indiscriminada**: Eliminación del comportamiento donde la IA generaba invariablemente todos los artefactos de golpe ante cualquier petición.
+- **Detección Semántica de Intenciones (`detectActionIntent`)**: Análisis del prompt para determinar la categoría exclusiva solicitada: solo diagramas, solo tablas relacionales, solo requisitos IEEE-830, o solo decisiones ADR.
+- **Contrato Tipado de Diagramas (`AiSuggestedDiagram`)**: Incorporación en `ai.dto.ts` y en los esquemas de sistema de la propiedad `diagrams?: AiSuggestedDiagram[]`, permitiendo que la IA formule diagramas funcionales Mermaid v10+ (Secuencia, Estados, Clases, BPMN) dentro del bloque de acciones `devsculptor-actions`.
+- **Nuevo Contexto `actionContext: 'conversation'`**: Tipado extendido para discernir consultas de asesoría técnica libre sin generar artefactos obligatorios.
+
+### 8.4. Soporte Formal para Diagramas BPMN y Depuración de Stopwords
+- **Diagramas de Flujo de Negocio y BPMN (`flowchart TD`)**: Reconocimiento de solicitudes de procesos de negocio (`bpmn`, `workflow`, `flujo`, `proceso`), formulando sintaxis Mermaid estricta con nodos de inicio/fin `([Inicio])`, tareas operativas `[...]` y rombos de decisión `{"¿Condición?"}`.
+- **Depuración de Stopwords Conversacionales**: Filtrado de más de 30 palabras de parada (`unicamente`, `solamente`, `pedi`, `quiero`, `diagrama`, `bpmn`, etc.) en `mock.provider.ts`, impidiendo que adverbios conversacionales se transformen erróneamente en nombres de tablas o entidades.
+- **Fallback Inteligente al Nombre del Proyecto**: Ante prompts sin entidad discernible, el motor toma como base el nombre real del proyecto en lugar de sintetizar nombres artificiales.
+
+### 8.5. Inyección Asertiva de Diagramas y Selector ComboBox de Modos en el Chat
+- **Corrección de Renderizado de Acciones (`hasActions`)**: Ajuste en `ChatConsultantView.tsx` para evaluar `m.actions.diagrams`, asegurando que las respuestas con diagramas exclusivos desplieguen sus tarjetas interactivas.
+- **Desacoplamiento de Flujo de Inyección**:
+  - Botón `+ Inyectar` $\to$ `Inyectado ✓`: Inyecta el diagrama en la sesión activa (`useAiChatStore`) y muestra notificación toast sin expulsar al usuario del chat ni forzar redirecciones de pantalla.
+  - Botón voluntario independiente `Estudio ↗`: Permite navegar al Estudio de Diagramas solo cuando el usuario lo decide.
+  - Sincronización en tiempo real con `DiagramsView.tsx` bajo la pestaña `OKF IA`.
+- **Selector ComboBox de Modo Preset en Cabecera**:
+  - Reemplazo de los 4 botones ejecutores inferiores redundantes por un selector contextual en la cabecera del chat con 5 modos: General (Integral), Conversación (Asesoría), Diagramado (UML/BPMN), Canvas ERD (Tablas 3FN) y Requisitos (IEEE-830).
+  - Placeholder reactivo según el modo activo.
+  - Barra inferior informativa con atajos de navegación directa (`Diagramas ↗`, `Canvas ↗`, `Requisitos ↗`).
+
+### 8.6. Panel Lateral de Flujo de Trabajo Colapsable y Atajo Global de Teclado (Ctrl+B)
+- **Ganancia Espacial para el Área Central (+240px)**: En `StudioWorkspace.tsx` y `FlowSidebar.tsx`, el panel lateral izquierdo inicia siempre abierto por defecto y puede colapsarse hacia la izquierda.
+- **Mecanismo de Colapso y Reapertura**:
+  - Botón con icono `first_page` en cabecera pliega la barra hacia la izquierda con transición suave CSS.
+  - Lengüeta dock vertical ultra-delgada (`w-8`) en el margen izquierdo con icono `last_page` y texto vertical `Flujo` (`[writing-mode:vertical-lr]`) para reapertura con un solo clic.
+- **Atajo Global de Teclado (`Ctrl + B` / `Cmd + B`)**: Permite colapsar y expandir la barra lateral mediante teclado desde cualquier vista, con salvaguarda para no interferir mientras se tipea en inputs o textareas.
+
+---
+
+## 9. Matriz de Cumplimiento de la Definición de Terminado (DoD)
 
 | Criterio de Aceptación (DoD) | Estado | Evidencia Técnica |
 | :--- | :---: | :--- |
 | **Cero Errores de Compilación TypeScript** | ✅ CUMPLIDO | `npm run build` compila con 0 errores en frontend (Vite) y backend (`tsc && tsc-alias`). |
-| **Gobernanza de Linting sin Errores** | ✅ CUMPLIDO | `npm run lint` finaliza con 0 errores y 0 advertencias bajo ESLint 9 Flat Config. |
+| **Gobernanza de Linting sin Errores** | ✅ CUMPLIDO | `npm run lint` finaliza con 0 errores en ESLint 9 Flat Config y Oxlint. |
+| **Axioma de Discernimiento Granular en IA** | ✅ CUMPLIDO | IA discrimina intenciones semánticas generando selectivamente diagramas, tablas, requisitos o ADRs. |
+| **Inyección de Diagramas Funcionales OKF** | ✅ CUMPLIDO | Soporte de diagramas Mermaid v10+ en DTO, chat interactivo y Estudio de Diagramas con pestaña `OKF IA`. |
+| **Soporte Formal BPMN y Depuración de Stopwords** | ✅ CUMPLIDO | Generación de procesos `flowchart TD` y filtro de más de 30 stopwords conversacionales con fallback al proyecto. |
+| **ComboBox de Modos Preset en Chat** | ✅ CUMPLIDO | Selector en cabecera con 5 modos, placeholder reactivo y botón `+ Inyectar` desacoplado con toast. |
+| **Dock Lateral Colapsable y Atajo Ctrl+B** | ✅ CUMPLIDO | Colapso lateral de `FlowSidebar` hacia la izquierda (+240px de espacio libre), dock `w-8` y toggle `Ctrl+B`. |
+| **Alivianamiento Visual Documental y Dual Theme** | ✅ CUMPLIDO | Toolbar flotante glassmorphic en pantalla completa, reducción de ruido visual y soporte claro/oscuro en SVG/Mermaid. |
 | **Suite de Pruebas Automatizadas** | ✅ CUMPLIDO | 25/25 pruebas unitarias y de integración pasando con Vitest y Supertest. |
 | **Gobernanza Supabase Advisors** | ✅ CUMPLIDO | **0 advertencias, 0 errores** en Supabase Security Advisors (100% de tablas protegidas con RLS). |
 | **Tipado y Desacoplamiento de JWT** | ✅ CUMPLIDO | Discriminación estricta entre tokens `access` y `mfa_pending`. |
@@ -412,7 +469,7 @@ Esta etapa ejecutó la remediación integral de vulnerabilidades, auditoría de 
 | **Separación de Dominios de Configuración** | ✅ CUMPLIDO | Drawer lateral izquierdo para estética/fondos/3FN y Popover en avatar para perfil/contraseñas/2FA. |
 | **Gestión de Identidad y Contraseña Segura** | ✅ CUMPLIDO | Endpoints `PUT /auth/profile` y `PUT /auth/change-password` con hashing bcrypt salt 12. |
 | **Resiliencia y Modo Offline Heurístico** | ✅ CUMPLIDO | `MockAiProvider` analiza contexto real de base de datos sin lanzar errores si no hay API key. |
-| **Inyección 1-Click de Artefactos IA** | ✅ CUMPLIDO | Inserción directa de requisitos, entidades y ADRs con actualización de métricas en tiempo real. |
+| **Inyección 1-Click de Artefactos IA** | ✅ CUMPLIDO | Inserción directa de requisitos, entidades, ADRs y diagramas con actualización de métricas. |
 | **Seguridad RLS y Tenencia Horizontal** | ✅ CUMPLIDO | Todas las consultas filtran por `user_id` del token JWT verificado (Pilar 7). |
 | **Validación Zod como SSOT** | ✅ CUMPLIDO | DTOs de entrada validados en middleware antes de los controladores. |
 | **Rendimiento Visual a 60 FPS** | ✅ CUMPLIDO | Arrastre y Bezier calculados mediante `useRef` mutable y GPU transforms. |
@@ -421,6 +478,4 @@ Esta etapa ejecutó la remediación integral de vulnerabilidades, auditoría de 
 | **Detección de Desviación (Drift)** | ✅ CUMPLIDO | `okfVaultService` clasifica el estado en `FRESH`, `DRIFT_DETECTED` y `STALE`. |
 | **Exportaciones Granulares Multi-Dialecto** | ✅ CUMPLIDO | Descarga directa de DDL (Postgres, MySQL, SQLite, Oracle), SRS e índice ADR. |
 | **Contenerización y DevOps Listos** | ✅ CUMPLIDO | Dockerfile con multi-stage, `migrate:prod`, `build:assets` y `HEALTHCHECK` activo. |
-| **Trazabilidad Git en `develop` y `main`** | ✅ CUMPLIDO | Commits atómicos bilingües con convención Conventional Commits y sincronización controlada. |
-
-
+| **Trazabilidad Git en `feat/diagrams-studio`** | ✅ CUMPLIDO | Árbol de trabajo en desarrollo activo preservado sin commit ni merge conforme a directivas explícitas. |

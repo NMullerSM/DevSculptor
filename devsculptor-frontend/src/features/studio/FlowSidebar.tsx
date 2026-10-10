@@ -2,7 +2,7 @@ import React from 'react';
 import { VisionPill } from '@/components/ui/VisionPill';
 import { VisionButton } from '@/components/ui/VisionButton';
 
-export type StudioStep = 'view-chat' | 'view-reqs' | 'view-docs' | 'view-canvas';
+export type StudioStep = 'view-chat' | 'view-reqs' | 'view-docs' | 'view-canvas' | 'view-diagrams';
 
 interface FlowSidebarProps {
   activeStep: StudioStep;
@@ -11,6 +11,7 @@ interface FlowSidebarProps {
   reqsCount?: number;
   adrsCount?: number;
   onClose?: () => void;
+  onToggleCollapse?: () => void;
   className?: string;
 }
 
@@ -21,6 +22,7 @@ export const FlowSidebar: React.FC<FlowSidebarProps> = ({
   reqsCount = 0,
   adrsCount = 0,
   onClose,
+  onToggleCollapse,
   className = '',
 }) => {
   const steps = [
@@ -47,6 +49,12 @@ export const FlowSidebar: React.FC<FlowSidebarProps> = ({
       badgeVariant: 'cyan' as const,
     },
     {
+      id: 'view-diagrams' as StudioStep,
+      icon: 'account_tree',
+      title: 'Diagramas',
+      iconColor: 'text-indigo-400',
+    },
+    {
       id: 'view-canvas' as StudioStep,
       icon: 'schema',
       title: 'Modelador de Código',
@@ -65,22 +73,40 @@ export const FlowSidebar: React.FC<FlowSidebarProps> = ({
     <aside className={`vision-window flex flex-col p-3 gap-3 select-none ${className}`}>
       {/* Encabezado con título blanco de alto contraste */}
       <div className="flex items-center justify-between pb-1.5 border-b border-glass-subtle">
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-mono uppercase tracking-wider text-white font-semibold">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="material-symbols-outlined text-[15px] text-indigo-400 shrink-0">
+            account_tree
+          </span>
+          <span className="text-[10px] font-mono uppercase tracking-wider text-white font-semibold truncate">
             Flujo de Trabajo
           </span>
         </div>
 
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="vision-btn vision-btn-icon !p-1 text-muted hover:text-primary"
-            title="Cerrar panel de flujo"
-            aria-label="Cerrar panel de flujo"
-          >
-            <span className="material-symbols-outlined text-sm">close</span>
-          </button>
-        )}
+        <div className="flex items-center gap-1 shrink-0">
+          {onToggleCollapse && (
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className="vision-btn !p-1 text-muted hover:text-primary rounded-[6px] transition-colors"
+              title="Ocultar panel hacia la izquierda (Ctrl+B)"
+              aria-label="Ocultar panel hacia la izquierda"
+            >
+              <span className="material-symbols-outlined text-[16px]">first_page</span>
+            </button>
+          )}
+
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="vision-btn vision-btn-icon !p-1 text-muted hover:text-primary"
+              title="Cerrar panel de flujo"
+              aria-label="Cerrar panel de flujo"
+            >
+              <span className="material-symbols-outlined text-sm">close</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Lista de Pasos Minimalista */}

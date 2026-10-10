@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { apiClient } from '@/services/apiClient';
 import { useThemeStore, WALLPAPERS } from './useThemeStore';
+import { clampBlur, clampOpacity } from '@/utils/visualEffects';
 
 export type AiProvider = 'openrouter' | 'gemini' | 'openai' | 'deepseek' | 'anthropic' | 'groq' | 'custom';
 
@@ -258,14 +259,14 @@ const syncByokToLocalStorage = (
 
 const persisted = loadPersistedSettings();
 
-const applyVisualEffectsToDom = (blur: number, opacity: number) => {
+export const applyVisualEffectsToDom = (blur: number, opacity: number) => {
   if (typeof document !== 'undefined') {
     document.documentElement.style.setProperty('--glass-blur-val', `${blur}px`);
     document.documentElement.style.setProperty('--window-opacity-val', `${opacity / 100}`);
   }
 };
 
-applyVisualEffectsToDom(persisted?.glassBlur || 20, persisted?.windowOpacity || 85);
+applyVisualEffectsToDom(clampBlur(persisted?.glassBlur), clampOpacity(persisted?.windowOpacity));
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   provider: persisted?.provider || 'gemini',
@@ -276,8 +277,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   currentWallpaperUrl: persisted?.currentWallpaperUrl || WALLPAPER_PRESETS[0].url,
   customWallpaperUrl: persisted?.customWallpaperUrl || '',
-  glassBlur: persisted?.glassBlur || 20,
-  windowOpacity: persisted?.windowOpacity || 85,
+  glassBlur: clampBlur(persisted?.glassBlur),
+  windowOpacity: clampOpacity(persisted?.windowOpacity),
 
   reqCodePrefix: persisted?.reqCodePrefix || 'RF',
   strict3FN: persisted?.strict3FN ?? true,
@@ -368,19 +369,21 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
 
   setGlassBlur: (blur) => {
+    const validBlur = clampBlur(blur);
     set((state) => {
-      const next = { ...state, glassBlur: blur };
+      const next = { ...state, glassBlur: validBlur };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      applyVisualEffectsToDom(blur, state.windowOpacity);
+      applyVisualEffectsToDom(validBlur, state.windowOpacity);
       return next;
     });
   },
 
   setWindowOpacity: (opacity) => {
+    const validOpacity = clampOpacity(opacity);
     set((state) => {
-      const next = { ...state, windowOpacity: opacity };
+      const next = { ...state, windowOpacity: validOpacity };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      applyVisualEffectsToDom(state.glassBlur, opacity);
+      applyVisualEffectsToDom(state.glassBlur, validOpacity);
       return next;
     });
   },

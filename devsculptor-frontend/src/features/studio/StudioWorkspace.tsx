@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FlowSidebar, StudioStep } from './FlowSidebar';
 import { CopilotInspector } from './CopilotInspector';
 import { ChatConsultantView } from '@/features/chat/ChatConsultantView';
 import { RequirementsView } from '@/features/requirements/RequirementsView';
 import { DecisionsView } from '@/features/decisions/DecisionsView';
 import { CanvasView } from '@/features/canvas/CanvasView';
+import { DiagramsView } from '@/features/diagrams/DiagramsView';
 import { OkfExportModal } from '@/features/export/OkfExportModal';
 import { useProjectStore } from '@/stores/useProjectStore';
 import { useAiChatStore } from '@/stores/useAiChatStore';
@@ -20,11 +21,33 @@ export const StudioWorkspace: React.FC = () => {
   } = useLayoutStore();
 
   const [activeStep, setActiveStep] = useState<StudioStep>('view-chat');
+  const [isFlowSidebarOpen, setIsFlowSidebarOpen] = useState(true);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [reqsCount, setReqsCount] = useState(0);
   const [adrsCount, setAdrsCount] = useState(0);
   const [isRightPanelExpanded, setIsRightPanelExpanded] = useState(false);
   const [rightPanelTab, setRightPanelTab] = useState<'chat' | 'inspector'>('chat');
+
+  // Atajo de teclado para alternar el panel izquierdo (Ctrl+B / Cmd+B)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isTyping =
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable);
+      if (isTyping) return;
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        setIsFlowSidebarOpen((prev) => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleQuickAction = (actionText: string) => {
     if (actionText.includes('Auditoría IA') || actionText.includes('3FN')) {
@@ -51,17 +74,46 @@ export const StudioWorkspace: React.FC = () => {
 
   return (
     <div id="screen-studio" className="flex-1 min-h-0 flex flex-col xl:flex-row gap-2 sm:gap-3 w-full z-10 fade-in relative overflow-hidden">
-      {/* 1. Panel Izquierdo Desktop: Flujo Guiado (Visible en pantallas >= 1280px) */}
-      <FlowSidebar
-        activeStep={activeStep}
-        onSelectStep={(step) => setActiveStep(step)}
-        onOpenExportModal={() => setIsExportOpen(true)}
-        reqsCount={reqsCount}
-        adrsCount={adrsCount}
-        className="w-[240px] shrink-0 hidden xl:flex"
-      />
+      {/* 1. Panel Izquierdo Desktop: Flujo Guiado Colapsable (Visible en pantallas >= 1280px) */}
+      <div
+        className={`hidden xl:flex flex-col shrink-0 transition-all duration-300 ease-in-out ${
+          isFlowSidebarOpen
+            ? 'w-[240px] opacity-100 translate-x-0'
+            : 'w-0 opacity-0 -translate-x-full pointer-events-none overflow-hidden !m-0 !p-0 !border-0'
+        }`}
+      >
+        <FlowSidebar
+          activeStep={activeStep}
+          onSelectStep={(step) => setActiveStep(step)}
+          onOpenExportModal={() => setIsExportOpen(true)}
+          onToggleCollapse={() => setIsFlowSidebarOpen(false)}
+          reqsCount={reqsCount}
+          adrsCount={adrsCount}
+          className="w-[240px] h-full"
+        />
+      </div>
 
-      {/* 2. Panel Central: Workspace Studio de 4 Vistas Activas (100% en móvil/tablet, flex-1 en desktop) */}
+      {/* Botón Acoplado para Mostrar Flujo cuando está colapsado hacia la izquierda */}
+      {!isFlowSidebarOpen && (
+        <div className="hidden xl:flex items-center shrink-0 self-stretch animate-fade-in py-2">
+          <button
+            type="button"
+            onClick={() => setIsFlowSidebarOpen(true)}
+            className="vision-btn !py-3 !px-1.5 flex flex-col items-center justify-center gap-1.5 text-muted hover:text-indigo-400 rounded-[8px] bg-black/10 dark:bg-white/[0.03] border border-glass-subtle hover:border-indigo-500/40 hover:bg-indigo-500/10 shadow-sm transition-all cursor-pointer group"
+            title="Mostrar Flujo de Trabajo (Ctrl+B)"
+            aria-label="Mostrar Flujo de Trabajo"
+          >
+            <span className="material-symbols-outlined text-[17px] text-indigo-400 group-hover:scale-110 transition-transform">
+              last_page
+            </span>
+            <span className="text-[9.5px] font-mono [writing-mode:vertical-lr] tracking-wider uppercase text-secondary group-hover:text-primary transition-colors py-1">
+              Flujo
+            </span>
+          </button>
+        </div>
+      )}
+
+      {/* 2. Panel Central: Workspace Studio de 5 Vistas Activas (100% en móvil/tablet, flex-1 en desktop) */}
       <main className="vision-window flex-1 flex flex-col min-w-0 relative overflow-hidden h-full">
         {activeStep === 'view-chat' && (
           <ChatConsultantView onNavigateStep={(step) => setActiveStep(step)} />
@@ -79,6 +131,10 @@ export const StudioWorkspace: React.FC = () => {
             projectId={activeProject.id}
             onCountChange={(count) => setAdrsCount(count)}
           />
+        )}
+
+        {activeStep === 'view-diagrams' && (
+          <DiagramsView projectId={activeProject.id} />
         )}
 
         {activeStep === 'view-canvas' && (
@@ -198,7 +254,7 @@ export const StudioWorkspace: React.FC = () => {
             title="Conversación"
           >
             <span className="material-symbols-outlined text-[14px] text-indigo-400">chat_bubble</span>
-            <span className="hidden xs:inline">Chat</span>
+            <span className="hidden sm:inline">Chat</span>
           </button>
           <button
             onClick={() => setActiveStep('view-reqs')}
@@ -208,7 +264,7 @@ export const StudioWorkspace: React.FC = () => {
             title="Requisitos"
           >
             <span className="material-symbols-outlined text-[14px] text-indigo-400">checklist</span>
-            <span className="hidden xs:inline">Requisitos</span>
+            <span className="hidden sm:inline">Requisitos</span>
           </button>
           <button
             onClick={() => setActiveStep('view-docs')}
@@ -218,7 +274,17 @@ export const StudioWorkspace: React.FC = () => {
             title="Documentos"
           >
             <span className="material-symbols-outlined text-[14px] text-indigo-400">description</span>
-            <span className="hidden xs:inline">ADRs</span>
+            <span className="hidden sm:inline">ADRs</span>
+          </button>
+          <button
+            onClick={() => setActiveStep('view-diagrams')}
+            className={`vision-btn !py-1 !px-2 text-[11px] flex items-center gap-1 ${
+              activeStep === 'view-diagrams' ? 'vision-btn-primary' : ''
+            }`}
+            title="Diagramas"
+          >
+            <span className="material-symbols-outlined text-[14px] text-indigo-400">account_tree</span>
+            <span className="hidden sm:inline">Diagramas</span>
           </button>
           <button
             onClick={() => setActiveStep('view-canvas')}
@@ -228,7 +294,7 @@ export const StudioWorkspace: React.FC = () => {
             title="Modelador de Código"
           >
             <span className="material-symbols-outlined text-[14px] text-indigo-400">schema</span>
-            <span className="hidden xs:inline">Canvas</span>
+            <span className="hidden sm:inline">Canvas</span>
           </button>
         </div>
 

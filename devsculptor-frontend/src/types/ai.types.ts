@@ -34,10 +34,20 @@ export interface AiSuggestedDecision {
   consequences?: string;
 }
 
+export interface AiSuggestedDiagram {
+  code: string;
+  title: string;
+  type: 'class' | 'sequence' | 'er' | 'state' | 'c4' | 'deployment' | 'activity' | 'flowchart';
+  format: 'mermaid';
+  mermaidCode: string;
+  description?: string;
+}
+
 export interface DevSculptorActions {
   requirements?: AiSuggestedRequirement[];
   entities?: AiSuggestedEntity[];
   decisions?: AiSuggestedDecision[];
+  diagrams?: AiSuggestedDiagram[];
 }
 
 export interface AiChatResult {
@@ -49,6 +59,7 @@ export interface AiChatResult {
   suggestedRequirements?: AiSuggestedRequirement[];
   suggestedEntities?: AiSuggestedEntity[];
   suggestedDecisions?: AiSuggestedDecision[];
+  suggestedDiagrams?: AiSuggestedDiagram[];
 }
 
 export interface AiChatMessage {

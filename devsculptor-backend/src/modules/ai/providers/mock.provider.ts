@@ -2,8 +2,235 @@ import {
   IAiProvider,
   AiProjectContext,
   AiChatResult,
+  AiSuggestedRequirement,
+  AiSuggestedEntity,
+  AiSuggestedDecision,
+  AiSuggestedDiagram,
 } from './ai-provider.interface';
 import { parseDevSculptorActions } from '../ai.prompts';
+
+export interface ActionIntent {
+  wantsDiagrams: boolean;
+  wantsEntities: boolean;
+  wantsRequirements: boolean;
+  wantsDecisions: boolean;
+  wantsAll: boolean;
+  isExclusive: boolean;
+}
+
+/**
+ * Axioma de Discernimiento Granular (Sprint 6 OKF)
+ * Determina asertivamente la intención técnica del prompt del usuario para no
+ * generar artefactos masivos de forma indiscriminada cuando se pide una categoría específica.
+ */
+export function detectActionIntent(prompt: string, actionContext?: string): ActionIntent {
+  const p = prompt.toLowerCase();
+
+  // 1. Contexto de acción forzado desde la UI
+  if (actionContext === 'diagrams') {
+    return { wantsDiagrams: true, wantsEntities: false, wantsRequirements: false, wantsDecisions: false, wantsAll: false, isExclusive: true };
+  }
+  if (actionContext === 'canvas' || actionContext === 'entities') {
+    return { wantsDiagrams: false, wantsEntities: true, wantsRequirements: false, wantsDecisions: false, wantsAll: false, isExclusive: true };
+  }
+  if (actionContext === 'requirements') {
+    return { wantsDiagrams: false, wantsEntities: false, wantsRequirements: true, wantsDecisions: false, wantsAll: false, isExclusive: true };
+  }
+  if (actionContext === 'decisions') {
+    return { wantsDiagrams: false, wantsEntities: false, wantsRequirements: false, wantsDecisions: true, wantsAll: false, isExclusive: true };
+  }
+  if (actionContext === 'conversation') {
+    return { wantsDiagrams: false, wantsEntities: false, wantsRequirements: false, wantsDecisions: false, wantsAll: false, isExclusive: true };
+  }
+
+  // 2. Detección semántica por palabras clave
+  const mentionsDiagrams =
+    p.includes('diagram') ||
+    p.includes('mermaid') ||
+    p.includes('bpmn') ||
+    p.includes('proceso') ||
+    p.includes('workflow') ||
+    p.includes('actividad') ||
+    p.includes('secuencia') ||
+    p.includes('sequence') ||
+    p.includes('flujo') ||
+    p.includes('flowchart') ||
+    p.includes('c4') ||
+    p.includes('clase') ||
+    p.includes('clases') ||
+    p.includes('class') ||
+    p.includes('estado') ||
+    p.includes('estados') ||
+    p.includes('state') ||
+    p.includes('despliegue') ||
+    p.includes('deployment');
+
+  const mentionsEntities =
+    p.includes('entidad') ||
+    p.includes('entidades') ||
+    p.includes('tabla') ||
+    p.includes('tablas') ||
+    p.includes('canvas') ||
+    p.includes('modelo relacional') ||
+    p.includes('erd') ||
+    p.includes('esquema') ||
+    p.includes('schema') ||
+    p.includes('modelo de datos');
+
+  const mentionsReqs =
+    p.includes('requisito') ||
+    p.includes('requisitos') ||
+    p.includes('requerimiento') ||
+    p.includes('requerimientos') ||
+    p.includes('rf') ||
+    p.includes('rnf') ||
+    p.includes('ieee') ||
+    p.includes('historia de usuario') ||
+    p.includes('criterios de aceptacion');
+
+  const mentionsDecisions =
+    p.includes('adr') ||
+    p.includes('adrs') ||
+    p.includes('decision') ||
+    p.includes('decisiones') ||
+    p.includes('acta') ||
+    p.includes('actas');
+
+  const mentionsAllExplicit =
+    p.includes('todo') ||
+    p.includes('todos') ||
+    p.includes('completo') ||
+    p.includes('completa') ||
+    p.includes('integral') ||
+    p.includes('suite completa') ||
+    p.includes('formaliza todo') ||
+    p.includes('genera todo');
+
+  const anySpecific = mentionsDiagrams || mentionsEntities || mentionsReqs || mentionsDecisions;
+
+  // Si especificó categorías concretas y NO pidió explícitamente "todo":
+  if (anySpecific && !mentionsAllExplicit) {
+    const categoriesCount = [mentionsDiagrams, mentionsEntities, mentionsReqs, mentionsDecisions].filter(Boolean).length;
+    return {
+      wantsDiagrams: mentionsDiagrams,
+      wantsEntities: mentionsEntities,
+      wantsRequirements: mentionsReqs,
+      wantsDecisions: mentionsDecisions,
+      wantsAll: false,
+      isExclusive: categoriesCount === 1,
+    };
+  }
+
+  // Comportamiento por defecto ante "formaliza la propuesta", "genera la arquitectura" o petición global:
+  return {
+    wantsDiagrams: true,
+    wantsEntities: true,
+    wantsRequirements: true,
+    wantsDecisions: true,
+    wantsAll: true,
+    isExclusive: false,
+  };
+}
+
+/**
+ * Ensambla de forma asertiva la respuesta textual y el bloque estructurado devsculptor-actions
+ * respetando estrictamente las categorías solicitadas por el usuario.
+ */
+function buildSelectiveResponse(params: {
+  projectName: string;
+  domainTitle: string;
+  intent: ActionIntent;
+  summaryRationale: string;
+  reqs: AiSuggestedRequirement[];
+  entities: AiSuggestedEntity[];
+  decisions: AiSuggestedDecision[];
+  diagrams: AiSuggestedDiagram[];
+}): string {
+  const { projectName, domainTitle, intent, summaryRationale, reqs, entities, decisions, diagrams } = params;
+
+  let textHeader: string;
+
+  if (intent.isExclusive && intent.wantsDiagrams) {
+    textHeader = `### 📐 Formalización Asertiva de Diagramas Arquitectónicos (OKF Mermaid UML)
+
+He evaluado tu solicitud para el proyecto **${projectName}** y generado **exclusivamente diagramas funcionales** para el subsistema de **${domainTitle}**:
+
+- **Paradigma**: Mermaid v10+ conforme a especificación formal OKF.
+- **Diagramas generados**: ${diagrams.map((d) => `\`${d.code}\` (*${d.title}*)`).join(', ')}.
+- **Criterio**: Sintaxis estricta, renderizable interactivamente en el visualizador con controles de zoom, pan y copia de código.
+
+${summaryRationale}`;
+  } else if (intent.isExclusive && intent.wantsEntities) {
+    textHeader = `### 🗄️ Formalización Asertiva de Esquema Relacional (Canvas ERD)
+
+He procesado tu solicitud para **${projectName}** generando **únicamente entidades para el Canvas Relacional** para **${domainTitle}**:
+
+- **Normalización**: 3FN con claves primarias UUID, claves foráneas explícitas y tenencia horizontal RLS.
+- **Tablas generadas**: ${entities.map((e) => `\`${e.tableName}\` (${e.columns.length} columnas)`).join(', ')}.
+
+${summaryRationale}`;
+  } else if (intent.isExclusive && intent.wantsRequirements) {
+    textHeader = `### 📋 Formalización Asertiva de Requisitos de Software (IEEE-830)
+
+He procesado tu solicitud para **${projectName}** generando **únicamente requisitos formales** para **${domainTitle}**:
+
+- **Requisitos derivados**: ${reqs.length} especificaciones (${reqs.filter((r) => r.type === 'RF').length} Funcionales y ${reqs.filter((r) => r.type === 'RNF').length} No Funcionales).
+- **Criterio**: Asignación correlativa no colisionante y priorización por impacto arquitectónico.
+
+${summaryRationale}`;
+  } else if (intent.isExclusive && intent.wantsDecisions) {
+    textHeader = `### 🏛️ Formalización Asertiva de Actas de Decisión (ADRs)
+
+He procesado tu solicitud para **${projectName}** generando **únicamente actas de decisión técnica** para **${domainTitle}**:
+
+- **ADRs generadas**: ${decisions.map((d) => `\`${d.code}\` (*${d.title}*)`).join(', ')}.
+
+${summaryRationale}`;
+  } else if (!intent.wantsAll) {
+    const includedTypes: string[] = [];
+    if (intent.wantsDiagrams) includedTypes.push('Diagramas UML');
+    if (intent.wantsEntities) includedTypes.push('Tablas Canvas');
+    if (intent.wantsRequirements) includedTypes.push('Requisitos IEEE-830');
+    if (intent.wantsDecisions) includedTypes.push('ADRs');
+
+    textHeader = `### 🎯 Formalización Asertiva Combinada (${includedTypes.join(' + ')})
+
+He procesado tu solicitud para **${projectName}** generando **únicamente la combinación solicitada** para **${domainTitle}**:
+
+${intent.wantsDiagrams ? `- **Diagramas**: ${diagrams.map((d) => `\`${d.code}\``).join(', ')}\n` : ''}${intent.wantsEntities ? `- **Entidades**: ${entities.map((e) => `\`${e.tableName}\``).join(', ')}\n` : ''}${intent.wantsRequirements ? `- **Requisitos**: ${reqs.length} especificaciones\n` : ''}${intent.wantsDecisions ? `- **Decisiones**: ${decisions.map((d) => `\`${d.code}\``).join(', ')}\n` : ''}
+${summaryRationale}`;
+  } else {
+    textHeader = `### 🏛️ Formalización Integral de Arquitectura y Gobernanza Técnica
+
+He formulado la propuesta integral de 4 dimensiones para **${domainTitle}** en el proyecto **${projectName}**:
+
+1. **Requisitos IEEE-830**: ${reqs.length} especificaciones correlativas balanceadas.
+2. **Modelo Relacional Canvas**: ${entities.length} entidades en 3FN formando un grafo conexo.
+3. **Decisiones de Arquitectura (ADR)**: Fundamentación técnica para compensaciones críticas.
+4. **Diagramas Formales OKF**: Visualización en Mermaid v10+ lista para el estudio interactivo.
+
+${summaryRationale}`;
+  }
+
+  // Construcción del bloque JSON filtrado
+  const actionsPayload: Record<string, unknown> = {};
+  if (intent.wantsRequirements && reqs.length > 0) {
+    actionsPayload.suggestedRequirements = reqs;
+  }
+  if (intent.wantsEntities && entities.length > 0) {
+    actionsPayload.suggestedEntities = entities;
+  }
+  if (intent.wantsDecisions && decisions.length > 0) {
+    actionsPayload.suggestedDecisions = decisions;
+  }
+  if (intent.wantsDiagrams && diagrams.length > 0) {
+    actionsPayload.suggestedDiagrams = diagrams;
+  }
+
+  const jsonBlock = `\`\`\`json:devsculptor-actions\n${JSON.stringify(actionsPayload, null, 2)}\n\`\`\``;
+
+  return `${textHeader}\n\n${jsonBlock}`;
+}
 
 export class MockAiProvider implements IAiProvider {
   public readonly name = 'mock';
@@ -11,7 +238,7 @@ export class MockAiProvider implements IAiProvider {
   public async generateChat(
     messages: Array<{ role: 'user' | 'model'; content: string }>,
     context: AiProjectContext,
-    _options?: { temperature?: number; actionContext?: string }
+    options?: { temperature?: number; actionContext?: string }
   ): Promise<AiChatResult> {
     const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user')?.content || '';
     const lower = lastUserMsg.toLowerCase();
@@ -51,28 +278,31 @@ export class MockAiProvider implements IAiProvider {
       lower.includes('diseña') ||
       lower.includes('disena') ||
       lower.includes('genera') ||
-      lower.includes('crea los requisitos') ||
-      lower.includes('estructura los artefactos') ||
+      lower.includes('crea') ||
       lower.includes('inyectar') ||
       lower.includes('inyecta') ||
-      lower.includes('procede');
+      lower.includes('procede') ||
+      lower.includes('diagram') ||
+      lower.includes('tabla') ||
+      lower.includes('requisito');
 
     const isConsultativeQuestion =
-      !isExplicitFormalization &&
-      (lower.includes('?') ||
-        lower.includes('¿') ||
-        lower.startsWith('cómo') ||
-        lower.startsWith('como') ||
-        lower.startsWith('qué') ||
-        lower.startsWith('que') ||
-        lower.startsWith('cuál') ||
-        lower.startsWith('cual') ||
-        lower.includes('recomiendas') ||
-        lower.includes('opinas') ||
-        lower.includes('alternativa') ||
-        lower.includes('explica') ||
-        lower.includes('trade-off') ||
-        lower.includes('dilema'));
+      options?.actionContext === 'conversation' ||
+      (!isExplicitFormalization &&
+        (lower.includes('?') ||
+          lower.includes('¿') ||
+          lower.startsWith('cómo') ||
+          lower.startsWith('como') ||
+          lower.startsWith('qué') ||
+          lower.startsWith('que') ||
+          lower.startsWith('cuál') ||
+          lower.startsWith('cual') ||
+          lower.includes('recomiendas') ||
+          lower.includes('opinas') ||
+          lower.includes('alternativa') ||
+          lower.includes('explica') ||
+          lower.includes('trade-off') ||
+          lower.includes('dilema')));
 
     if (isConsultativeQuestion) {
       const consultativeReply = `### 🏛️ Asesoría de Arquitectura de Software y Gobernanza Técnica
@@ -87,23 +317,27 @@ He evaluado tu consulta técnica para el proyecto **${context.projectName}** (Es
 #### ❓ Preguntas Estratégicas de Refinamiento:
 1. **¿Cuál es el volumen pico estimado de operaciones concurrentes?** (Permite calibrar la estrategia de bloqueo transaccional).
 2. **¿Se requieren reglas de compensación, reversión o anulación automática ante fallos de downstream?**
-3. **¿Existen entidades preexistentes adicionales o restricciones de integración externa?**
+3. **¿Deseas que genere únicamente diagramas, únicamente tablas para el canvas, o los requisitos formales?**
 
 ---
-*💡 Cuando desees que formalice esta arquitectura en tu proyecto, indícame **"Formaliza la propuesta"** o **"Genera los requisitos y tablas"** y generaré la descomposición IEEE-830, el modelo relacional conexo en canvas y las actas ADR correspondientes.*`;
+*💡 Indica específicamente lo que necesitas (ej: **"Genera sólo diagramas de secuencia"**, **"Genera tablas para el canvas"**, o **"Formaliza todo"**) y aplicaré el criterio asertivo correspondiente.*`;
 
       return {
         content: consultativeReply,
         reply: consultativeReply,
         provider: this.name,
         model: 'devsculptor-heuristic-architect-v1',
+        actions: {},
       };
     }
+
+    // 4. Detección del Axioma de Discernimiento Granular
+    const intent = detectActionIntent(lastUserMsg, options?.actionContext);
 
     // Helper para asignar correlativos continuos a requerimientos dinámicos
     const formatReqs = (
       reqs: Array<{ title: string; type: 'RF' | 'RNF'; priority: 'HIGH' | 'MEDIUM' | 'LOW' | 'CRITICAL'; description: string }>
-    ) => {
+    ): AiSuggestedRequirement[] => {
       let curRf = maxRf;
       let curRnf = maxRnf;
       return reqs.map((r) => {
@@ -126,7 +360,9 @@ He evaluado tu consulta técnica para el proyecto **${context.projectName}** (Es
 
     let reply: string;
 
-    // Dominio 1: E-Commerce / Pedidos / Carrito / Órdenes / Dark Stores
+    // =========================================================================
+    // DOMINIO 1: E-Commerce / Pedidos / Carrito / Órdenes / Dark Stores
+    // =========================================================================
     if (
       scopeText.includes('pedido') ||
       scopeText.includes('orden') ||
@@ -161,142 +397,24 @@ He evaluado tu consulta técnica para el proyecto **${context.projectName}** (Es
             description: 'Controlar transiciones secuenciales (RECEIVED -> PICKING -> READY -> IN_TRANSIT -> DELIVERED).',
           },
           {
-            title: 'Compensación y Reembolso ante Faltantes de Bodega',
-            type: 'RF',
-            priority: 'HIGH',
-            description: 'Revertir automáticamente cargos y notificar al cliente si un producto resulta dañado durante el picking.',
-          },
-          {
             title: 'Aislamiento Transaccional ACID Serializable',
             type: 'RNF',
             priority: 'CRITICAL',
             description: 'Garantizar aislamiento estricto en la deducción de existencias con latencia p95 menor a 200ms.',
           },
-          {
-            title: 'Ingesta Desacoplada de Telemetría Logística',
-            type: 'RNF',
-            priority: 'HIGH',
-            description: 'Bufferizar reportes de ubicación de repartidores en caché o memoria sin saturar la base relacional principal.',
-          },
         ];
 
-        if (lower.includes('precio') || lower.includes('importe') || lower.includes('subtotal') || lower.includes('calcular') || lower.includes('monto')) {
-          dynamicReqs.push({
-            title: 'Validación de Precios Unitarios e Impuestos en Servidor',
-            type: 'RF',
-            priority: 'HIGH',
-            description: 'Recalcular en backend los precios, descuentos e impuestos aplicables para blindar la integridad del importe total.',
-          });
-        }
+        const reqs = formatReqs(dynamicReqs);
 
-        if (lower.includes('existencia') || lower.includes('stock') || lower.includes('inventario') || lower.includes('reserva') || lower.includes('disponib')) {
-          dynamicReqs.push({
-            title: 'Reserva Concurrente y Bloqueo de Stock en Inventario',
-            type: 'RF',
-            priority: 'HIGH',
-            description: 'Comprobar disponibilidad y deducir transaccionalmente el stock de inventario impidiendo sobreventas simultáneas.',
-          });
-        }
-
-        if (lower.includes('pago') || lower.includes('cobro') || lower.includes('liquidar') || lower.includes('tarjeta')) {
-          dynamicReqs.push({
-            title: 'Transición de Estado y Disparo de Liquidación de Pago',
-            type: 'RF',
-            priority: 'HIGH',
-            description: 'Gestionar el ciclo de vida de la orden hacia PENDING_PAYMENT coordinando la solicitud con la pasarela financiera.',
-          });
-        }
-
-        if (lower.includes('despacho') || lower.includes('envio') || lower.includes('entrega') || lower.includes('logistica') || lower.includes('rastreo')) {
-          dynamicReqs.push({
-            title: 'Generación de Orden de Despacho y Trazabilidad Logística',
-            type: 'RF',
-            priority: 'HIGH',
-            description: 'Emitir orden de despacho con dirección de entrega y asignación de transportista una vez acreditada la orden.',
-          });
-        }
-
-        if (lower.includes('historial') || lower.includes('consulta') || lower.includes('seguimiento') || lower.includes('mis pedidos')) {
-          dynamicReqs.push({
-            title: 'Consulta Paginada de Historial y Detalle de Órdenes',
-            type: 'RF',
-            priority: 'MEDIUM',
-            description: 'Habilitar a clientes y operadores la inspección de pedidos previos con desglose de renglones y comprobantes.',
-          });
-        }
-
-        if (lower.includes('cancel') || lower.includes('devoluc') || lower.includes('anulac') || lower.includes('reembolso')) {
-          dynamicReqs.push({
-            title: 'Anulación y Reversión Automática de Existencias',
-            type: 'RF',
-            priority: 'HIGH',
-            description: 'Permitir la anulación controlada de pedidos no despachados reintegrando de forma inmediata el stock disponible.',
-          });
-        }
-
-        // Si la petición fue muy breve, garantizar al menos la validación de importes
-        if (dynamicReqs.length === 1) {
-          dynamicReqs.push({
-            title: 'Validación de Precios y Existencias en Servidor',
-            type: 'RF',
-            priority: 'HIGH',
-            description: 'Verificar en runtime que los precios unitarios y existencias sean consistentes antes de emitir la confirmación.',
-          });
-        }
-
-        // Requisito No Funcional de consistencia
-        dynamicReqs.push({
-          title: 'Transaccionalidad ACID con Aislamiento Serializable',
-          type: 'RNF',
-          priority: 'HIGH',
-          description: 'Garantizar que la deducción de inventario y creación de renglones ocurran en una sola transacción atómica sin lecturas fantasma.',
-        });
-
-        // Entidades dinámicas del dominio formando un grafo estrictamente conexo
-        const isDarkStoreDomain =
-          scopeText.includes('dark store') ||
-          scopeText.includes('dark_store') ||
-          scopeText.includes('sobreventa') ||
-          scopeText.includes('bodega');
-
-        const dynamicEntities: unknown[] = [];
-
-        if (isDarkStoreDomain && !existingTableNames.includes('dark_stores')) {
-          dynamicEntities.push({
-            tableName: 'dark_stores',
-            columns: [
-              { name: 'id', type: 'UUID', isPk: true },
-              { name: 'name', type: 'VARCHAR(100)', nullable: false },
-              { name: 'address', type: 'VARCHAR(255)', nullable: false },
-              { name: 'is_active', type: 'BOOLEAN', nullable: false },
-              { name: 'created_at', type: 'TIMESTAMP', nullable: false },
-            ],
-          });
-        }
-
-        if (!existingTableNames.includes('products')) {
-          dynamicEntities.push({
-            tableName: 'products',
-            columns: [
-              { name: 'id', type: 'UUID', isPk: true },
-              { name: 'sku', type: 'VARCHAR(50)', unique: true, nullable: false },
-              { name: 'name', type: 'VARCHAR(150)', nullable: false },
-              { name: 'price', type: 'DECIMAL(10,2)', nullable: false },
-              { name: 'created_at', type: 'TIMESTAMP', nullable: false },
-            ],
-          });
-        }
-
-        dynamicEntities.push(
+        const entities: AiSuggestedEntity[] = [
           {
             tableName: 'orders',
             columns: [
               { name: 'id', type: 'UUID', isPk: true },
-              { name: 'user_id', type: 'UUID', isFk: true, referencesTable: 'users', cardinality: '1:N', nullable: false },
-              ...(isDarkStoreDomain ? [{ name: 'dark_store_id', type: 'UUID', isFk: true, referencesTable: 'dark_stores', cardinality: '1:N', nullable: false }] : []),
-              { name: 'order_number', type: 'VARCHAR(32)', unique: true, nullable: false },
-              { name: 'total_amount', type: 'DECIMAL(12,2)', nullable: false },
+              { name: 'user_id', type: 'UUID', isFk: hasUsersTable, referencesTable: hasUsersTable ? 'users' : undefined, cardinality: '1:N' },
+              { name: 'order_number', type: 'VARCHAR(30)', unique: true, nullable: false },
               { name: 'status', type: 'VARCHAR(20)', nullable: false },
+              { name: 'total_amount', type: 'DECIMAL(12,2)', nullable: false },
               { name: 'created_at', type: 'TIMESTAMP', nullable: false },
             ],
           },
@@ -304,82 +422,83 @@ He evaluado tu consulta técnica para el proyecto **${context.projectName}** (Es
             tableName: 'order_items',
             columns: [
               { name: 'id', type: 'UUID', isPk: true },
-              { name: 'order_id', type: 'UUID', isFk: true, referencesTable: 'orders', cardinality: '1:N', nullable: false },
-              { name: 'product_id', type: 'UUID', isFk: true, referencesTable: 'products', cardinality: '1:N', nullable: false },
+              { name: 'order_id', type: 'UUID', isFk: true, referencesTable: 'orders', cardinality: '1:N' },
+              { name: 'product_id', type: 'UUID', isFk: true, referencesTable: 'products', cardinality: '1:N' },
               { name: 'unit_price', type: 'DECIMAL(10,2)', nullable: false },
               { name: 'quantity', type: 'INTEGER', nullable: false },
               { name: 'subtotal', type: 'DECIMAL(12,2)', nullable: false },
             ],
-          }
-        );
+          },
+        ];
 
-        if (lower.includes('despacho') || lower.includes('envio') || lower.includes('entrega') || lower.includes('direccion') || lower.includes('logistica')) {
-          dynamicEntities.push({
-            tableName: 'shipping_addresses',
-            columns: [
-              { name: 'id', type: 'UUID', isPk: true },
-              { name: 'order_id', type: 'UUID', isFk: true, referencesTable: 'orders', cardinality: '1:1', unique: true, nullable: false },
-              { name: 'recipient_name', type: 'VARCHAR(120)', nullable: false },
-              { name: 'street_address', type: 'VARCHAR(255)', nullable: false },
-              { name: 'city', type: 'VARCHAR(100)', nullable: false },
-              { name: 'postal_code', type: 'VARCHAR(20)', nullable: false },
-              { name: 'country_code', type: 'VARCHAR(3)', nullable: false },
-            ],
-          });
-        }
+        const decisions: AiSuggestedDecision[] = [
+          {
+            code: adr1,
+            title: 'Bloqueo Pesimista SELECT FOR UPDATE en Reserva de Stock',
+            context: 'Picos concurrentes de demanda en Dark Stores pueden provocar sobreventa de la última unidad disponible.',
+            decision: 'Ejecutar reservas con SELECT FOR UPDATE a nivel de fila dentro de transacciones aisladas en PostgreSQL.',
+            consequences: 'Consistencia absoluta de inventario con mínimo overhead gracias a índices en product_id y store_id.',
+          },
+        ];
 
-        if (lower.includes('pago') || lower.includes('cobro') || lower.includes('liquidar') || lower.includes('transaccion')) {
-          dynamicEntities.push({
-            tableName: 'payments',
-            columns: [
-              { name: 'id', type: 'UUID', isPk: true },
-              { name: 'order_id', type: 'UUID', isFk: true, referencesTable: 'orders', cardinality: '1:1', unique: true, nullable: false },
-              { name: 'amount', type: 'DECIMAL(12,2)', nullable: false },
-              { name: 'currency', type: 'VARCHAR(3)', nullable: false },
-              { name: 'status', type: 'VARCHAR(20)', nullable: false },
-              { name: 'idempotency_key', type: 'UUID', unique: true, nullable: false },
-            ],
-          });
-        }
-        const reqsJson = JSON.stringify(formatReqs(dynamicReqs), null, 4);
-        const entitiesJson = JSON.stringify(dynamicEntities, null, 4);
+        const diagrams: AiSuggestedDiagram[] = [
+          {
+            code: 'DIAG-01',
+            title: 'Diagrama de Secuencia - Reserva y Transición de Órdenes',
+            type: 'sequence',
+            format: 'mermaid',
+            mermaidCode: `sequenceDiagram
+  autonumber
+  actor User as Cliente
+  participant Web as Frontend Web
+  participant GW as API Gateway
+  participant OrderSvc as Order Service
+  participant DB as PostgreSQL
+  User->>Web: Confirmar Orden
+  Web->>GW: POST /api/v1/orders
+  GW->>OrderSvc: dispatch(CreateOrderCommand)
+  OrderSvc->>DB: BEGIN TRANSACTION (SERIALIZABLE)
+  OrderSvc->>DB: SELECT * FROM stock WHERE id = $1 FOR UPDATE
+  OrderSvc->>DB: INSERT INTO orders ...
+  OrderSvc->>DB: INSERT INTO order_items ...
+  OrderSvc->>DB: COMMIT
+  OrderSvc-->>GW: OrderCreatedDTO (201 Created)
+  GW-->>Web: 201 Created { orderId }
+  Web-->>User: Pedido Confirmado`,
+            description: 'Flujo de ejecución E2E conforme a especificación OKF-005-UML-SEQUENCE con aislamiento pesimista.',
+          },
+          {
+            code: 'DIAG-02',
+            title: 'Máquina de Estados - Ciclo de Vida del Pedido',
+            type: 'state',
+            format: 'mermaid',
+            mermaidCode: `stateDiagram-v2
+  [*] --> PENDING : Creación de Orden
+  PENDING --> PAID : Confirmación de Pago
+  PENDING --> CANCELLED : Anulación / Timeout
+  PAID --> PICKING : Asignación en Bodega
+  PICKING --> READY : Empaque Finalizado
+  READY --> IN_TRANSIT : Despacho Logístico
+  IN_TRANSIT --> DELIVERED : Entrega Confirmada
+  DELIVERED --> [*]
+  CANCELLED --> [*]`,
+            description: 'Transiciones de estado del ciclo de vida de la orden conforme a OKF-007-STATE.',
+          },
+        ];
 
-        reply = `Como Arquitecto de Software Principal, he evaluado exhaustivamente tu solicitud para el módulo de **Órdenes y Pedidos** en el proyecto **"${context.projectName}"** (${context.architectureStyle}).
-
-### Razonamiento Arquitectónico y Descomposición del Dominio:
-1. **Desacoplamiento Cabecera-Detalle y Entidades Satélite**: Una orden requiere un modelo relacional en 3FN que separe la cabecera (\`orders\`), sus renglones (\`order_items\`)${
-  dynamicEntities.some((e: unknown) => (e as { tableName: string }).tableName === 'shipping_addresses')
-    ? ', los datos de destino logístico (`shipping_addresses`)'
-    : ''
-}${
-  dynamicEntities.some((e: unknown) => (e as { tableName: string }).tableName === 'payments')
-    ? ' y la transacción financiera vinculada (`payments`)'
-    : ''
-} con claves foráneas cruzadas.
-2. **Asociación y Multi-Tenancy**: ${
-  hasUsersTable
-    ? 'Se vincula directamente con la tabla existente `users` mediante `user_id UUID FK`, preservando el principio de no duplicación.'
-    : 'Se incluye la referencia `user_id UUID` lista para acoplar al módulo de identidad.'
-}
-3. **Criterio Dinámico de Requisitos y Entidades**: Se formularon **${dynamicReqs.length} requisitos específicos** y **${dynamicEntities.length} entidades relacionales normalizadas** deducidas directamente de las responsabilidades descritas en tu propuesta.
-4. **Control Transaccional ACID**: Se formaliza el aislamiento serializable para evitar sobreventas concurrentes.
-
-\`\`\`json:devsculptor-actions
-{
-  "suggestedRequirements": ${reqsJson},
-  "suggestedEntities": ${entitiesJson},
-  "suggestedDecisions": [
-    {
-      "code": "${adr1}",
-      "title": "Máquina de Estados Finita e Inmutabilidad para Ciclo de Órdenes",
-      "context": "Las órdenes requieren transición controlada entre estados (CREATED -> PAID -> FULFILLED | CANCELLED).",
-      "decision": "Implementar validación de transiciones de estado a nivel de DTO y base de datos impidiendo mutaciones en pedidos liquidados.",
-      "consequences": "Integridad contable total, mitigación de dobles despachos y auditoría fidedigna."
-    }
-  ]
-}
-\`\`\``;
+        reply = buildSelectiveResponse({
+          projectName: context.projectName,
+          domainTitle: 'Procesamiento de Órdenes y Carrito',
+          intent,
+          summaryRationale:
+            'Se aísla la cabecera `orders` de sus detalles `order_items` preservando integridad referencial en 3FN y control estricto de concurrencia.',
+          reqs,
+          entities,
+          decisions,
+          diagrams,
+        });
       } else {
+        // La tabla orders ya existe -> Expandir a logística de envíos
         const dynamicReqs: Array<{ title: string; type: 'RF' | 'RNF'; priority: 'HIGH' | 'MEDIUM' | 'CRITICAL'; description: string }> = [
           {
             title: 'Despacho y Trazabilidad de Envíos',
@@ -387,69 +506,80 @@ He evaluado tu consulta técnica para el proyecto **${context.projectName}** (Es
             priority: 'HIGH',
             description: 'Generación de guías de despacho con número de rastreo y fecha estimada vinculadas a órdenes existentes.',
           },
+          {
+            title: 'Sincronización Eventual Asíncrona de Estados de Despacho',
+            type: 'RNF',
+            priority: 'MEDIUM',
+            description: 'Procesar eventos de despacho desacoplados de la sesión HTTP mediante colas de mensajes.',
+          },
         ];
 
-        if (lower.includes('notific') || lower.includes('alerta') || lower.includes('correo') || lower.includes('email')) {
-          dynamicReqs.push({
-            title: 'Notificación Multicanal de Cambio de Estado en Envíos',
-            type: 'RF',
-            priority: 'MEDIUM',
-            description: 'Emisión de eventos automáticos cada vez que el paquete cambie de estado de entrega.',
-          });
-        }
+        const reqs = formatReqs(dynamicReqs);
 
-        if (lower.includes('rastreo') || lower.includes('tracking') || lower.includes('guia') || lower.includes('transportista')) {
-          dynamicReqs.push({
-            title: 'Sincronización con APIs de Transportistas Externos',
-            type: 'RF',
-            priority: 'HIGH',
-            description: 'Consultar periódicamente el estado de la guía en los servicios web del transportista logístico.',
-          });
-        }
+        const entities: AiSuggestedEntity[] = [
+          {
+            tableName: 'shipments',
+            columns: [
+              { name: 'id', type: 'UUID', isPk: true },
+              { name: 'order_id', type: 'UUID', isFk: true, referencesTable: 'orders', cardinality: '1:N' },
+              { name: 'tracking_number', type: 'VARCHAR(64)', unique: true, nullable: false },
+              { name: 'carrier', type: 'VARCHAR(50)', nullable: false },
+              { name: 'status', type: 'VARCHAR(20)', nullable: false },
+              { name: 'shipped_at', type: 'TIMESTAMP', nullable: true },
+              { name: 'delivered_at', type: 'TIMESTAMP', nullable: true },
+            ],
+          },
+        ];
 
-        dynamicReqs.push({
-          title: 'Sincronización Eventual Asíncrona de Estados de Despacho',
-          type: 'RNF',
-          priority: 'MEDIUM',
-          description: 'Procesar eventos de despacho desacoplados de la sesión HTTP mediante colas de mensajes.',
+        const decisions: AiSuggestedDecision[] = [
+          {
+            code: adr1,
+            title: 'Estrategia de Actualización Asíncrona para Guías de Envío',
+            context: 'Los operadores logísticos externos proveen webhooks con latencia variable.',
+            decision: 'Procesar actualizaciones de estado de envío de forma asíncrona desacoplada de la sesión del cliente.',
+            consequences: 'Mayor resiliencia del sistema ante caídas o lentitud de las APIs de las empresas de correo.',
+          },
+        ];
+
+        const diagrams: AiSuggestedDiagram[] = [
+          {
+            code: 'DIAG-01',
+            title: 'Diagrama de Secuencia - Trazabilidad de Envíos',
+            type: 'sequence',
+            format: 'mermaid',
+            mermaidCode: `sequenceDiagram
+  autonumber
+  actor Carrier as Transportista Logístico
+  participant Webhook as Webhook Receiver
+  participant ShipSvc as Shipment Service
+  participant DB as PostgreSQL
+  actor Client as Cliente
+  Carrier->>Webhook: POST /webhooks/carrier (tracking, status)
+  Webhook->>Webhook: Validar Firma HMAC
+  Webhook->>ShipSvc: updateShipmentStatus(...)
+  ShipSvc->>DB: UPDATE shipments SET status = $1 WHERE tracking = $2
+  ShipSvc->>Client: Notificación Push / Email
+  Webhook-->>Carrier: 200 OK`,
+            description: 'Flujo de ingesta asíncrona de eventos de transporte logístico.',
+          },
+        ];
+
+        reply = buildSelectiveResponse({
+          projectName: context.projectName,
+          domainTitle: 'Logística de Despachos y Guías de Envío',
+          intent,
+          summaryRationale:
+            'La tabla `orders` ya existe en el modelo. Se extiende el dominio con `shipments` para trazabilidad de envíos sin duplicidad.',
+          reqs,
+          entities,
+          decisions,
+          diagrams,
         });
-
-        const reqsJson = JSON.stringify(formatReqs(dynamicReqs), null, 4);
-
-        reply = `He verificado el estado vivo de tu proyecto y detecté que la tabla **\`orders\` ya existe en el canvas**.
-Aplicando la regla de **no-duplicación**, propongo expandir el dominio hacia el subsistema de **Logística de Envíos y Despachos**:
-
-\`\`\`json:devsculptor-actions
-{
-  "suggestedRequirements": ${reqsJson},
-  "suggestedEntities": [
-    {
-      "tableName": "shipments",
-      "columns": [
-        { "name": "id", "type": "UUID", "isPk": true },
-        { "name": "order_id", "type": "UUID", "isFk": true, "referencesTable": "orders", "cardinality": "1:N" },
-        { "name": "tracking_number", "type": "VARCHAR(64)", "unique": true, "nullable": false },
-        { "name": "carrier", "type": "VARCHAR(50)", "nullable": false },
-        { "name": "status", "type": "VARCHAR(20)", "nullable": false },
-        { "name": "shipped_at", "type": "TIMESTAMP", "nullable": true },
-        { "name": "delivered_at", "type": "TIMESTAMP", "nullable": true }
-      ]
-    }
-  ],
-  "suggestedDecisions": [
-    {
-      "code": "${adr1}",
-      "title": "Estrategia de Actualización Asíncrona para Guías de Envío",
-      "context": "Los operadores logísticos externos proveen webhooks con latencia variable.",
-      "decision": "Procesar actualizaciones de estado de envío de forma asíncrona desacoplada de la sesión del cliente.",
-      "consequences": "Mayor resiliencia del sistema ante caídas o lentitud de las APIs de las empresas de correo."
-    }
-  ]
-}
-\`\`\``;
       }
 
-    // Dominio 2: Pagos / Cobros / Billing
+    // =========================================================================
+    // DOMINIO 2: Pagos / Cobros / Billing
+    // =========================================================================
     } else if (
       lower.includes('pago') ||
       lower.includes('payment') ||
@@ -467,107 +597,106 @@ Aplicando la regla de **no-duplicación**, propongo expandir el dominio hacia el
             priority: 'HIGH',
             description: 'Procesar cargos financieros mediante tokens de pasarela externa con verificación estricta de clave de idempotencia UUID v4.',
           },
-        ];
-
-        if (lower.includes('webhook') || lower.includes('callback') || lower.includes('notific')) {
-          dynamicReqs.push({
+          {
             title: 'Conciliación Asíncrona de Webhooks de Pago',
             type: 'RF',
             priority: 'HIGH',
             description: 'Recepción y validación de firmas criptográficas HMAC en webhooks de pasarela con reintentos exponenciales.',
-          });
-        }
+          },
+          {
+            title: 'Cumplimiento PCI-DSS mediante Tokenización Externa',
+            type: 'RNF',
+            priority: 'CRITICAL',
+            description: 'Prohibir el almacenamiento de datos primarios de tarjeta (PAN/CVV) en la base de datos de la aplicación.',
+          },
+        ];
 
-        if (lower.includes('reembolso') || lower.includes('refund') || lower.includes('devoluc')) {
-          dynamicReqs.push({
-            title: 'Liquidación y Registro de Reembolsos Totales o Parciales',
-            type: 'RF',
-            priority: 'HIGH',
-            description: 'Ejecución de reembolsos a través de la API de la pasarela y actualización auditada del estado del pago.',
-          });
-        }
+        const reqs = formatReqs(dynamicReqs);
 
-        if (lower.includes('suscrip') || lower.includes('recurrente') || lower.includes('plan')) {
-          dynamicReqs.push({
-            title: 'Gestión y Renovación Automatizada de Cobros Recurrentes',
-            type: 'RF',
-            priority: 'HIGH',
-            description: 'Programar cobros periódicos asociados a planes de suscripción con manejo de gracia ante fallos.',
-          });
-        }
+        const paymentCols: AiSuggestedEntity['columns'] = [
+          { name: 'id', type: 'UUID', isPk: true },
+          ...(existingTableNames.includes('orders')
+            ? [{ name: 'order_id', type: 'UUID', isFk: true, referencesTable: 'orders', cardinality: '1:1' as const }]
+            : []),
+          { name: 'user_id', type: 'UUID', isFk: hasUsersTable, referencesTable: hasUsersTable ? 'users' : undefined, cardinality: '1:N' as const },
+          { name: 'amount', type: 'DECIMAL(12,2)', nullable: false },
+          { name: 'currency', type: 'VARCHAR(3)', nullable: false },
+          { name: 'status', type: 'VARCHAR(20)', nullable: false },
+          { name: 'idempotency_key', type: 'UUID', unique: true, nullable: false },
+          { name: 'created_at', type: 'TIMESTAMP', nullable: false },
+        ];
 
-        if (lower.includes('factura') || lower.includes('recibo') || lower.includes('fiscal') || lower.includes('comprobante')) {
-          dynamicReqs.push({
-            title: 'Emisión Automatizada de Comprobantes Fiscales',
-            type: 'RF',
-            priority: 'MEDIUM',
-            description: 'Generar comprobante tributario y vincular el folio fiscal a la transacción confirmada.',
-          });
-        }
+        const entities: AiSuggestedEntity[] = [
+          {
+            tableName: 'payments',
+            columns: paymentCols,
+          },
+          {
+            tableName: 'payment_transactions',
+            columns: [
+              { name: 'id', type: 'UUID', isPk: true },
+              { name: 'payment_id', type: 'UUID', isFk: true, referencesTable: 'payments', cardinality: '1:N' as const },
+              { name: 'gateway_event_id', type: 'VARCHAR(100)', unique: true, nullable: false },
+              { name: 'event_type', type: 'VARCHAR(50)', nullable: false },
+              { name: 'created_at', type: 'TIMESTAMP', nullable: false },
+            ],
+          },
+        ];
 
-        dynamicReqs.push({
-          title: 'Cumplimiento PCI-DSS mediante Tokenización Externa',
-          type: 'RNF',
-          priority: 'CRITICAL',
-          description: 'Prohibir el almacenamiento de datos primarios de tarjeta (PAN/CVV) en la base de datos de la aplicación.',
+        const decisions: AiSuggestedDecision[] = [
+          {
+            code: adr1,
+            title: 'Tokenización Externa y Manejo Idempotente de Pagos',
+            context: 'Se requiere procesar transacciones monetarias reduciendo la superficie de riesgo PCI-DSS y evitando dobles cargos.',
+            decision: 'Delegar la captura de tarjetas sensibles a pasarela externa (Stripe/MercadoPago) y almacenar únicamente tokens e idempotencia.',
+            consequences: 'Menor superficie de ataque, total cumplimiento normativo e inmunidad contra fallas de red.',
+          },
+        ];
+
+        const diagrams: AiSuggestedDiagram[] = [
+          {
+            code: 'DIAG-01',
+            title: 'Diagrama de Secuencia - Procesamiento Idempotente de Pagos',
+            type: 'sequence',
+            format: 'mermaid',
+            mermaidCode: `sequenceDiagram
+  autonumber
+  actor User as Comprador
+  participant Web as Checkout UI
+  participant API as API Server
+  participant Stripe as Pasarela Financiera
+  participant DB as PostgreSQL
+  User->>Web: Autorizar Cobro
+  Web->>API: POST /payments (Idempotency-Key: UUID)
+  API->>DB: SELECT * FROM payments WHERE idempotency_key = $1
+  alt Clave ya procesada
+    DB-->>API: PaymentRecord (Existente)
+    API-->>Web: 200 OK (Respuesta en Caché)
+  else Nueva Transacción
+    API->>Stripe: ChargeToken(amount, token)
+    Stripe-->>API: ChargeSuccess { chargeId }
+    API->>DB: INSERT INTO payments (status='CONFIRMED', ...)
+    API->>DB: INSERT INTO payment_transactions (...)
+    API-->>Web: 201 Created { paymentId }
+    Web-->>User: Comprobante Emitido
+  end`,
+            description: 'Flujo de cobro tokenizado con verificación estricta de idempotencia.',
+          },
+        ];
+
+        reply = buildSelectiveResponse({
+          projectName: context.projectName,
+          domainTitle: 'Pagos y Transacciones Financieras',
+          intent,
+          summaryRationale:
+            'Se separa la intención de pago `payments` de los eventos de auditoría `payment_transactions`, blindando el flujo con clave de idempotencia.',
+          reqs,
+          entities,
+          decisions,
+          diagrams,
         });
-
-        const reqsJson = JSON.stringify(formatReqs(dynamicReqs), null, 4);
-
-        reply = `He formulado la propuesta integral para el subsistema de **Pagos y Transacciones Financieras** en **"${context.projectName}"**:
-
-### Razonamiento de Blindaje Transaccional:
-1. **Separación de Responsabilidades**: Desacoplamos la intención de pago (\`payments\`) de los eventos de auditoría y callbacks del proveedor (\`payment_transactions\`).
-2. **No Duplicación y Referencias**: ${
-  existingTableNames.includes('orders')
-    ? 'Se enlaza a la tabla `orders` ya existente en tu canvas con clave foránea.'
-    : hasUsersTable
-    ? 'Se asocia con `users` mediante `user_id FK`.'
-    : 'Se proveen las claves foráneas listas para relacionar.'
-}
-3. **Criterio Dinámico**: Se derivaron **${dynamicReqs.length} requisitos funcionales y no funcionales** conforme a las operaciones solicitadas.
-4. **Idempotencia**: Todo cobro requiere un UUID de idempotencia unívoco para neutralizar dobles cobros ante reintentos de red.
-
-\`\`\`json:devsculptor-actions
-{
-  "suggestedRequirements": ${reqsJson},
-  "suggestedEntities": [
-    {
-      "tableName": "payments",
-      "columns": [
-        { "name": "id", "type": "UUID", "isPk": true },
-        ${existingTableNames.includes('orders') ? '{ "name": "order_id", "type": "UUID", "isFk": true, "referencesTable": "orders", "cardinality": "1:1" },' : ''}
-        { "name": "user_id", "type": "UUID", "isFk": ${hasUsersTable}, ${hasUsersTable ? '"referencesTable": "users", "cardinality": "1:N",' : ''} "nullable": false },
-        { "name": "amount", "type": "DECIMAL(12,2)", "nullable": false },
-        { "name": "currency", "type": "VARCHAR(3)", "nullable": false },
-        { "name": "status", "type": "VARCHAR(20)", "nullable": false },
-        { "name": "idempotency_key", "type": "UUID", "unique": true, "nullable": false },
-        { "name": "created_at", "type": "TIMESTAMP", "nullable": false }
-      ]
-    },
-    {
-      "tableName": "payment_transactions",
-      "columns": [
-        { "name": "id", "type": "UUID", "isPk": true },
-        { "name": "payment_id", "type": "UUID", "isFk": true, "referencesTable": "payments", "cardinality": "1:N" },
-        { "name": "gateway_event_id", "type": "VARCHAR(100)", "unique": true, "nullable": false },
-        { "name": "event_type", "type": "VARCHAR(50)", "nullable": false },
-        { "name": "created_at", "type": "TIMESTAMP", "nullable": false }
-      ]
-    }
-  ],
-  "suggestedDecisions": [
-    {
-      "code": "${adr1}",
-      "title": "Tokenización Externa y Manejo Idempotente de Pagos",
-      "context": "Se requiere procesar transacciones monetarias reduciendo la superficie de riesgo PCI-DSS y evitando dobles cargos.",
-      "decision": "Delegar la captura de tarjetas sensibles a pasarela externa (Stripe/MercadoPago) y almacenar únicamente tokens e idempotencia.",
-      "consequences": "Menor superficie de ataque, total cumplimiento normativo e inmunidad contra fallas de red."
-    }
-  ]
-}
-\`\`\``;
       } else {
+        // payments ya existe -> métodos de pago guardados
         const dynamicReqs: Array<{ title: string; type: 'RF' | 'RNF'; priority: 'HIGH' | 'MEDIUM' | 'CRITICAL'; description: string }> = [
           {
             title: 'Almacenamiento Seguro de Métodos de Pago Preferidos',
@@ -583,41 +712,73 @@ Aplicando la regla de **no-duplicación**, propongo expandir el dominio hacia el
           },
         ];
 
-        const reqsJson = JSON.stringify(formatReqs(dynamicReqs), null, 4);
+        const reqs = formatReqs(dynamicReqs);
 
-        reply = `Detecté que **\`payments\` ya existe** en tu canvas. Para complementar el flujo de pagos, propongo el módulo de **Métodos de Pago Guardados**:
+        const entities: AiSuggestedEntity[] = [
+          {
+            tableName: 'payment_methods',
+            columns: [
+              { name: 'id', type: 'UUID', isPk: true },
+              { name: 'user_id', type: 'UUID', isFk: hasUsersTable, referencesTable: hasUsersTable ? 'users' : undefined, cardinality: '1:N' },
+              { name: 'provider_token', type: 'VARCHAR(255)', unique: true, nullable: false },
+              { name: 'card_brand', type: 'VARCHAR(20)', nullable: false },
+              { name: 'last4', type: 'VARCHAR(4)', nullable: false },
+              { name: 'is_default', type: 'BOOLEAN', nullable: false },
+              { name: 'created_at', type: 'TIMESTAMP', nullable: false },
+            ],
+          },
+        ];
 
-\`\`\`json:devsculptor-actions
-{
-  "suggestedRequirements": ${reqsJson},
-  "suggestedEntities": [
-    {
-      "tableName": "payment_methods",
-      "columns": [
-        { "name": "id", "type": "UUID", "isPk": true },
-        { "name": "user_id", "type": "UUID", "isFk": ${hasUsersTable}, ${hasUsersTable ? '"referencesTable": "users", "cardinality": "1:N",' : ''} "nullable": false },
-        { "name": "provider_token", "type": "VARCHAR(255)", "unique": true, "nullable": false },
-        { "name": "card_brand", "type": "VARCHAR(20)", "nullable": false },
-        { "name": "last4", "type": "VARCHAR(4)", "nullable": false },
-        { "name": "is_default", "type": "BOOLEAN", "nullable": false },
-        { "name": "created_at", "type": "TIMESTAMP", "nullable": false }
-      ]
-    }
-  ],
-  "suggestedDecisions": [
-    {
-      "code": "${adr1}",
-      "title": "Persistencia Exclusiva de Tokens de Cliente",
-      "context": "Se busca mejorar la experiencia en checkout recurrente sin violar PCI-DSS.",
-      "decision": "Guardar únicamente el identificador de cliente del procesador de pagos y los últimos 4 dígitos informativos.",
-      "consequences": "Experiencia de 1-click checkout segura y sin riesgo de filtración de credenciales."
-    }
-  ]
-}
-\`\`\``;
+        const decisions: AiSuggestedDecision[] = [
+          {
+            code: adr1,
+            title: 'Persistencia Exclusiva de Tokens de Cliente',
+            context: 'Se busca mejorar la experiencia en checkout recurrente sin violar PCI-DSS.',
+            decision: 'Guardar únicamente el identificador de cliente del procesador de pagos y los últimos 4 dígitos informativos.',
+            consequences: 'Experiencia de 1-click checkout segura y sin riesgo de filtración de credenciales.',
+          },
+        ];
+
+        const diagrams: AiSuggestedDiagram[] = [
+          {
+            code: 'DIAG-01',
+            title: 'Diagrama de Secuencia - Tokenización y Registro de Tarjeta',
+            type: 'sequence',
+            format: 'mermaid',
+            mermaidCode: `sequenceDiagram
+  autonumber
+  actor User as Usuario
+  participant App as Frontend
+  participant Gateway as Pasarela (Stripe Elements)
+  participant Backend as API Backend
+  participant DB as PostgreSQL
+  User->>App: Ingresar Tarjeta en Formulario Seguro
+  App->>Gateway: Enviar PAN/CVV directamente
+  Gateway-->>App: provider_token (tok_xyz)
+  App->>Backend: POST /payment-methods { token, brand, last4 }
+  Backend->>DB: INSERT INTO payment_methods (...)
+  Backend-->>App: 201 Created
+  App-->>User: Método Guardado`,
+            description: 'Registro de métodos de pago sin contacto directo con datos sensibles de tarjeta.',
+          },
+        ];
+
+        reply = buildSelectiveResponse({
+          projectName: context.projectName,
+          domainTitle: 'Bóveda de Métodos de Pago Guardados',
+          intent,
+          summaryRationale:
+            'La tabla `payments` ya existe. Se introduce `payment_methods` para agilizar cobros recurrentes sin almacenar datos PAN.',
+          reqs,
+          entities,
+          decisions,
+          diagrams,
+        });
       }
 
-    // Dominio 3: Autenticación / Roles / Permisos (RBAC)
+    // =========================================================================
+    // DOMINIO 3: Autenticación / Roles / Permisos (RBAC)
+    // =========================================================================
     } else if (
       lower.includes('auth') ||
       lower.includes('usuario') ||
@@ -637,155 +798,181 @@ Aplicando la regla de **no-duplicación**, propongo expandir el dominio hacia el
             priority: 'HIGH',
             description: 'Asignar roles con matrices de permisos asociadas a usuarios para restringir endpoints y acciones sensibles.',
           },
-        ];
-
-        if (lower.includes('permiso') || lower.includes('matriz') || lower.includes('accion') || lower.includes('politica')) {
-          dynamicReqs.push({
+          {
             title: 'Definición Jerárquica de Matrices de Permisos por Recurso',
             type: 'RF',
             priority: 'HIGH',
             description: 'Permitir estructurar permisos granulares por recurso (create, read, update, delete) asignables a roles.',
-          });
-        }
-
-        if (lower.includes('token') || lower.includes('jwt') || lower.includes('sesion') || lower.includes('rotac')) {
-          dynamicReqs.push({
-            title: 'Rotación de Refresh Tokens con Revocación Inmediata',
-            type: 'RF',
-            priority: 'HIGH',
-            description: 'Emisión de tokens de actualización con hash SHA-256 en base de datos y revocación ante detección de reuso.',
-          });
-        }
-
-        if (lower.includes('mfa') || lower.includes('2fa') || lower.includes('otp') || lower.includes('dos pasos')) {
-          dynamicReqs.push({
-            title: 'Autenticación Multifactorial Obligatoria (TOTP / SMS)',
-            type: 'RF',
-            priority: 'HIGH',
-            description: 'Exigir comprobación de código temporal OTP para el acceso a roles privilegiados o administrativos.',
-          });
-        }
-
-        if (lower.includes('fuerza bruta') || lower.includes('bloqueo') || lower.includes('intrus') || lower.includes('anomalia')) {
-          dynamicReqs.push({
-            title: 'Detección de Anomalías y Bloqueo Temporal por Intentos Fallidos',
-            type: 'RF',
-            priority: 'HIGH',
-            description: 'Suspender temporalmente peticiones procedentes de direcciones IP con ráfagas de credenciales incorrectas.',
-          });
-        }
-
-        dynamicReqs.push({
-          title: 'Evaluación Sub-5ms de Permisos de Usuario en Memoria',
-          type: 'RNF',
-          priority: 'HIGH',
-          description: 'El middleware de autorización debe validar los claims del JWT sin consultar la base de datos en cada request.',
-        });
-
-        const reqsJson = JSON.stringify(formatReqs(dynamicReqs), null, 4);
-
-        reply = `He estructurado la propuesta integral de **Autenticación y Autorización RBAC (Role-Based Access Control)** para **"${context.projectName}"**:
-
-### Razonamiento de Seguridad y 3FN:
-1. **Matriz de Control N:M Descompuesta**: Separamos \`roles\`, \`permissions\` y su tabla asociativa intermedia \`role_permissions\`.
-2. **Sesiones Seguras**: Para una arquitectura en **${context.architectureStyle}**, separamos el ciclo de vida de los tokens de actualización (\`auth_tokens\`).
-3. **Criterio Autónomo**: Se infirieron **${dynamicReqs.length} requisitos funcionales y no funcionales** adaptados a los mecanismos de seguridad indicados.
-4. **Gobernanza**: Se propone un ADR estableciendo el modelo de tokens rotativos y evaluación en memoria.
-
-\`\`\`json:devsculptor-actions
-{
-  "suggestedRequirements": ${reqsJson},
-  "suggestedEntities": [
-    {
-      "tableName": "roles",
-      "columns": [
-        { "name": "id", "type": "UUID", "isPk": true },
-        { "name": "name", "type": "VARCHAR(50)", "unique": true, "nullable": false },
-        { "name": "description", "type": "VARCHAR(255)", "nullable": true },
-        { "name": "created_at", "type": "TIMESTAMP", "nullable": false }
-      ]
-    },
-    {
-      "tableName": "role_permissions",
-      "columns": [
-        { "name": "id", "type": "UUID", "isPk": true },
-        { "name": "role_id", "type": "UUID", "isFk": true, "referencesTable": "roles", "cardinality": "1:N" },
-        { "name": "resource", "type": "VARCHAR(50)", "nullable": false },
-        { "name": "action", "type": "VARCHAR(20)", "nullable": false }
-      ]
-    },
-    {
-      "tableName": "auth_tokens",
-      "columns": [
-        { "name": "id", "type": "UUID", "isPk": true },
-        { "name": "user_id", "type": "UUID", "isFk": ${hasUsersTable}, ${hasUsersTable ? '"referencesTable": "users", "cardinality": "1:N",' : ''} "nullable": false },
-        { "name": "token_hash", "type": "VARCHAR(255)", "unique": true, "nullable": false },
-        { "name": "is_revoked", "type": "BOOLEAN", "nullable": false },
-        { "name": "expires_at", "type": "TIMESTAMP", "nullable": false }
-      ]
-    }
-  ],
-  "suggestedDecisions": [
-    {
-      "code": "${adr1}",
-      "title": "Estrategia Dual JWT sin Estado + Refresh Tokens Rotativos",
-      "context": "Se requiere equilibrio entre baja latencia en endpoints protegidos y capacidad de revocación inmediata de sesiones.",
-      "decision": "Implementar JWTs de corta duración firmados criptográficamente complementados por refresh tokens en base de datos.",
-      "consequences": "Sesiones seguras con revocación en tiempo real sin sobrecargar la base de datos en peticiones concurrentes."
-    }
-  ]
-}
-\`\`\``;
-      } else {
-        const dynamicReqs: Array<{ title: string; type: 'RF' | 'RNF'; priority: 'HIGH' | 'MEDIUM' | 'CRITICAL'; description: string }> = [
-          {
-            title: 'Registro de Sesiones Activas e Intentos Fallidos',
-            type: 'RF',
-            priority: 'HIGH',
-            description: 'Almacenar dirección IP, User-Agent y estado de inicio de sesión para activar bloqueos temporales por fuerza bruta.',
           },
           {
-            title: 'Trazabilidad Forense Inmutable de Eventos de Seguridad',
+            title: 'Seguridad Multi-Tenant Horizontal con PostgreSQL RLS',
             type: 'RNF',
-            priority: 'HIGH',
-            description: 'Registrar logs de seguridad sin permitir mutaciones ni eliminaciones por parte de los usuarios.',
+            priority: 'CRITICAL',
+            description: 'Aplicar directivas Row Level Security que aseguren que los usuarios solo accedan a sus registros propios.',
           },
         ];
 
-        const reqsJson = JSON.stringify(formatReqs(dynamicReqs), null, 4);
+        const reqs = formatReqs(dynamicReqs);
 
-        reply = `La tabla de **\`roles\` ya se encuentra modelada**. Te propongo registrar el módulo de **Auditoría de Sesiones y Detección de Anomalías**:
+        const entities: AiSuggestedEntity[] = [
+          {
+            tableName: 'roles',
+            columns: [
+              { name: 'id', type: 'UUID', isPk: true },
+              { name: 'name', type: 'VARCHAR(50)', unique: true, nullable: false },
+              { name: 'description', type: 'TEXT', nullable: true },
+              { name: 'created_at', type: 'TIMESTAMP', nullable: false },
+            ],
+          },
+          {
+            tableName: 'permissions',
+            columns: [
+              { name: 'id', type: 'UUID', isPk: true },
+              { name: 'code', type: 'VARCHAR(80)', unique: true, nullable: false },
+              { name: 'resource', type: 'VARCHAR(50)', nullable: false },
+              { name: 'action', type: 'VARCHAR(20)', nullable: false },
+            ],
+          },
+          {
+            tableName: 'role_permissions',
+            columns: [
+              { name: 'id', type: 'UUID', isPk: true },
+              { name: 'role_id', type: 'UUID', isFk: true, referencesTable: 'roles', cardinality: '1:N' },
+              { name: 'permission_id', type: 'UUID', isFk: true, referencesTable: 'permissions', cardinality: '1:N' },
+            ],
+          },
+        ];
 
-\`\`\`json:devsculptor-actions
-{
-  "suggestedRequirements": ${reqsJson},
-  "suggestedEntities": [
-    {
-      "tableName": "auth_audit_logs",
-      "columns": [
-        { "name": "id", "type": "UUID", "isPk": true },
-        { "name": "user_id", "type": "UUID", "isFk": ${hasUsersTable}, ${hasUsersTable ? '"referencesTable": "users", "cardinality": "1:N",' : ''} "nullable": true },
-        { "name": "ip_address", "type": "VARCHAR(45)", "nullable": false },
-        { "name": "user_agent", "type": "TEXT", "nullable": true },
-        { "name": "event_type", "type": "VARCHAR(30)", "nullable": false },
-        { "name": "created_at", "type": "TIMESTAMP", "nullable": false }
-      ]
-    }
-  ],
-  "suggestedDecisions": [
-    {
-      "code": "${adr1}",
-      "title": "Auditoría Forense de Eventos de Autenticación",
-      "context": "Se requiere detectar patrones de intrusión y bloqueos preventivos por IP.",
-      "decision": "Registrar cada evento de login exitoso o fallido de forma asíncrona sin bloquear la respuesta HTTP.",
-      "consequences": "Trazabilidad completa con impacto despreciable en el tiempo de respuesta del portal."
-    }
-  ]
-}
-\`\`\``;
+        const decisions: AiSuggestedDecision[] = [
+          {
+            code: adr1,
+            title: 'RBAC Desacoplado con Verificación de Permisos en Middleware',
+            context: 'Se requiere gobernar privilegios sin acoplar lógica dura de roles en los controladores.',
+            decision: 'Consultar permisos en middleware de autorización y cachear la matriz en sesión o claims JWT.',
+            consequences: 'Máxima flexibilidad para crear nuevos roles sin alterar código fuente.',
+          },
+        ];
+
+        const diagrams: AiSuggestedDiagram[] = [
+          {
+            code: 'DIAG-01',
+            title: 'Diagrama de Secuencia - Autenticación JWT y Autorización RBAC',
+            type: 'sequence',
+            format: 'mermaid',
+            mermaidCode: `sequenceDiagram
+  autonumber
+  actor User as Usuario
+  participant App as SPA Client
+  participant Auth as Auth Service
+  participant DB as PostgreSQL (RLS)
+  User->>App: Ingresar Credenciales
+  App->>Auth: POST /api/v1/auth/login
+  Auth->>DB: SELECT * FROM users WHERE email = $1
+  Auth->>Auth: Verificar Hash Argon2id
+  Auth->>Auth: Generar JWT Access + Refresh Token
+  Auth-->>App: 200 OK { accessToken, refreshToken }
+  Note over App,DB: Petición protegida subsecuente
+  App->>Auth: GET /api/v1/protected (Bearer JWT)
+  Auth->>DB: SET LOCAL request.jwt.claim.user_id = $1
+  Auth->>DB: SELECT * FROM protected_resource
+  DB-->>Auth: Filas filtradas por RLS Policy
+  Auth-->>App: 200 OK { data }`,
+            description: 'Protocolo de autenticación moderna con tokens efímeros y seguridad horizontal en base de datos.',
+          },
+        ];
+
+        reply = buildSelectiveResponse({
+          projectName: context.projectName,
+          domainTitle: 'Control de Acceso Basado en Roles (RBAC)',
+          intent,
+          summaryRationale:
+            'Se estructura la terna `roles`, `permissions` y `role_permissions` desacoplando las autorizaciones de las credenciales de usuario.',
+          reqs,
+          entities,
+          decisions,
+          diagrams,
+        });
+      } else {
+        // roles ya existe -> auditoría de sesiones y logins
+        const dynamicReqs: Array<{ title: string; type: 'RF' | 'RNF'; priority: 'HIGH' | 'MEDIUM' | 'CRITICAL'; description: string }> = [
+          {
+            title: 'Auditoría Forense de Inicios de Sesión',
+            type: 'RF',
+            priority: 'HIGH',
+            description: 'Registrar cada intento de acceso con IP, User-Agent, estado y marca temporal.',
+          },
+          {
+            title: 'Trazabilidad Inmutable de Seguridad',
+            type: 'RNF',
+            priority: 'HIGH',
+            description: 'Prohibir mutaciones o borrados sobre la tabla de auditoría de sesiones.',
+          },
+        ];
+
+        const reqs = formatReqs(dynamicReqs);
+
+        const entities: AiSuggestedEntity[] = [
+          {
+            tableName: 'login_audits',
+            columns: [
+              { name: 'id', type: 'UUID', isPk: true },
+              { name: 'user_id', type: 'UUID', isFk: hasUsersTable, referencesTable: hasUsersTable ? 'users' : undefined, cardinality: '1:N' },
+              { name: 'ip_address', type: 'VARCHAR(45)', nullable: false },
+              { name: 'user_agent', type: 'TEXT', nullable: true },
+              { name: 'is_successful', type: 'BOOLEAN', nullable: false },
+              { name: 'created_at', type: 'TIMESTAMP', nullable: false },
+            ],
+          },
+        ];
+
+        const decisions: AiSuggestedDecision[] = [
+          {
+            code: adr1,
+            title: 'Registro Inmutable de Eventos de Autenticación',
+            context: 'Se requiere cumplir con estándares de auditoría forense y mitigación de fuerza bruta.',
+            decision: 'Registrar cada evento de login exitoso o fallido de forma asíncrona sin bloquear la respuesta HTTP.',
+            consequences: 'Trazabilidad completa con impacto despreciable en el tiempo de respuesta del portal.',
+          },
+        ];
+
+        const diagrams: AiSuggestedDiagram[] = [
+          {
+            code: 'DIAG-01',
+            title: 'Diagrama de Secuencia - Auditoría Asíncrona de Login',
+            type: 'sequence',
+            format: 'mermaid',
+            mermaidCode: `sequenceDiagram
+  autonumber
+  actor Attacker as Cliente / Posible Atacante
+  participant AuthSvc as Auth Service
+  participant AuditQueue as Cola de Auditoría
+  participant Worker as Audit Worker
+  participant DB as PostgreSQL
+  Attacker->>AuthSvc: POST /login { email, bad_password }
+  AuthSvc->>AuditQueue: emit(LoginFailedEvent)
+  AuthSvc-->>Attacker: 401 Unauthorized
+  AuditQueue->>Worker: consume(LoginFailedEvent)
+  Worker->>DB: INSERT INTO login_audits (ip, success=false)`,
+            description: 'Registro de auditoría forense desacoplado del hilo de respuesta HTTP.',
+          },
+        ];
+
+        reply = buildSelectiveResponse({
+          projectName: context.projectName,
+          domainTitle: 'Auditoría Forense de Sesiones',
+          intent,
+          summaryRationale:
+            'La tabla `roles` ya existe en el esquema. Se añade `login_audits` para cumplimiento y trazabilidad de seguridad.',
+          reqs,
+          entities,
+          decisions,
+          diagrams,
+        });
       }
 
-    // Dominio 4: Catálogo / Productos / Inventario
+    // =========================================================================
+    // DOMINIO 4: Catálogo / Productos / Inventario
+    // =========================================================================
     } else if (
       lower.includes('producto') ||
       lower.includes('catalogo') ||
@@ -803,91 +990,100 @@ Aplicando la regla de **no-duplicación**, propongo expandir el dominio hacia el
             priority: 'HIGH',
             description: 'Permitir la creación y actualización de productos asignados a categorías normalizadas con slug SEO unívoco.',
           },
-        ];
-
-        if (lower.includes('stock') || lower.includes('inventario') || lower.includes('reserva') || lower.includes('existencia')) {
-          dynamicReqs.push({
+          {
             title: 'Control y Reserva Concurrente de Stock',
             type: 'RF',
             priority: 'HIGH',
             description: 'Actualizar el inventario disponible con validación de balance positivo impidiendo sobreventas concurrentes.',
-          });
-        }
-
-        if (lower.includes('precio') || lower.includes('descuento') || lower.includes('oferta') || lower.includes('promocion')) {
-          dynamicReqs.push({
-            title: 'Motor de Precios Dinámicos y Reglas de Descuento',
-            type: 'RF',
-            priority: 'HIGH',
-            description: 'Aplicar políticas de precios promocionales temporales con validación de vigencia en servidor.',
-          });
-        }
-
-        if (lower.includes('busqueda') || lower.includes('filtro') || lower.includes('buscar')) {
-          dynamicReqs.push({
-            title: 'Indexación y Búsqueda Avanzada Multi-Atributo',
-            type: 'RF',
+          },
+          {
+            title: 'Latencia Sub-200ms en Consultas de Catálogo',
+            type: 'RNF',
             priority: 'MEDIUM',
-            description: 'Optimizar la localización de artículos mediante índices de texto y filtros por rango de precio.',
-          });
-        }
+            description: 'Las consultas de listado de productos deben optimizarse con índices B-Tree en category_id y status.',
+          },
+        ];
 
-        dynamicReqs.push({
-          title: 'Latencia Sub-200ms en Consultas de Catálogo',
-          type: 'RNF',
-          priority: 'MEDIUM',
-          description: 'Las consultas de listado de productos deben optimizarse con índices B-Tree en category_id y status.',
+        const reqs = formatReqs(dynamicReqs);
+
+        const entities: AiSuggestedEntity[] = [
+          {
+            tableName: 'categories',
+            columns: [
+              { name: 'id', type: 'UUID', isPk: true },
+              { name: 'name', type: 'VARCHAR(100)', unique: true, nullable: false },
+              { name: 'slug', type: 'VARCHAR(120)', unique: true, nullable: false },
+              { name: 'description', type: 'TEXT', nullable: true },
+              { name: 'created_at', type: 'TIMESTAMP', nullable: false },
+            ],
+          },
+          {
+            tableName: 'products',
+            columns: [
+              { name: 'id', type: 'UUID', isPk: true },
+              { name: 'category_id', type: 'UUID', isFk: true, referencesTable: 'categories', cardinality: '1:N' },
+              { name: 'sku', type: 'VARCHAR(50)', unique: true, nullable: false },
+              { name: 'name', type: 'VARCHAR(150)', nullable: false },
+              { name: 'price', type: 'DECIMAL(10,2)', nullable: false },
+              { name: 'stock', type: 'INTEGER', nullable: false },
+              { name: 'created_at', type: 'TIMESTAMP', nullable: false },
+            ],
+          },
+        ];
+
+        const decisions: AiSuggestedDecision[] = [
+          {
+            code: adr1,
+            title: 'Bloqueo Pesimista SELECT FOR UPDATE para Modificación de Stock',
+            context: 'Múltiples clientes pueden intentar reservar la última unidad de un producto de forma simultánea.',
+            decision: 'Aplicar SELECT FOR UPDATE dentro de la transacción de checkout para garantizar consistencia atómica del inventario.',
+            consequences: 'Inmunidad ante condiciones de carrera de sobreventa con bajo impacto en operaciones de lectura.',
+          },
+        ];
+
+        const diagrams: AiSuggestedDiagram[] = [
+          {
+            code: 'DIAG-01',
+            title: 'Diagrama de Clases - Modelo de Dominio de Catálogo',
+            type: 'class',
+            format: 'mermaid',
+            mermaidCode: `classDiagram
+  class Category {
+    +UUID id
+    +String name
+    +String slug
+    +String description
+    +DateTime createdAt
+    +getProducts() List~Product~
+  }
+  class Product {
+    +UUID id
+    +UUID categoryId
+    +String sku
+    +String name
+    +Decimal price
+    +Integer stock
+    +DateTime createdAt
+    +reserveStock(qty: Integer) Boolean
+  }
+  Category "1" --> "0..*" Product : agrupa`,
+            description: 'Jerarquía y relaciones de clases del módulo de inventario y catálogo.',
+          },
+        ];
+
+        reply = buildSelectiveResponse({
+          projectName: context.projectName,
+          domainTitle: 'Catálogo de Productos y Control de Inventario',
+          intent,
+          summaryRationale:
+            'Desacoplamos `categories` de `products` mediante `category_id FK` para normalización 3FN e indexación de alta velocidad.',
+          reqs,
+          entities,
+          decisions,
+          diagrams,
         });
-
-        const reqsJson = JSON.stringify(formatReqs(dynamicReqs), null, 4);
-
-        reply = `He formulado la propuesta integral para el dominio de **Catálogo y Control de Inventario**:
-
-### Razonamiento de Normalización (3FN):
-1. **Categorización**: Desacoplamos \`categories\` de \`products\` mediante una clave foránea \`category_id\`, evitando repetición de textos y facilitando árboles de navegación.
-2. **Integridad de Stock**: Se modela el precio con precisión decimal estricta (\`DECIMAL(10,2)\`) y código \`sku\` unívoco.
-3. **Criterio Basado en Alcance**: Se sintetizaron **${dynamicReqs.length} requisitos** que blindan la administración y consulta del inventario.
-4. **Decisión Técnica**: Se formula un ADR sobre control de concurrencia y bloqueo para reservas de stock.
-
-\`\`\`json:devsculptor-actions
-{
-  "suggestedRequirements": ${reqsJson},
-  "suggestedEntities": [
-    {
-      "tableName": "categories",
-      "columns": [
-        { "name": "id", "type": "UUID", "isPk": true },
-        { "name": "name", "type": "VARCHAR(100)", "unique": true, "nullable": false },
-        { "name": "slug", "type": "VARCHAR(120)", "unique": true, "nullable": false },
-        { "name": "description", "type": "TEXT", "nullable": true },
-        { "name": "created_at", "type": "TIMESTAMP", "nullable": false }
-      ]
-    },
-    {
-      "tableName": "products",
-      "columns": [
-        { "name": "id", "type": "UUID", "isPk": true },
-        { "name": "category_id", "type": "UUID", "isFk": true, "referencesTable": "categories", "cardinality": "1:N" },
-        { "name": "sku", "type": "VARCHAR(50)", "unique": true, "nullable": false },
-        { "name": "name", "type": "VARCHAR(150)", "nullable": false },
-        { "name": "price", "type": "DECIMAL(10,2)", "nullable": false },
-        { "name": "stock", "type": "INTEGER", "nullable": false },
-        { "name": "created_at", "type": "TIMESTAMP", "nullable": false }
-      ]
-    }
-  ],
-  "suggestedDecisions": [
-    {
-      "code": "${adr1}",
-      "title": "Bloqueo Pesimista SELECT FOR UPDATE para Modificación de Stock",
-      "context": "Múltiples clientes pueden intentar reservar la última unidad de un producto de forma simultánea.",
-      "decision": "Aplicar SELECT FOR UPDATE dentro de la transacción de checkout para garantizar consistencia atómica del inventario.",
-      "consequences": "Inmunidad ante condiciones de carrera de sobreventa con bajo impacto en operaciones de lectura."
-    }
-  ]
-}
-\`\`\``;
       } else {
+        // products ya existe -> auditoría de movimientos de stock
         const dynamicReqs: Array<{ title: string; type: 'RF' | 'RNF'; priority: 'HIGH' | 'MEDIUM' | 'CRITICAL'; description: string }> = [
           {
             title: 'Registro Inmutable de Movimientos de Inventario',
@@ -903,168 +1099,228 @@ Aplicando la regla de **no-duplicación**, propongo expandir el dominio hacia el
           },
         ];
 
-        const reqsJson = JSON.stringify(formatReqs(dynamicReqs), null, 4);
+        const reqs = formatReqs(dynamicReqs);
 
-        reply = `Detecté que **\`products\` ya existe** en tu esquema. Te propongo el módulo de **Movimientos y Auditoría de Stock**:
+        const entities: AiSuggestedEntity[] = [
+          {
+            tableName: 'stock_movements',
+            columns: [
+              { name: 'id', type: 'UUID', isPk: true },
+              { name: 'product_id', type: 'UUID', isFk: true, referencesTable: 'products', cardinality: '1:N' },
+              { name: 'movement_type', type: 'VARCHAR(20)', nullable: false },
+              { name: 'quantity', type: 'INTEGER', nullable: false },
+              { name: 'reason', type: 'VARCHAR(255)', nullable: false },
+              { name: 'created_at', type: 'TIMESTAMP', nullable: false },
+            ],
+          },
+        ];
 
-\`\`\`json:devsculptor-actions
-{
-  "suggestedRequirements": ${reqsJson},
-  "suggestedEntities": [
-    {
-      "tableName": "stock_movements",
-      "columns": [
-        { "name": "id", "type": "UUID", "isPk": true },
-        { "name": "product_id", "type": "UUID", "isFk": true, "referencesTable": "products", "cardinality": "1:N" },
-        { "name": "movement_type", "type": "VARCHAR(20)", "nullable": false },
-        { "name": "quantity", "type": "INTEGER", "nullable": false },
-        { "name": "reason", "type": "VARCHAR(255)", "nullable": false },
-        { "name": "created_at", "type": "TIMESTAMP", "nullable": false }
-      ]
-    }
-  ],
-  "suggestedDecisions": [
-    {
-      "code": "${adr1}",
-      "title": "Modelo de Registro Inmutable de Inventario tipo Libro Diario",
-      "context": "Se requiere justificar cualquier variación de existencias ante auditorías fiscales y de almacén.",
-      "decision": "Todo cambio de inventario debe realizarse mediante un INSERT en stock_movements sin mutaciones directas de balance sin respaldo.",
-      "consequences": "Trazabilidad contable total y capacidad de reconstruir el stock a cualquier punto en el tiempo."
-    }
-  ]
-}
-\`\`\``;
+        const decisions: AiSuggestedDecision[] = [
+          {
+            code: adr1,
+            title: 'Modelo de Registro Inmutable de Inventario tipo Libro Diario',
+            context: 'Se requiere justificar cualquier variación de existencias ante auditorías fiscales y de almacén.',
+            decision: 'Todo cambio de inventario debe realizarse mediante un INSERT en stock_movements sin mutaciones directas sin respaldo.',
+            consequences: 'Trazabilidad contable total y capacidad de reconstruir el stock a cualquier punto en el tiempo.',
+          },
+        ];
+
+        const diagrams: AiSuggestedDiagram[] = [
+          {
+            code: 'DIAG-01',
+            title: 'Diagrama de Secuencia - Registro Inmutable de Stock',
+            type: 'sequence',
+            format: 'mermaid',
+            mermaidCode: `sequenceDiagram
+  autonumber
+  actor Operator as Operador de Almacén
+  participant App as WMS Portal
+  participant InvSvc as Inventory Service
+  participant DB as PostgreSQL
+  Operator->>App: Ajustar Inventario (+50 Unidades)
+  App->>InvSvc: POST /stock-movements { productId, type='IN', qty=50 }
+  InvSvc->>DB: BEGIN TRANSACTION
+  InvSvc->>DB: INSERT INTO stock_movements (...)
+  InvSvc->>DB: UPDATE products SET stock = stock + 50 WHERE id = $1
+  InvSvc->>DB: COMMIT
+  InvSvc-->>App: 201 Created
+  App-->>Operator: Ajuste Asentado con Auditoría`,
+            description: 'Flujo transaccional de alteración de balance con persistencia en libro diario.',
+          },
+        ];
+
+        reply = buildSelectiveResponse({
+          projectName: context.projectName,
+          domainTitle: 'Movimientos y Auditoría Inmutable de Stock',
+          intent,
+          summaryRationale:
+            'La tabla `products` ya existe. Se introduce `stock_movements` para auditoría forense de entradas y salidas de bodega.',
+          reqs,
+          entities,
+          decisions,
+          diagrams,
+        });
       }
 
-    // Dominio 5: Caso General / Dinámico basado en el sujeto del mensaje
+    // =========================================================================
+    // DOMINIO 5: Caso General / Dinámico basado en el prompt
+    // =========================================================================
     } else {
-      // Extraer una palabra representativa para crear un dominio coherente excluyendo stopwords conversacionales
       const STOPWORDS = new Set([
         'excelente', 'analisis', 'formaliza', 'propuesta', 'proyecto', 'generando', 'genera',
         'requisitos', 'modelo', 'relacional', 'canvas', 'actas', 'arquitectura', 'favor',
         'podrias', 'puedes', 'sistema', 'modulo', 'buenas', 'tardes', 'hola', 'bueno',
-        'gracias', 'procede', 'estructura', 'artefactos', 'tablas', 'entidades', 'acuerdo'
+        'gracias', 'procede', 'estructura', 'artefactos', 'tablas', 'entidades', 'acuerdo',
+        'diagrama', 'diagramas', 'mermaid', 'unicamente', 'solamente', 'solo', 'solos',
+        'sola', 'solas', 'quiero', 'quisiera', 'necesito', 'pedi', 'pido', 'pedir',
+        'generar', 'crear', 'disenar', 'disena', 'hazme', 'hacer', 'dame', 'dar',
+        'poner', 'mostrar', 'muestra', 'bpmn', 'flujo', 'flowchart', 'secuencia',
+        'sequence', 'clases', 'estados', 'state', 'c4', 'uml', 'accion', 'acciones',
+        'inyecta', 'inyectar', 'inyeccion', 'inyecciones', 'estudio', 'visualizador',
+        'como', 'cual', 'donde', 'cuando', 'porque', 'para', 'pero', 'este', 'esta'
       ]);
       const words = scopeText.replace(/[^\w\sáéíóúÁÉÍÓÚñÑ]/g, '').split(/\s+/).filter((w) => w.length > 3 && !STOPWORDS.has(w));
-      const rawDomain = (words[0] || 'recurso').toLowerCase();
+      let rawDomain = (words[0] || '').toLowerCase();
+      if (!rawDomain || rawDomain.length < 3) {
+        const projectWords = `${context.projectName} ${context.projectDescription || ''}`
+          .replace(/[^\w\sáéíóúÁÉÍÓÚñÑ]/g, '')
+          .split(/\s+/)
+          .filter((w) => w.length > 3 && !STOPWORDS.has(w.toLowerCase()));
+        rawDomain = (projectWords[0] || 'operacion').toLowerCase();
+      }
+
       const domainSlug = rawDomain.replace(/[áàä]/g, 'a').replace(/[éèë]/g, 'e').replace(/[íìï]/g, 'i').replace(/[óòö]/g, 'o').replace(/[úùü]/g, 'u').replace(/ñ/g, 'n');
-      const domainTable = domainSlug.endsWith('s') ? domainSlug : `${domainSlug}s`;
-      const domainDetailTable = `${domainTable}_items`;
+      const domainSingular = domainSlug.endsWith('es') ? domainSlug.slice(0, -2) : domainSlug.endsWith('s') ? domainSlug.slice(0, -1) : domainSlug;
+      const domainPlural = domainSingular.endsWith('r') || domainSingular.endsWith('l') || domainSingular.endsWith('n') ? `${domainSingular}es` : `${domainSingular}s`;
+
+      const domainTable = existingTableNames.includes(domainPlural) ? `${domainPlural}_records` : domainPlural;
+      const domainDetailsTable = `${domainSingular}_details`;
 
       const dynamicReqs: Array<{ title: string; type: 'RF' | 'RNF'; priority: 'HIGH' | 'MEDIUM' | 'CRITICAL'; description: string }> = [
         {
-          title: `Captura y Validación de Entradas de ${domainTable.toUpperCase()}`,
+          title: `Gestión y Orquestación del Ciclo de Vida de ${domainSingular.toUpperCase()}`,
           type: 'RF',
           priority: 'HIGH',
-          description: `Validar pre-condiciones, contratos de datos e integridad referencial antes de registrar registros de ${domainTable}.`,
+          description: `Permitir operaciones transaccionales para crear, consultar y auditar registros de ${domainPlural} con validación estricta de DTOs.`,
         },
         {
-          title: `Control de Transiciones y Ciclo de Vida de ${domainTable.toUpperCase()}`,
-          type: 'RF',
-          priority: 'HIGH',
-          description: `Implementar máquina de estados determinista para coordinar el ciclo operativo de ${domainTable}.`,
-        },
-        {
-          title: `Transaccionalidad Atómica y Consistencia ACID en ${domainTable.toUpperCase()}`,
-          type: 'RF',
-          priority: 'HIGH',
-          description: `Garantizar que las mutaciones sobre ${domainTable} y sus renglones se ejecuten de forma atómica e indivisible.`,
-        },
-        {
-          title: `Manejo de Excepciones y Compensaciones en ${domainTable.toUpperCase()}`,
+          title: `Trazabilidad Forense de Estado en ${domainSingular.toUpperCase()}`,
           type: 'RF',
           priority: 'MEDIUM',
-          description: `Definir acciones compensatorias automáticas ante fallos o cancelaciones en operaciones de ${domainTable}.`,
+          description: `Garantizar transiciones controladas de estado y registro cronológico de alteraciones.`,
         },
         {
-          title: 'Aislamiento de Persistencia y Prevención de Concurrencia',
+          title: `Gobernanza Pre-Código y Aislamiento por Capas`,
           type: 'RNF',
           priority: 'HIGH',
-          description: `Controlar accesos concurrentes a ${domainTable} mediante bloqueos transaccionales adecuados o versionado optimista.`,
-        },
-        {
-          title: 'Seguridad Multi-Tenancy Horizontal (RLS) y Auditoría',
-          type: 'RNF',
-          priority: 'HIGH',
-          description: `Aislar las operaciones de ${domainTable} mediante políticas de Row Level Security en PostgreSQL con sellos temporales created_at.`,
+          description: `Preservar contratos tipados DTO en entrada y salida desacoplando controladores de los repositorios relacionales.`,
         },
       ];
 
-      if (lower.includes('consulta') || lower.includes('filtro') || lower.includes('buscar') || lower.includes('reporte')) {
-        dynamicReqs.push({
-          title: `Consultas Indexadas y Paginación de ${domainTable.toUpperCase()}`,
-          type: 'RF',
-          priority: 'MEDIUM',
-          description: `Garantizar listados paginados de ${domainTable} con filtros dinámicos optimizados por índices B-Tree.`,
+      const reqs = formatReqs(dynamicReqs);
+
+      const entities: AiSuggestedEntity[] = [
+        {
+          tableName: domainTable,
+          columns: [
+            { name: 'id', type: 'UUID', isPk: true },
+            { name: 'user_id', type: 'UUID', isFk: hasUsersTable, referencesTable: hasUsersTable ? 'users' : undefined, cardinality: '1:N' },
+            { name: 'code', type: 'VARCHAR(50)', unique: true, nullable: false },
+            { name: 'title', type: 'VARCHAR(150)', nullable: false },
+            { name: 'status', type: 'VARCHAR(20)', nullable: false },
+            { name: 'created_at', type: 'TIMESTAMP', nullable: false },
+          ],
+        },
+        {
+          tableName: domainDetailsTable,
+          columns: [
+            { name: 'id', type: 'UUID', isPk: true },
+            { name: `${domainSingular}_id`, type: 'UUID', isFk: true, referencesTable: domainTable, cardinality: '1:N' },
+            { name: 'detail_key', type: 'VARCHAR(100)', nullable: false },
+            { name: 'detail_value', type: 'TEXT', nullable: false },
+          ],
+        },
+      ];
+
+      const decisions: AiSuggestedDecision[] = [
+        {
+          code: adr1,
+          title: `Contratos Tipados DTO como Fuente Única de Verdad para ${domainTable.toUpperCase()}`,
+          context: 'Se requiere preservar desacoplamiento modular entre la capa de presentación y la base de datos.',
+          decision: 'Definir DTOs tipados en TypeScript como SSOT garantizando validación simétrica en entrada y salida.',
+          consequences: 'Consistencia estructural plena, prevención de fugas de datos y fácil mantenimiento evolutivo.',
+        },
+      ];
+
+      const isBpmnRequest =
+        lower.includes('bpmn') ||
+        lower.includes('proceso') ||
+        lower.includes('flujo') ||
+        lower.includes('workflow') ||
+        lower.includes('actividad');
+
+      const diagrams: AiSuggestedDiagram[] = [];
+
+      if (isBpmnRequest) {
+        diagrams.push({
+          code: 'DIAG-01',
+          title: `Diagrama de Procesos BPMN - Flujo Operativo de ${domainSingular.toUpperCase()}`,
+          type: 'flowchart',
+          format: 'mermaid',
+          mermaidCode: `flowchart TD
+  Start([Inicio del Proceso: Solicitud de ${domainSingular.toUpperCase()}]) --> TaskValidation[Validación de Contrato DTO y Permisos]
+  TaskValidation --> GateCheck{¿Payload Válido?}
+  GateCheck -- No --> TaskReject([Fin: 400 Bad Request / Notificación])
+  GateCheck -- Sí --> TaskTx[Inicio de Transacción ACID en Repositorio]
+  TaskTx --> TaskPersist[(INSERT en ${domainTable})]
+  TaskPersist --> TaskAudit[Registro de Evento en Log de Auditoría]
+  TaskAudit --> GateCommit{¿Commit Exitoso?}
+  GateCommit -- Sí --> TaskNotify[Emisión de Respuesta 201 Created]
+  GateCommit -- No --> TaskRollback[ROLLBACK Transaccional]
+  TaskRollback --> TaskReject
+  TaskNotify --> EndSuccess([Fin del Proceso: Operación Formalizada])`,
+          description: `Modelado de proceso de negocio BPMN con compuertas de decisión y eventos conforme a estándar OKF.`,
+        });
+      } else {
+        diagrams.push({
+          code: 'DIAG-01',
+          title: `Diagrama de Secuencia - Orquestación por Capas para ${domainSingular.toUpperCase()}`,
+          type: 'sequence',
+          format: 'mermaid',
+          mermaidCode: `sequenceDiagram
+  autonumber
+  actor Client as Cliente / Consumidor
+  participant Ctrl as ${domainSingular.charAt(0).toUpperCase() + domainSingular.slice(1)}Controller
+  participant Svc as ${domainSingular.charAt(0).toUpperCase() + domainSingular.slice(1)}Service
+  participant Repo as ${domainSingular.charAt(0).toUpperCase() + domainSingular.slice(1)}Repository
+  participant DB as PostgreSQL
+  Client->>Ctrl: POST /api/v1/${domainPlural} (DTO)
+  Ctrl->>Ctrl: Validar Esquema DTO (Zod / class-validator)
+  Ctrl->>Svc: execute(Command)
+  Svc->>Repo: persist(Entity)
+  Repo->>DB: INSERT INTO ${domainTable} (...)
+  DB-->>Repo: Record (Row)
+  Repo-->>Svc: DomainEntity
+  Svc-->>Ctrl: ResultDTO
+  Ctrl-->>Client: 201 Created { id }`,
+          description: `Flujo transaccional layered MVC para ${domainPlural} con validación simétrica.`,
         });
       }
 
-      if (lower.includes('notific') || lower.includes('alerta') || lower.includes('aviso')) {
-        dynamicReqs.push({
-          title: `Despacho de Eventos y Notificaciones de ${domainTable.toUpperCase()}`,
-          type: 'RF',
-          priority: 'MEDIUM',
-          description: `Emitir notificaciones ante cada cambio de estado relevante en los registros de ${domainTable}.`,
-        });
-      }
-
-      dynamicReqs.push({
-        title: 'Persistencia Segura con Multi-Tenancy Horizontal (RLS)',
-        type: 'RNF',
-        priority: 'HIGH',
-        description: `Aislar las operaciones de ${domainTable} mediante políticas de Row Level Security en PostgreSQL.`,
+      reply = buildSelectiveResponse({
+        projectName: context.projectName,
+        domainTitle: `Dominio de ${domainPlural.toUpperCase()}`,
+        intent,
+        summaryRationale:
+          `Se normaliza la entidad maestra \`${domainTable}\` con su tabla subordinada de atributos \`${domainDetailsTable}\` en 3FN.`,
+        reqs,
+        entities,
+        decisions,
+        diagrams,
       });
-
-      const reqsJson = JSON.stringify(formatReqs(dynamicReqs), null, 4);
-
-      reply = `He analizado tu planteamiento técnico para el proyecto **"${context.projectName}"** (${context.architectureStyle}):
-
-*"${lastUserMsg}"*
-
-### Razonamiento de Arquitectura Pre-Código:
-1. **Desglose de Dominio**: Se derivaron **${dynamicReqs.length} requisitos funcionales y no funcionales** deducidos con precisión según el alcance solicitado.
-2. **Modelo Relacional en 3FN**: Se define la entidad principal **\`${domainTable}\`** junto a su entidad subordinada **\`${domainDetailTable}\`** vinculadas por clave foránea, garantizando no redundancia y atomicidad de datos.
-3. **Alineación con Estado Actual**: Se omitieron duplicados y se continuó la numeración correlativa a partir de los artefactos existentes.
-
-\`\`\`json:devsculptor-actions
-{
-  "suggestedRequirements": ${reqsJson},
-  "suggestedEntities": [
-    {
-      "tableName": "${domainTable}",
-      "columns": [
-        { "name": "id", "type": "UUID", "isPk": true },
-        { "name": "user_id", "type": "UUID", "isFk": ${hasUsersTable}, ${hasUsersTable ? '"referencesTable": "users", "cardinality": "1:N",' : ''} "nullable": false },
-        { "name": "code", "type": "VARCHAR(50)", "unique": true, "nullable": false },
-        { "name": "title", "type": "VARCHAR(150)", "nullable": false },
-        { "name": "status", "type": "VARCHAR(20)", "nullable": false },
-        { "name": "created_at", "type": "TIMESTAMP", "nullable": false }
-      ]
-    },
-    {
-      "tableName": "${domainDetailTable}",
-      "columns": [
-        { "name": "id", "type": "UUID", "isPk": true },
-        { "name": "${domainSlug}_id", "type": "UUID", "isFk": true, "referencesTable": "${domainTable}", "cardinality": "1:N" },
-        { "name": "detail_key", "type": "VARCHAR(50)", "nullable": false },
-        { "name": "detail_value", "type": "TEXT", "nullable": false }
-      ]
-    }
-  ],
-  "suggestedDecisions": [
-    {
-      "code": "${adr1}",
-      "title": "Contratos Tipados DTO como Fuente Única de Verdad para ${domainTable.toUpperCase()}",
-      "context": "Se requiere preservar desacoplamiento modular entre la capa de presentación y la base de datos.",
-      "decision": "Definir DTOs tipados en TypeScript como SSOT garantizando validación simétrica en entrada y salida.",
-      "consequences": "Consistencia estructural plena, prevención de fugas de datos y fácil mantenimiento evolutivo."
-    }
-  ]
-}
-\`\`\``;
     }
 
-    const { cleanText, suggestedRequirements, suggestedEntities, suggestedDecisions } =
+    const { cleanText, suggestedRequirements, suggestedEntities, suggestedDecisions, suggestedDiagrams } =
       parseDevSculptorActions(reply);
 
     return {
@@ -1076,10 +1332,12 @@ Aplicando la regla de **no-duplicación**, propongo expandir el dominio hacia el
         requirements: suggestedRequirements,
         entities: suggestedEntities,
         decisions: suggestedDecisions,
+        diagrams: suggestedDiagrams,
       },
       suggestedRequirements,
       suggestedEntities,
       suggestedDecisions,
+      suggestedDiagrams,
     };
   }
 

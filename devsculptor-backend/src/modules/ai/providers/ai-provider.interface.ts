@@ -53,6 +53,15 @@ export interface AiSuggestedDecision {
   consequences?: string;
 }
 
+export interface AiSuggestedDiagram {
+  code?: string;
+  title: string;
+  type: 'class' | 'sequence' | 'er' | 'state' | 'c4' | 'deployment' | 'activity' | 'flowchart';
+  format: 'mermaid';
+  mermaidCode: string;
+  description?: string;
+}
+
 export interface AiChatResult {
   content: string;
   reply?: string;
@@ -62,10 +71,12 @@ export interface AiChatResult {
     requirements?: AiSuggestedRequirement[];
     entities?: AiSuggestedEntity[];
     decisions?: AiSuggestedDecision[];
+    diagrams?: AiSuggestedDiagram[];
   };
   suggestedRequirements?: AiSuggestedRequirement[];
   suggestedEntities?: AiSuggestedEntity[];
   suggestedDecisions?: AiSuggestedDecision[];
+  suggestedDiagrams?: AiSuggestedDiagram[];
 }
 
 export interface IAiProvider {

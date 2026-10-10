@@ -3,6 +3,7 @@ import { useSettingsStore, RegisteredAiModel, WALLPAPER_PRESETS } from '@/stores
 import { useProjectStore } from '@/stores/useProjectStore';
 import { VisionButton } from '@/components/ui/VisionButton';
 import { VisionPill } from '@/components/ui/VisionPill';
+import { GLASS_BLUR_RANGE } from '@/utils/visualEffects';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -609,17 +610,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 </div>
                 <input
                   type="range"
-                  min="5"
-                  max="45"
-                  step="5"
+                  min={GLASS_BLUR_RANGE.min}
+                  max={GLASS_BLUR_RANGE.max}
+                  step={GLASS_BLUR_RANGE.step}
                   value={glassBlur}
                   onChange={(e) => setGlassBlur(Number(e.target.value))}
                   className="w-full accent-indigo-500 cursor-pointer"
                 />
                 <div className="flex justify-between text-[10px] font-mono text-muted">
-                  <span>Sutil (5px)</span>
+                  <span>Sin blur (0px)</span>
                   <span>Estándar (20px)</span>
-                  <span>Opaco Profundo (45px)</span>
+                  <span>Máximo (120px)</span>
                 </div>
               </div>
             </div>

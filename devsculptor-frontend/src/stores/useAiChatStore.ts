@@ -5,6 +5,7 @@ import {
   AiSuggestedRequirement,
   AiSuggestedEntity,
   AiSuggestedDecision,
+  AiSuggestedDiagram,
   DevSculptorActions,
 } from '@/types/ai.types';
 import { aiService } from '@/services/ai.service';
@@ -16,6 +17,7 @@ import { useProjectStore } from './useProjectStore';
 export interface ProjectChatSession {
   messages: AiChatMessage[];
   injectedKeys: Record<string, boolean>;
+  injectedDiagrams?: AiSuggestedDiagram[];
 }
 
 interface AiChatState {
@@ -35,6 +37,7 @@ interface AiChatState {
   injectRequirement: (projectId: string, req: AiSuggestedRequirement) => Promise<void>;
   injectEntity: (projectId: string, entity: AiSuggestedEntity) => Promise<void>;
   injectDecision: (projectId: string, decision: AiSuggestedDecision) => Promise<void>;
+  injectDiagram: (projectId: string, diagram: AiSuggestedDiagram) => Promise<void>;
   injectAllActions: (projectId: string, actions: DevSculptorActions) => Promise<number>;
 
   clearHistory: () => void;
@@ -182,6 +185,7 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
           requirements: result.suggestedRequirements,
           entities: result.suggestedEntities,
           decisions: result.suggestedDecisions,
+          diagrams: result.suggestedDiagrams,
         },
         timestamp: Date.now(),
       };
@@ -225,6 +229,7 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
           requirements: result.suggestedRequirements,
           entities: result.suggestedEntities,
           decisions: result.suggestedDecisions,
+          diagrams: result.suggestedDiagrams,
         },
         timestamp: Date.now(),
       };
@@ -268,6 +273,7 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
           requirements: result.suggestedRequirements,
           entities: result.suggestedEntities,
           decisions: result.suggestedDecisions,
+          diagrams: result.suggestedDiagrams,
         },
         timestamp: Date.now(),
       };
@@ -469,6 +475,39 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
     useProjectStore.getState().fetchMetrics(projectId);
   },
 
+  injectDiagram: async (projectId: string, diagram: AiSuggestedDiagram) => {
+    if (get().currentProjectId !== projectId) {
+      get().switchProject(projectId);
+    }
+
+    const key = `diagram:${diagram.code}`;
+    if (get().injectedKeys[key]) return;
+
+    const updatedKeys = { ...get().injectedKeys, [key]: true };
+    const currentSession = get().sessions[projectId] || {
+      messages: get().messages,
+      injectedKeys: get().injectedKeys,
+      injectedDiagrams: [],
+    };
+    const existingDiagrams = currentSession.injectedDiagrams || [];
+    const updatedDiagrams = [...existingDiagrams, diagram];
+
+    const updatedSessions = {
+      ...get().sessions,
+      [projectId]: {
+        ...currentSession,
+        injectedKeys: updatedKeys,
+        injectedDiagrams: updatedDiagrams,
+      },
+    };
+    saveSessionsToStorage(updatedSessions);
+
+    set({
+      injectedKeys: updatedKeys,
+      sessions: updatedSessions,
+    });
+  },
+
   injectAllActions: async (projectId: string, actions: DevSculptorActions) => {
     if (get().currentProjectId !== projectId) {
       get().switchProject(projectId);
@@ -503,6 +542,15 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
       }
     }
 
+    if (actions.diagrams && actions.diagrams.length > 0) {
+      for (const diag of actions.diagrams) {
+        if (!get().injectedKeys[`diagram:${diag.code}`]) {
+          await get().injectDiagram(projectId, diag);
+          count++;
+        }
+      }
+    }
+
     return count;
   },
 
@@ -511,6 +559,7 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
     const cleanSession: ProjectChatSession = {
       messages: [INITIAL_GREETING],
       injectedKeys: {},
+      injectedDiagrams: [],
     };
 
     const updatedSessions = currentProjectId

@@ -11,6 +11,7 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { useProjectStore } from '@/stores/useProjectStore';
 import { documentExportService, ExportFormat } from '@/features/export/documentExportService';
 import { ConsolidatedDocumentsView } from '@/features/export/ConsolidatedDocumentsView';
+import { ENTERPRISE_TEMPLATES } from '@/features/export/okfTemplates';
 
 interface DecisionsViewProps {
   projectId: string;
@@ -153,7 +154,7 @@ export const DecisionsView: React.FC<DecisionsViewProps> = ({
             <span className="material-symbols-outlined text-[15px]">menu_book</span>
             <span>Documentos Consolidados (OKF)</span>
             <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 ml-0.5 border border-emerald-500/30">
-              13 Plantillas
+              {ENTERPRISE_TEMPLATES.length} Plantillas
             </span>
           </button>
         </div>

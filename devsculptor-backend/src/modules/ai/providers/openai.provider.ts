@@ -87,16 +87,24 @@ export class OpenAiProvider implements IAiProvider {
 
       const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
       const rawText = data.choices?.[0]?.message?.content || 'Sin respuesta.';
-      const { cleanText, suggestedRequirements, suggestedEntities, suggestedDecisions } =
+      const { cleanText, suggestedRequirements, suggestedEntities, suggestedDecisions, suggestedDiagrams } =
         parseDevSculptorActions(rawText);
 
       return {
         content: cleanText,
+        reply: cleanText,
         provider: this.name,
         model: this.model,
+        actions: {
+          requirements: suggestedRequirements,
+          entities: suggestedEntities,
+          decisions: suggestedDecisions,
+          diagrams: suggestedDiagrams,
+        },
         suggestedRequirements,
         suggestedEntities,
         suggestedDecisions,
+        suggestedDiagrams,
       };
     } catch (err: unknown) {
       clearTimeout(timeoutId);
