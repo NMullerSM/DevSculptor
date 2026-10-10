@@ -23,7 +23,7 @@
   /* Desenfoque Óptico con Saturación de Color */
   --blur-window: blur(var(--glass-blur-val)) saturate(190%);
   --blur-card: blur(calc(var(--glass-blur-val) * 0.7)) saturate(170%);
-  --blur-modal: blur(calc(var(--glass-blur-val) * 1.5)) saturate(210%);
+  --blur-modal: blur(min(calc(var(--glass-blur-val) * 1.25), 150px)) saturate(210%);
 
   /* Reflejos Especulares Biselados (Colores Puros para compatibilidad con Tailwind border-color) */
   --border-glass-color: rgba(255, 255, 255, 0.20);

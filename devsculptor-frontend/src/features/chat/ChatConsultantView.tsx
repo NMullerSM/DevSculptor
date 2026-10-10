@@ -3,18 +3,74 @@ import { useAiChatStore } from '@/stores/useAiChatStore';
 import { useProjectStore } from '@/stores/useProjectStore';
 import { VisionPill } from '@/components/ui/VisionPill';
 import { VisionButton } from '@/components/ui/VisionButton';
+import { MermaidVisualizer } from '@/components/diagrams/MermaidVisualizer';
 import {
   AiChatMessage,
   AiSuggestedRequirement,
   AiSuggestedEntity,
   AiSuggestedDecision,
+  AiSuggestedDiagram,
   DevSculptorActions,
 } from '@/types/ai.types';
 
 interface ChatConsultantViewProps {
-  onNavigateStep?: (step: 'view-reqs' | 'view-docs' | 'view-canvas') => void;
+  onNavigateStep?: (step: 'view-reqs' | 'view-docs' | 'view-canvas' | 'view-diagrams') => void;
   isCompact?: boolean;
 }
+
+export type AiModePreset = 'general' | 'conversation' | 'diagrams' | 'canvas' | 'requirements';
+
+interface ModePresetOption {
+  value: AiModePreset;
+  label: string;
+  shortLabel: string;
+  pillVariant: 'indigo' | 'cyan' | 'emerald' | 'amber' | 'rose';
+  description: string;
+  placeholder: string;
+}
+
+const MODE_PRESET_OPTIONS: ModePresetOption[] = [
+  {
+    value: 'general',
+    label: '🏛️ General (Integral)',
+    shortLabel: 'General',
+    pillVariant: 'indigo',
+    description: 'Genera suite técnica completa: requerimientos IEEE-830, entidades relacionales y diagramas UML/BPMN.',
+    placeholder: 'Describe un módulo o solicita formalizar la arquitectura...',
+  },
+  {
+    value: 'conversation',
+    label: '💬 Conversación (Asesoría)',
+    shortLabel: 'Conversación',
+    pillVariant: 'cyan',
+    description: 'Asesoría técnica y consultoría arquitectónica pura sin generar inyecciones automáticas.',
+    placeholder: 'Haz una consulta técnica o debate de diseño arquitectónico...',
+  },
+  {
+    value: 'diagrams',
+    label: '📐 Diagramado (UML / BPMN)',
+    shortLabel: 'Diagramado',
+    pillVariant: 'indigo',
+    description: 'Generación exclusiva de diagramas de arquitectura en Mermaid (BPMN, Secuencia, Clases, Estados).',
+    placeholder: 'Solicita un diagrama de secuencia, BPMN, flujo transaccional o estados...',
+  },
+  {
+    value: 'canvas',
+    label: '🗄️ Canvas ERD (Tablas 3FN)',
+    shortLabel: 'Canvas ERD',
+    pillVariant: 'emerald',
+    description: 'Modelado exclusivo de tablas relacionales en 3FN y claves foráneas para el Canvas.',
+    placeholder: 'Describe entidades, atributos o relaciones para el canvas relacional...',
+  },
+  {
+    value: 'requirements',
+    label: '📋 Requisitos (IEEE-830)',
+    shortLabel: 'Requisitos',
+    pillVariant: 'amber',
+    description: 'Sintetización exclusiva de requerimientos funcionales (RF) y no funcionales (RNF).',
+    placeholder: 'Describe requerimientos funcionales o reglas de negocio bajo norma IEEE-830...',
+  },
+];
 
 export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNavigateStep, isCompact = false }) => {
   const { activeProject } = useProjectStore();
@@ -23,21 +79,24 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
     isLoading,
     error,
     sendMessage,
-    analyzeSchema,
-    suggestRequirements,
     injectRequirement,
     injectEntity,
     injectDecision,
+    injectDiagram,
     injectAllActions,
     isItemInjected,
     clearHistory,
     switchProject,
   } = useAiChatStore();
 
+  const [activeMode, setActiveMode] = useState<AiModePreset>('general');
   const [inputVal, setInputVal] = useState('');
   const [injectionFeedback, setInjectionFeedback] = useState<string | null>(null);
   const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
+  const [expandedDiagramCodes, setExpandedDiagramCodes] = useState<Record<string, boolean>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const currentPreset = MODE_PRESET_OPTIONS.find((p) => p.value === activeMode) || MODE_PRESET_OPTIONS[0];
 
   const handleCopyText = async (id: string, text: string) => {
     try {
@@ -110,6 +169,18 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
         );
       }
 
+      if (m.actions.diagrams && m.actions.diagrams.length > 0) {
+        parts.push(
+          '\n\n### Diagramas de Arquitectura (Mermaid UML):\n' +
+            m.actions.diagrams
+              .map(
+                (d: AiSuggestedDiagram) =>
+                  `* **[${d.code}] ${d.title}** (${d.type})${d.description ? `\n  ${d.description}` : ''}\n\`\`\`mermaid\n${d.mermaidCode}\n\`\`\``
+              )
+              .join('\n\n')
+        );
+      }
+
       if (parts.length > 0) {
         text += parts.join('');
       }
@@ -141,7 +212,8 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
     if (!text.trim() || isLoading) return;
 
     if (!textToSend) setInputVal('');
-    await sendMessage(activeProject.id, text);
+    const actionContext = activeMode === 'general' ? undefined : activeMode;
+    await sendMessage(activeProject.id, text, actionContext);
   };
 
   const handleInjectRequirement = async (req: AiSuggestedRequirement) => {
@@ -171,6 +243,16 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
       showToast(`Decisión ${decision.code} inyectada en Actas`);
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Error al inyectar decisión');
+    }
+  };
+
+  const handleInjectDiagram = async (diagram: AiSuggestedDiagram) => {
+    if (!activeProject) return;
+    try {
+      await injectDiagram(activeProject.id, diagram);
+      showToast(`Diagrama "${diagram.title}" registrado en el proyecto`);
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Error al registrar diagrama');
     }
   };
 
@@ -208,6 +290,27 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
             </div>
           )}
 
+          {/* ComboBox Selector de Modo Preset */}
+          <div className="flex items-center gap-1">
+            <label htmlFor="ai-mode-selector" className="text-[10px] font-mono text-muted uppercase hidden sm:inline">
+              Modo:
+            </label>
+            <select
+              id="ai-mode-selector"
+              value={activeMode}
+              onChange={(e) => setActiveMode(e.target.value as AiModePreset)}
+              className="vision-btn text-[11px] !py-1 !px-2 bg-[var(--glass-input)] text-primary font-mono cursor-pointer border border-glass-subtle focus:border-indigo-500 rounded-[6px]"
+              title="Preset de generación del Arquitecto IA"
+              aria-label="Preset de generación del Arquitecto IA"
+            >
+              {MODE_PRESET_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value} className="bg-slate-900 text-white dark:bg-slate-900">
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <VisionButton
             size="sm"
             icon="delete_sweep"
@@ -219,7 +322,9 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
           </VisionButton>
 
           {!isCompact && (
-            <VisionPill variant="indigo" className="hidden xs:inline-flex">CONSULTOR ACTIVO</VisionPill>
+            <VisionPill variant={currentPreset.pillVariant} className="hidden lg:inline-flex text-[9px] uppercase font-mono">
+              MODO {currentPreset.shortLabel.toUpperCase()}
+            </VisionPill>
           )}
         </div>
       </div>
@@ -248,7 +353,8 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
               m.actions &&
               ((m.actions.requirements && m.actions.requirements.length > 0) ||
                 (m.actions.entities && m.actions.entities.length > 0) ||
-                (m.actions.decisions && m.actions.decisions.length > 0));
+                (m.actions.decisions && m.actions.decisions.length > 0) ||
+                (m.actions.diagrams && m.actions.diagrams.length > 0));
 
             return (
               <div
@@ -493,6 +599,128 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
                         </div>
                       </div>
                     )}
+
+                    {/* Diagramas Arquitectónicos (Mermaid UML) */}
+                    {m.actions.diagrams && m.actions.diagrams.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="text-[9.5px] font-mono text-muted uppercase tracking-wider flex items-center gap-1.5">
+                            <span className="material-symbols-outlined text-[13px] text-fuchsia-400">schema</span>
+                            <span>Diagramas Arquitectónicos OKF ({m.actions.diagrams.length})</span>
+                          </div>
+                          <button
+                            onClick={() =>
+                              handleCopyText(
+                                `diagrams-all-${m.id}`,
+                                m.actions!.diagrams!
+                                  .map((d) => `%% ${d.title} (${d.code})\n${d.mermaidCode}`)
+                                  .join('\n\n')
+                              )
+                            }
+                            className="text-[9.5px] font-mono text-muted hover:text-primary flex items-center gap-1 cursor-pointer transition-colors"
+                            title="Copiar todos los diagramas en Mermaid"
+                          >
+                            <span className="material-symbols-outlined text-[11px]">
+                              {copiedMsgId === `diagrams-all-${m.id}` ? 'check' : 'content_copy'}
+                            </span>
+                            <span>{copiedMsgId === `diagrams-all-${m.id}` ? 'Copiados' : 'Copiar Mermaid'}</span>
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-1 gap-2">
+                          {m.actions.diagrams.map((diag, i) => {
+                            const isInjected = isItemInjected(`diagram:${diag.code}`);
+                            const isExpanded = !!expandedDiagramCodes[`${m.id}-${diag.code}`];
+
+                            return (
+                              <div
+                                key={i}
+                                className="p-2.5 rounded-[8px] bg-black/10 dark:bg-white/[0.04] border border-glass-subtle text-[11px] space-y-2 transition-all"
+                              >
+                                <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+                                  <div className="flex items-center gap-2 overflow-hidden min-w-0">
+                                    <span className="font-mono font-bold text-fuchsia-400 shrink-0">
+                                      {diag.code}
+                                    </span>
+                                    <span className="truncate text-primary font-medium">{diag.title}</span>
+                                    <VisionPill variant="indigo" className="text-[8.5px] px-1 py-0.2 uppercase shrink-0">
+                                      {diag.type}
+                                    </VisionPill>
+                                  </div>
+                                  <div className="flex items-center gap-1 shrink-0 ml-auto">
+                                    <button
+                                      onClick={() =>
+                                        setExpandedDiagramCodes((prev) => ({
+                                          ...prev,
+                                          [`${m.id}-${diag.code}`]: !prev[`${m.id}-${diag.code}`],
+                                        }))
+                                      }
+                                      className="text-[10px] font-mono px-2 py-1 rounded bg-black/20 dark:bg-white/10 hover:bg-black/30 dark:hover:bg-white/15 text-secondary hover:text-primary transition-colors flex items-center gap-1 cursor-pointer"
+                                      title={isExpanded ? 'Ocultar renderizado' : 'Previsualizar diagrama interactivo'}
+                                    >
+                                      <span className="material-symbols-outlined text-[12px]">
+                                        {isExpanded ? 'visibility_off' : 'visibility'}
+                                      </span>
+                                      <span>{isExpanded ? 'Ocultar' : 'Previsualizar'}</span>
+                                    </button>
+
+                                    <button
+                                      onClick={() => handleCopyText(`diag-${m.id}-${i}`, diag.mermaidCode)}
+                                      className="text-[10px] font-mono px-2 py-1 rounded bg-black/20 dark:bg-white/10 hover:bg-black/30 dark:hover:bg-white/15 text-secondary hover:text-primary transition-colors flex items-center gap-1 cursor-pointer"
+                                      title="Copiar código Mermaid"
+                                    >
+                                      <span className="material-symbols-outlined text-[12px]">
+                                        {copiedMsgId === `diag-${m.id}-${i}` ? 'check' : 'content_copy'}
+                                      </span>
+                                      <span>{copiedMsgId === `diag-${m.id}-${i}` ? 'Copiado' : 'Código'}</span>
+                                    </button>
+
+                                    <button
+                                      onClick={() => handleInjectDiagram(diag)}
+                                      disabled={isInjected}
+                                      className={`text-[10px] font-mono px-2 py-1 rounded transition-all cursor-pointer ${
+                                        isInjected
+                                          ? 'text-emerald-400 bg-emerald-500/10 cursor-default'
+                                          : 'text-fuchsia-400 hover:text-fuchsia-300 bg-fuchsia-500/15 hover:bg-fuchsia-500/25'
+                                      }`}
+                                    >
+                                      {isInjected ? 'Inyectado ✓' : '+ Inyectar'}
+                                    </button>
+
+                                    {onNavigateStep && (
+                                      <button
+                                        onClick={() => onNavigateStep('view-diagrams')}
+                                        className="text-[10px] font-mono px-2 py-1 rounded bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-0.5 cursor-pointer"
+                                        title="Abrir este diagrama en el Estudio de Diagramas"
+                                      >
+                                        <span>Estudio</span>
+                                        <span className="material-symbols-outlined text-[11px]">open_in_new</span>
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {diag.description && (
+                                  <p className="text-[10.5px] text-secondary leading-relaxed font-sans">
+                                    {diag.description}
+                                  </p>
+                                )}
+
+                                {isExpanded && (
+                                  <div className="mt-2 rounded-[6px] border border-glass-subtle overflow-hidden bg-slate-900/40 p-2">
+                                    <MermaidVisualizer
+                                      code={diag.mermaidCode}
+                                      title={diag.title}
+                                      standard="OKF Mermaid v10"
+                                      showCode={false}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -545,91 +773,66 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
         <div ref={messagesEndRef} />
       </div>
 
-      {/* 4. Chips de Acción Rápida */}
-      <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-1 shrink-0">
-        <VisionButton
-          size="sm"
-          icon="search"
-          disabled={isLoading}
-          onClick={() => {
-            if (!activeProject) return;
-            analyzeSchema(activeProject.id);
-          }}
-          className="shrink-0"
-        >
-          Validar 3FN
-        </VisionButton>
-
-        <VisionButton
-          size="sm"
-          icon="receipt_long"
-          disabled={isLoading}
-          onClick={() => {
-            if (!activeProject) return;
-            suggestRequirements(
-              activeProject.id,
-              'Generar requisitos IEEE-830 para módulo de Pagos con Tarjeta y Autenticación MFA'
-            );
-          }}
-          className="shrink-0"
-        >
-          Sugerir Requisitos Pagos & Auth
-        </VisionButton>
-
-        <VisionButton
-          size="sm"
-          icon="gavel"
-          disabled={isLoading}
-          onClick={() =>
-            handleSend(
-              '¿Qué decisiones de arquitectura (ADRs) deberíamos registrar y formalizar según el estado actual del proyecto?'
-            )
-          }
-          className="shrink-0"
-        >
-          Auditar ADRs
-        </VisionButton>
-
-        <VisionButton
-          size="sm"
-          icon="table_view"
-          disabled={isLoading}
-          onClick={() =>
-            handleSend(
-              'Diseña una tabla de auditoría transversal con columnas id, table_name, record_id, action, old_data, new_data, user_id y timestamp.'
-            )
-          }
-          className="shrink-0"
-        >
-          Diseñar Tabla Auditoría
-        </VisionButton>
+      {/* 4. Barra Informativa de Preset Activo y Navegación Rápida */}
+      <div className="flex items-center justify-between gap-2 px-1 py-1 shrink-0 border-t border-glass-subtle/50 text-[11px] font-mono">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="text-[10px] uppercase text-muted tracking-wider hidden xs:inline">Preset:</span>
+          <span className="text-primary font-semibold truncate flex items-center gap-1">
+            <span>{currentPreset.label.split(' ')[0]}</span>
+            <span className="text-secondary">{currentPreset.shortLabel}</span>
+          </span>
+          <span className="text-[10px] text-muted truncate hidden md:inline">
+            — {currentPreset.description}
+          </span>
+        </div>
 
         {onNavigateStep && (
-          <VisionButton
-            size="sm"
-            icon="arrow_forward"
-            onClick={() => onNavigateStep('view-reqs')}
-            className="text-amber-500 dark:text-amber-400 hover:text-amber-300 ml-auto shrink-0"
-          >
-            Ver Requisitos
-          </VisionButton>
+          <div className="flex items-center gap-1 shrink-0 ml-auto">
+            <button
+              type="button"
+              onClick={() => onNavigateStep('view-diagrams')}
+              className="text-[10px] font-mono text-fuchsia-400 hover:text-fuchsia-300 px-2 py-0.5 rounded bg-fuchsia-500/10 hover:bg-fuchsia-500/20 transition-colors flex items-center gap-1 cursor-pointer"
+              title="Abrir Estudio de Diagramas"
+            >
+              <span className="material-symbols-outlined text-[12px]">schema</span>
+              <span>Diagramas ↗</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onNavigateStep('view-canvas')}
+              className="text-[10px] font-mono text-emerald-400 hover:text-emerald-300 px-2 py-0.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors flex items-center gap-1 cursor-pointer"
+              title="Abrir Canvas ERD"
+            >
+              <span className="material-symbols-outlined text-[12px]">table_chart</span>
+              <span>Canvas ↗</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onNavigateStep('view-reqs')}
+              className="text-[10px] font-mono text-amber-400 hover:text-amber-300 px-2 py-0.5 rounded bg-amber-500/10 hover:bg-amber-500/20 transition-colors flex items-center gap-1 cursor-pointer"
+              title="Abrir Requisitos"
+            >
+              <span className="material-symbols-outlined text-[12px]">checklist</span>
+              <span>Requisitos ↗</span>
+            </button>
+          </div>
         )}
       </div>
 
-      {/* 5. Input de Chat */}
+      {/* 5. Input de Chat con placeholder contextual */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
           handleSend();
         }}
-        className="relative flex items-center shrink-0 pt-1"
+        className="relative flex items-center shrink-0 pt-0.5"
       >
         <input
           type="text"
           value={inputVal}
           onChange={(e) => setInputVal(e.target.value)}
           disabled={isLoading}
-          placeholder="Describe un requerimiento, entidad relacional o solicita una auditoría..."
+          placeholder={currentPreset.placeholder}
           className="vision-input pr-10 text-xs"
         />
         <button

@@ -8,8 +8,8 @@ import { Decision } from '@/types/decision.types';
 import { CanvasEntity } from '@/types/canvas.types';
 import { ENTERPRISE_TEMPLATES } from './okfTemplates';
 import { documentExportService, triggerFileDownload } from './documentExportService';
-import { VisionButton } from '@/components/ui/VisionButton';
 import { MermaidVisualizer } from '@/components/diagrams/MermaidVisualizer';
+import { useThemeStore } from '@/stores/useThemeStore';
 
 interface ConsolidatedDocumentsViewProps {
   projectId: string;
@@ -20,6 +20,8 @@ type PreviewMode = 'executive' | 'diagram' | 'source';
 
 export const ConsolidatedDocumentsView: React.FC<ConsolidatedDocumentsViewProps> = ({ projectId }) => {
   const { activeProject, metrics } = useProjectStore();
+  const theme = useThemeStore((s) => s.theme);
+  const isDark = theme === 'dark';
 
   const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [decisions, setDecisions] = useState<Decision[]>([]);
@@ -32,10 +34,22 @@ export const ConsolidatedDocumentsView: React.FC<ConsolidatedDocumentsViewProps>
   const [searchQuery, setSearchQuery] = useState('');
   const [previewMode, setPreviewMode] = useState<PreviewMode>('executive');
   const [hasCopied, setHasCopied] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isCatalogOpen, setIsCatalogOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Cerrar catálogo con tecla Escape si está abierto
+  useEffect(() => {
+    if (!isCatalogOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsCatalogOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isCatalogOpen]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -235,22 +249,29 @@ export const ConsolidatedDocumentsView: React.FC<ConsolidatedDocumentsViewProps>
     <div
       ref={containerRef}
       className={`flex-1 flex flex-col h-full overflow-hidden select-none transition-colors ${
-        isFullscreen ? 'bg-[#080d1a] fixed inset-0 z-50' : ''
-      }`}
+        isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-100 text-slate-900'
+      } ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}
     >
       {/* Barra Superior con Métricas y Filtros de Categoría */}
-      <div className="px-3 sm:px-4 py-2 border-b border-glass-subtle bg-black/20 flex flex-wrap items-center justify-between gap-2 shrink-0">
+      <div
+        className={`px-3 sm:px-4 py-2 border-b flex flex-wrap items-center justify-between gap-2 shrink-0 ${
+          isDark ? 'border-white/10 bg-black/20' : 'border-slate-200 bg-white/70 shadow-xs'
+        }`}
+      >
         <div className="flex items-center gap-2">
-          {/* Botón para colapsar/expandir el catálogo lateral */}
+          {/* Botón retráctil estilo CanvasDrawer para abrir/cerrar catálogo */}
           <button
             type="button"
-            onClick={() => setIsSidebarCollapsed((prev) => !prev)}
-            className="p-1 rounded-md bg-white/5 hover:bg-white/10 text-secondary hover:text-primary transition-all border border-glass-subtle flex items-center justify-center"
-            title={isSidebarCollapsed ? 'Mostrar catálogo de plantillas' : 'Colapsar catálogo para pantalla ancha'}
+            onClick={() => setIsCatalogOpen((prev) => !prev)}
+            className="vision-btn !rounded-full !py-1 !px-3 text-[11px] flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+            aria-expanded={isCatalogOpen}
+            aria-controls="okf-catalog-drawer"
+            title={isCatalogOpen ? 'Ocultar catálogo de plantillas' : 'Desplegar catálogo de plantillas'}
           >
-            <span className="material-symbols-outlined text-[16px]">
-              {isSidebarCollapsed ? 'right_panel_open' : 'left_panel_close'}
+            <span className="material-symbols-outlined text-[15px]">
+              {isCatalogOpen ? 'chevron_left' : 'view_sidebar'}
             </span>
+            <span>{isCatalogOpen ? 'Ocultar' : `Catálogo (${ENTERPRISE_TEMPLATES.length})`}</span>
           </button>
 
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -289,43 +310,66 @@ export const ConsolidatedDocumentsView: React.FC<ConsolidatedDocumentsViewProps>
         </div>
       </div>
 
-      {/* Cuerpo Principal Dividido: Lista Lateral de Plantillas + Visor Activo */}
-      <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
-        {/* Panel Lateral: Catálogo de Plantillas (Colapsable) */}
-        {!isSidebarCollapsed && (
-          <div className="w-full md:w-80 lg:w-96 border-b md:border-b-0 md:border-r border-glass-subtle flex flex-col shrink-0 bg-black/15 transition-all animate-fadeIn">
-            {/* Barra de búsqueda */}
-            <div className="p-2.5 border-b border-glass-subtle flex items-center justify-between gap-2">
-              <div className="relative flex-1">
-                <span className="material-symbols-outlined absolute left-2 top-2 text-[15px] text-muted pointer-events-none">
-                  search
-                </span>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Buscar por estándar, título, tag..."
-                  className="vision-input !pl-7 !py-1 !text-xs w-full"
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-2 top-1.5 text-muted hover:text-primary text-xs"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsSidebarCollapsed(true)}
-                className="hidden md:flex p-1 rounded hover:bg-white/10 text-muted hover:text-primary transition-colors"
-                title="Colapsar panel"
-              >
-                <span className="material-symbols-outlined text-[16px]">chevron_left</span>
-              </button>
+      {/* Cuerpo Principal: Visor a Pantalla Completa + Drawer Deslizante sobrepuesto */}
+      <div className="flex-1 relative min-h-0 overflow-hidden">
+        {/* Backdrop en pantallas pequeñas */}
+        {isCatalogOpen && (
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm z-20 md:hidden transition-opacity"
+            onClick={() => setIsCatalogOpen(false)}
+          />
+        )}
+
+        {/* Panel Desplegable (Sliding Drawer) del Catálogo de Plantillas */}
+        <aside
+          id="okf-catalog-drawer"
+          className={`vision-drawer absolute top-0 left-0 bottom-0 w-80 sm:w-96 max-w-[90vw] z-30 flex flex-col transition-transform duration-300 ease-out shadow-2xl ${
+            isDark
+              ? 'border-r border-white/10 bg-slate-950/95 text-slate-100'
+              : 'border-r border-slate-200 bg-white/95 text-slate-900'
+          } ${isCatalogOpen ? 'translate-x-0' : '-translate-x-full pointer-events-none'}`}
+          aria-hidden={!isCatalogOpen}
+        >
+          {/* Barra de búsqueda y cabecera del drawer */}
+          <div
+            className={`p-2.5 border-b flex items-center justify-between gap-2 shrink-0 ${
+              isDark ? 'border-white/10' : 'border-slate-200'
+            }`}
+          >
+            <div className="relative flex-1">
+              <span className="material-symbols-outlined absolute left-2 top-2 text-[15px] text-muted pointer-events-none">
+                search
+              </span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Buscar por estándar, título, tag..."
+                className={`vision-input !pl-7 !py-1 !text-xs w-full ${
+                  isDark
+                    ? 'bg-black/30 border-white/10 text-white placeholder-slate-500'
+                    : 'bg-slate-100 border-slate-300 text-slate-900 placeholder-slate-400'
+                }`}
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2 top-1.5 text-muted hover:text-primary text-xs cursor-pointer"
+                >
+                  ✕
+                </button>
+              )}
             </div>
+            <button
+              type="button"
+              onClick={() => setIsCatalogOpen(false)}
+              className="p-1 rounded hover:bg-white/10 text-muted hover:text-primary transition-colors cursor-pointer"
+              title="Cerrar catálogo"
+            >
+              <span className="material-symbols-outlined text-[16px]">chevron_left</span>
+            </button>
+          </div>
 
           {/* Lista scrollable de plantillas */}
           <div className="flex-1 overflow-y-auto p-2 space-y-1.5 custom-scrollbar">
@@ -349,11 +393,16 @@ export const ConsolidatedDocumentsView: React.FC<ConsolidatedDocumentsViewProps>
                   <button
                     key={tpl.id}
                     type="button"
-                    onClick={() => setSelectedTemplateId(tpl.id)}
-                    className={`w-full text-left p-2.5 rounded-lg border transition-all flex flex-col gap-1.5 ${
+                    onClick={() => {
+                      setSelectedTemplateId(tpl.id);
+                      setIsCatalogOpen(false);
+                    }}
+                    className={`w-full text-left p-2.5 rounded-lg border transition-all flex flex-col gap-1.5 cursor-pointer ${
                       isSelected
                         ? 'bg-indigo-500/15 border-indigo-500/40 shadow-sm shadow-indigo-500/20'
-                        : 'bg-white/[0.02] hover:bg-white/[0.05] border-transparent'
+                        : isDark
+                          ? 'bg-white/[0.02] hover:bg-white/[0.05] border-transparent'
+                          : 'bg-slate-50 hover:bg-slate-100 border-slate-200'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-1.5">
@@ -389,162 +438,301 @@ export const ConsolidatedDocumentsView: React.FC<ConsolidatedDocumentsViewProps>
               })
             )}
           </div>
-        </div>
-      )}
+        </aside>
 
-      {/* Panel Central: Visor del Documento Consolidado */}
-        <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-black/5">
-          {/* Cabecera del Documento Activo (Diseño de 2 filas para legibilidad total) */}
-          <div className="p-3 border-b border-glass-subtle bg-white/[0.01] flex flex-col gap-2 shrink-0">
-            {/* Fila 1: Título completo y metadatos sin colisión */}
-            <div className="flex items-start justify-between gap-2 min-w-0">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-xs sm:text-sm font-bold text-primary">
-                    {selectedTemplate.title}
-                  </h3>
-                  <span className="text-[9.5px] font-mono px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 shrink-0 font-semibold">
-                    {selectedTemplate.standard}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 mt-0.5 text-[10.5px] text-muted font-mono truncate">
-                  <span>Ruta: {selectedTemplate.canonicalPath}</span>
-                  <span>•</span>
-                  <span className="text-emerald-400">Vinculado a Bóveda OKF</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Fila 2: Selector de Modo a la izquierda y Acciones de Exportación a la derecha */}
-            <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-white/[0.04]">
-              {/* Selector de Modo de Vista */}
-              <div className="flex items-center bg-black/40 p-0.5 rounded-lg border border-glass-subtle">
+        {/* Panel Central: Visor del Documento Consolidado (100% Ancho) */}
+        <div className="absolute inset-0 flex flex-col min-w-0 h-full overflow-hidden">
+          {/* 1. DOCK FLOTANTE EN PANTALLA COMPLETA */}
+          {isFullscreen && (
+            <div className="fixed top-4 right-4 z-50 flex items-center gap-2 p-1.5 rounded-xl shadow-2xl backdrop-blur-xl border border-white/20 bg-slate-900/85 text-white animate-in fade-in slide-in-from-top-2">
+              {/* Selector de modo flotante */}
+              <div className="flex items-center bg-black/40 p-0.5 rounded-lg border border-white/10">
                 <button
                   type="button"
                   onClick={() => setPreviewMode('executive')}
-                  className={`px-2.5 py-1 text-[10.5px] rounded-md font-medium transition-all ${
+                  className={`px-2 py-0.5 text-[10.5px] rounded-md font-medium transition-all ${
                     previewMode === 'executive'
-                      ? 'bg-indigo-600 text-white font-semibold shadow-sm'
-                      : 'text-secondary hover:text-primary'
+                      ? 'bg-indigo-600 text-white font-semibold shadow-xs'
+                      : 'text-slate-300 hover:text-white'
                   }`}
-                  title="Vista ejecutiva renderizada con estilos de alta fidelidad, código y diagramas"
+                  title="Vista Ejecutiva"
                 >
                   Vista Ejecutiva
                 </button>
-
                 {selectedTemplate.category === 'diagrams' && (
                   <button
                     type="button"
                     onClick={() => setPreviewMode('diagram')}
-                    className={`px-2.5 py-1 text-[10.5px] rounded-md font-medium transition-all ${
+                    className={`px-2 py-0.5 text-[10.5px] rounded-md font-medium transition-all ${
                       previewMode === 'diagram'
-                        ? 'bg-indigo-600 text-white font-semibold shadow-sm'
-                        : 'text-secondary hover:text-primary'
+                        ? 'bg-indigo-600 text-white font-semibold shadow-xs'
+                        : 'text-slate-300 hover:text-white'
                     }`}
-                    title="Lienzo interactivo React con zoom y renderizado vectorial de arquitectura"
+                    title="Diagrama Interactivo"
                   >
-                    Diagrama Interactivo
+                    Diagrama
                   </button>
                 )}
-
                 <button
                   type="button"
                   onClick={() => setPreviewMode('source')}
-                  className={`px-2.5 py-1 text-[10.5px] rounded-md font-medium transition-all ${
+                  className={`px-2 py-0.5 text-[10.5px] rounded-md font-medium transition-all ${
                     previewMode === 'source'
-                      ? 'bg-indigo-600 text-white font-semibold shadow-sm'
-                      : 'text-secondary hover:text-primary'
+                      ? 'bg-indigo-600 text-white font-semibold shadow-xs'
+                      : 'text-slate-300 hover:text-white'
                   }`}
-                  title="Markdown con YAML Frontmatter puro para IA o Git"
+                  title="YAML & Markdown"
                 >
-                  YAML & Markdown
+                  YAML & MD
                 </button>
               </div>
 
-              {/* Acciones de Exportación & Impresión */}
-              <div className="flex items-center gap-1.5 flex-wrap">
+              <div className="h-4 w-px bg-white/20" />
 
-              {/* Botón Copiar */}
-              <VisionButton
-                variant="secondary"
-                size="sm"
-                icon={hasCopied ? 'check' : 'content_copy'}
+              {/* Micro-acciones flotantes */}
+              <button
+                type="button"
                 onClick={handleCopyMarkdown}
-                title="Copiar contenido con Frontmatter al portapapeles"
-                className="!text-xs"
+                title="Copiar contenido"
+                className={`p-1.5 rounded-lg border text-xs flex items-center transition-all cursor-pointer ${
+                  hasCopied
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                    : 'bg-white/10 hover:bg-white/20 text-white border-white/10'
+                }`}
               >
-                {hasCopied ? '¡Copiado!' : 'Copiar'}
-              </VisionButton>
+                <span className="material-symbols-outlined text-[14px]">
+                  {hasCopied ? 'check' : 'content_copy'}
+                </span>
+              </button>
 
-              {/* Descargar Markdown */}
-              <VisionButton
-                variant="secondary"
-                size="sm"
-                icon="description"
+              <button
+                type="button"
                 onClick={handleDownloadMarkdown}
-                title="Descargar archivo .md listo para git"
-                className="!text-xs"
+                title="Descargar .md"
+                className="p-1.5 rounded-lg border border-white/10 bg-white/10 hover:bg-white/20 text-white text-xs flex items-center transition-all cursor-pointer font-mono text-[10px]"
               >
                 .md
-              </VisionButton>
+              </button>
 
-              {/* Descargar .mmd puro (Mermaid Definition) cuando es plantilla de diagramas */}
               {selectedTemplate.category === 'diagrams' && (
-                <VisionButton
-                  variant="secondary"
-                  size="sm"
-                  icon="account_tree"
+                <button
+                  type="button"
                   onClick={handleDownloadMmd}
-                  title="Descargar definición pura de Mermaid (.mmd)"
-                  className="!text-xs text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/10"
+                  title="Descargar .mmd"
+                  className="p-1.5 rounded-lg border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 text-xs flex items-center transition-all cursor-pointer font-mono text-[10px]"
                 >
                   .mmd
-                </VisionButton>
+                </button>
               )}
 
-              {/* Descargar HTML */}
-              <VisionButton
-                variant="secondary"
-                size="sm"
-                icon="html"
+              <button
+                type="button"
                 onClick={handleDownloadHtml}
-                title="Descargar HTML standalone con estilos ejecutivos y diagramas renderizados"
-                className="!text-xs"
+                title="Descargar .html"
+                className="p-1.5 rounded-lg border border-white/10 bg-white/10 hover:bg-white/20 text-white text-xs flex items-center transition-all cursor-pointer font-mono text-[10px]"
               >
                 .html
-              </VisionButton>
+              </button>
 
-              {/* Imprimir / Guardar como PDF */}
-              <VisionButton
-                variant="primary"
-                size="sm"
-                icon="print"
+              <button
+                type="button"
                 onClick={handlePrintPdf}
-                title="Abre la ventana de impresión nativa optimizada para guardar como PDF"
-                className="!text-xs !bg-gradient-to-r !from-indigo-600 !to-cyan-600 text-white shadow-lg shadow-indigo-500/20"
+                title="Imprimir / PDF"
+                className="p-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs flex items-center transition-all shadow-md cursor-pointer"
               >
-                PDF / Imprimir
-              </VisionButton>
+                <span className="material-symbols-outlined text-[14px]">print</span>
+              </button>
 
-              {/* Alternar Pantalla Completa Inmersiva */}
-              <VisionButton
-                variant="secondary"
-                size="sm"
-                icon={isFullscreen ? 'fullscreen_exit' : 'fullscreen'}
+              <div className="h-4 w-px bg-white/20" />
+
+              {/* Salir de pantalla completa */}
+              <button
+                type="button"
                 onClick={toggleFullscreen}
-                title={isFullscreen ? 'Salir de pantalla completa' : 'Expandir a pantalla completa inmersiva'}
-                className="!text-xs text-indigo-300 hover:text-white border-indigo-500/30"
+                title="Salir de pantalla completa (Esc)"
+                className="p-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 text-xs flex items-center transition-all cursor-pointer"
               >
-                {isFullscreen ? 'Salir' : 'Pantalla Completa'}
-              </VisionButton>
+                <span className="material-symbols-outlined text-[14px]">fullscreen_exit</span>
+              </button>
             </div>
-          </div>
-        </div>
+          )}
 
-        {/* Área de Visualización */}
-        <div className="flex-1 min-h-0 relative overflow-hidden">
+          {/* 2. CABECERA LIGERA EN MODO NORMAL (SIN ETIQUETAS DE COLORES, SELECTOR AL LADO DEL TÍTULO, MICRO-BOTONES) */}
+          {!isFullscreen && (
+            <div
+              className={`px-3.5 py-2 border-b flex items-center justify-between gap-3 shrink-0 transition-colors ${
+                isDark
+                  ? 'border-white/10 bg-white/[0.02]'
+                  : 'border-slate-200 bg-white/80 shadow-xs'
+              }`}
+            >
+              {/* Lado Izquierdo: Nombre del Documento + Selector de Vista al lado derecho */}
+              <div className="flex items-center gap-3 min-w-0">
+                <h3 className="text-xs sm:text-sm font-bold text-primary truncate max-w-[200px] sm:max-w-xs md:max-w-md">
+                  {selectedTemplate.title}
+                </h3>
+
+                {/* Selector de Modo de Vista colocado inmediatamente a la derecha del título */}
+                <div
+                  className={`flex items-center p-0.5 rounded-lg border shrink-0 ${
+                    isDark ? 'bg-black/40 border-white/10' : 'bg-slate-200/70 border-slate-300'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setPreviewMode('executive')}
+                    className={`px-2 py-0.5 text-[10.5px] rounded-md font-medium transition-all ${
+                      previewMode === 'executive'
+                        ? 'bg-indigo-600 text-white font-semibold shadow-xs'
+                        : isDark
+                          ? 'text-slate-400 hover:text-white'
+                          : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                    title="Vista ejecutiva renderizada con estilos de alta fidelidad, código y diagramas"
+                  >
+                    Vista Ejecutiva
+                  </button>
+
+                  {selectedTemplate.category === 'diagrams' && (
+                    <button
+                      type="button"
+                      onClick={() => setPreviewMode('diagram')}
+                      className={`px-2 py-0.5 text-[10.5px] rounded-md font-medium transition-all ${
+                        previewMode === 'diagram'
+                          ? 'bg-indigo-600 text-white font-semibold shadow-xs'
+                          : isDark
+                            ? 'text-slate-400 hover:text-white'
+                            : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                      title="Lienzo interactivo React con zoom y renderizado vectorial de arquitectura"
+                    >
+                      Diagrama
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setPreviewMode('source')}
+                    className={`px-2 py-0.5 text-[10.5px] rounded-md font-medium transition-all ${
+                      previewMode === 'source'
+                        ? 'bg-indigo-600 text-white font-semibold shadow-xs'
+                        : isDark
+                          ? 'text-slate-400 hover:text-white'
+                          : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                    title="Markdown con YAML Frontmatter puro para IA o Git"
+                  >
+                    YAML & MD
+                  </button>
+                </div>
+              </div>
+
+              {/* Lado Derecho: Micro-botones de Copiar, Descargar, Imprimir y Fullscreen */}
+              <div className="flex items-center gap-1 shrink-0">
+                {/* Micro-botón Copiar */}
+                <button
+                  type="button"
+                  onClick={handleCopyMarkdown}
+                  title="Copiar contenido con Frontmatter al portapapeles"
+                  className={`p-1.5 rounded-lg border text-xs flex items-center gap-1 transition-all cursor-pointer ${
+                    hasCopied
+                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                      : isDark
+                        ? 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[14px]">
+                    {hasCopied ? 'check' : 'content_copy'}
+                  </span>
+                  <span className="text-[10px] hidden sm:inline">
+                    {hasCopied ? 'Copiado' : 'Copiar'}
+                  </span>
+                </button>
+
+                {/* Micro-botón Descargar .md */}
+                <button
+                  type="button"
+                  onClick={handleDownloadMarkdown}
+                  title="Descargar archivo .md listo para git"
+                  className={`p-1.5 rounded-lg border text-xs flex items-center gap-1 transition-all cursor-pointer ${
+                    isDark
+                      ? 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[14px]">description</span>
+                  <span className="text-[10px] font-mono">.md</span>
+                </button>
+
+                {/* Micro-botón Descargar .mmd si es plantilla de diagramas */}
+                {selectedTemplate.category === 'diagrams' && (
+                  <button
+                    type="button"
+                    onClick={handleDownloadMmd}
+                    title="Descargar definición pura de Mermaid (.mmd)"
+                    className={`p-1.5 rounded-lg border text-xs flex items-center gap-1 transition-all cursor-pointer text-cyan-400 ${
+                      isDark
+                        ? 'bg-cyan-500/10 hover:bg-cyan-500/20 border-cyan-500/30'
+                        : 'bg-cyan-50 hover:bg-cyan-100 border-cyan-200'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[14px]">account_tree</span>
+                    <span className="text-[10px] font-mono">.mmd</span>
+                  </button>
+                )}
+
+                {/* Micro-botón Descargar .html */}
+                <button
+                  type="button"
+                  onClick={handleDownloadHtml}
+                  title="Descargar HTML standalone con estilos ejecutivos"
+                  className={`p-1.5 rounded-lg border text-xs flex items-center gap-1 transition-all cursor-pointer ${
+                    isDark
+                      ? 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[14px]">html</span>
+                  <span className="text-[10px] font-mono">.html</span>
+                </button>
+
+                {/* Micro-botón Imprimir / PDF */}
+                <button
+                  type="button"
+                  onClick={handlePrintPdf}
+                  title="Abre la ventana de impresión nativa / PDF"
+                  className="p-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs flex items-center gap-1 transition-all shadow-xs cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[14px]">print</span>
+                  <span className="text-[10px] hidden md:inline">PDF</span>
+                </button>
+
+                {/* Micro-botón Pantalla Completa */}
+                <button
+                  type="button"
+                  onClick={toggleFullscreen}
+                  title="Expandir a pantalla completa inmersiva"
+                  className={`p-1.5 rounded-lg border text-xs flex items-center transition-all cursor-pointer ${
+                    isDark
+                      ? 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[14px]">fullscreen</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 3. ÁREA DE VISUALIZACIÓN */}
+          <div className="flex-1 min-h-0 relative overflow-hidden">
             {previewMode === 'diagram' && selectedTemplate.category === 'diagrams' ? (
-              <div className="w-full h-full overflow-y-auto p-4 custom-scrollbar bg-[#070b16]">
+              <div
+                className={`w-full h-full overflow-y-auto p-4 custom-scrollbar transition-colors ${
+                  isDark ? 'bg-[#070b16]' : 'bg-slate-50'
+                }`}
+              >
                 <div className="max-w-5xl mx-auto">
                   <MermaidVisualizer
                     code={generatedContent?.markdown || ''}
@@ -558,17 +746,29 @@ export const ConsolidatedDocumentsView: React.FC<ConsolidatedDocumentsViewProps>
               <iframe
                 title="Executive Document Preview"
                 srcDoc={fullHtmlPreview}
-                className="w-full h-full border-none bg-[#0a0f1d]"
+                className={`w-full h-full border-none transition-colors ${
+                  isDark ? 'bg-[#0a0f1d]' : 'bg-white'
+                }`}
                 sandbox="allow-same-origin allow-scripts"
               />
             ) : (
-              <div className="w-full h-full overflow-y-auto p-4 custom-scrollbar bg-[#090d16] font-mono text-xs">
+              <div
+                className={`w-full h-full overflow-y-auto p-4 custom-scrollbar font-mono text-xs transition-colors ${
+                  isDark ? 'bg-[#090d16]' : 'bg-slate-50'
+                }`}
+              >
                 <div className="max-w-4xl mx-auto space-y-4">
                   {/* YAML Frontmatter Inspector */}
-                  <div className="rounded-xl border border-indigo-500/30 bg-indigo-950/20 p-3">
-                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-indigo-500/20 text-[10px] font-semibold text-indigo-300 uppercase tracking-wider">
+                  <div
+                    className={`rounded-xl border p-3 ${
+                      isDark
+                        ? 'border-indigo-500/30 bg-indigo-950/20'
+                        : 'border-indigo-200 bg-indigo-50/70'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-indigo-500/20 text-[10px] font-semibold text-indigo-400 uppercase tracking-wider">
                       <span>YAML Frontmatter Metadata (AI Binding Contract)</span>
-                      <span className="text-[9px] bg-indigo-500/20 px-1.5 py-0.5 rounded text-indigo-200">
+                      <span className="text-[9px] bg-indigo-500/20 px-1.5 py-0.5 rounded text-indigo-300">
                         Zod Ratified
                       </span>
                     </div>
@@ -578,14 +778,24 @@ export const ConsolidatedDocumentsView: React.FC<ConsolidatedDocumentsViewProps>
                   </div>
 
                   {/* Markdown Body */}
-                  <div className="rounded-xl border border-white/10 bg-black/40 p-4">
-                    <div className="flex items-center justify-between pb-2 mb-3 border-b border-white/10 text-[10px] font-semibold text-muted uppercase tracking-wider">
+                  <div
+                    className={`rounded-xl border p-4 ${
+                      isDark
+                        ? 'border-white/10 bg-black/40 text-slate-200'
+                        : 'border-slate-200 bg-white text-slate-800 shadow-xs'
+                    }`}
+                  >
+                    <div
+                      className={`flex items-center justify-between pb-2 mb-3 border-b text-[10px] font-semibold uppercase tracking-wider ${
+                        isDark ? 'border-white/10 text-muted' : 'border-slate-200 text-slate-500'
+                      }`}
+                    >
                       <span>Cuerpo Markdown Documental</span>
                       <span className="text-[9px] text-secondary">
                         {generatedContent?.markdown.split('\n').length} líneas
                       </span>
                     </div>
-                    <pre className="text-slate-200 whitespace-pre-wrap font-mono text-[11.5px] leading-relaxed">
+                    <pre className="whitespace-pre-wrap font-mono text-[11.5px] leading-relaxed">
                       {generatedContent?.markdown}
                     </pre>
                   </div>

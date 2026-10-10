@@ -13,7 +13,7 @@ export const chatRequestDtoSchema = z.object({
     .array(chatMessageDtoSchema)
     .min(1, 'Debe proporcionar al menos un mensaje')
     .max(40, 'No puede enviar más de 40 mensajes en el historial de conversación'),
-  actionContext: z.enum(['general', 'requirements', 'canvas', 'decisions']).optional().default('general'),
+  actionContext: z.enum(['general', 'requirements', 'canvas', 'decisions', 'diagrams', 'conversation']).optional().default('general'),
   temperature: z.number().min(0).max(2).optional(),
 });
 

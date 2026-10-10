@@ -30,12 +30,13 @@ Sintetiza la visión de producto (gobernanza técnica pre-código y mitigación 
    - 4.3. [Pantalla 1: Hub de Proyectos & Portafolio (`/projects`)](#43-pantalla-1-hub-de-proyectos--portafolio-projects)
    - 4.4. [Pantalla 2: Estudio de Gobernanza Tripartito NotebookLM (`/projects/:projectId`)](#44-pantalla-2-estudio-de-gobernanza-tripartito-notebooklm-projectsprojectid)
      - 4.4.1. [Barra Superior Integrada (Apple Glass TopBar)](#441-barra-superior-integrada-apple-glass-topbar)
-     - 4.4.2. [Panel Izquierdo: Flujo Guiado en 5 Pasos (Navigation Pipeline)](#442-panel-izquierdo-flujo-guiado-en-5-pasos-navigation-pipeline)
-     - 4.4.3. [Panel Central: Workspace / Studio de 4 Vistas Activas](#443-panel-central-workspace--studio-de-4-vistas-activas)
-       - *Vista 1: Conversación Inicial & Entrevista de Alcance (`view-chat`)*
+     - 4.4.2. [Panel Izquierdo: Flujo Guiado en 6 Pasos (Navigation Pipeline) & Dock Colapsable](#442-panel-izquierdo-flujo-guiado-en-6-pasos-navigation-pipeline--dock-colapsable)
+     - 4.4.3. [Panel Central: Workspace / Studio de 5 Vistas Activas](#443-panel-central-workspace--studio-de-5-vistas-activas)
+       - *Vista 1: Conversación Inicial & Copiloto Asertivo (`view-chat`)*
        - *Vista 2: Matriz de Requisitos RF y RNF (`view-reqs`)*
        - *Vista 3: Catálogo de Documentación & ADRs (`view-docs`)*
-       - *Vista 4: Canvas ERD & Salidas de Scripts Multi-Lenguaje (`view-canvas`)*
+       - *Vista 4: Estudio de Diagramas Arquitectónicos (`view-diagrams`)*
+       - *Vista 5: Canvas ERD & Salidas de Scripts Multi-Lenguaje (`view-canvas`)*
      - 4.4.4. [Panel Derecho: Copiloto & Inspector de Contexto (Metrics & Sources)](#444-panel-derecho-copiloto--inspector-de-contexto-metrics--sources)
      - 4.4.5. [Modal de Compilación & Exportación OKF (`export-modal`)](#445-modal-de-compilación--exportación-okf-export-modal)
 5. [Ergonomía y Arquitectura del Canvas Interactivo (ERD) & Salidas Multi-Lenguaje](#5-ergonomía-y-arquitectura-del-canvas-interactivo-erd--salidas-multi-lenguaje)
@@ -950,30 +951,49 @@ Es la pantalla central de DevSculptor. Su disposición replica el layout de **3 
 
 ---
 
-#### 4.4.2. Panel Izquierdo: Flujo Guiado en 5 Pasos (Navigation Pipeline)
-- Ancho rígido `260px`, superficie `glass-window`, sin scroll exterior.
-- Encabezado con título `FLUJO DE TRABAJO` y badge `5 PASOS`.
-- Contenedor de botones de paso (`.nav-step`), cada uno con icono temático, título en negrita, subtítulo explicativo y badge contador:
+#### 4.4.2. Panel Izquierdo: Flujo Guiado en 6 Pasos (Navigation Pipeline) & Dock Colapsable
+- **Dimensiones y Anatomía:**
+  - Ancho estándar desplegado: `240px` (o `260px` según breakpoint), superficie `glass-window`, sin scroll exterior.
+  - Estado inicial: **Abierto por defecto** al montar `StudioWorkspace`.
+- **Mecanismo de Colapso Lateral Dinámico:**
+  - **Botón de Colapso en Cabecera:** Icono `first_page` en la barra superior junto al título que pliega el panel hacia la izquierda mediante `transition-all duration-300 ease-in-out`.
+  - **Dock de Reapertura Vertical Ultra-Delgado:** Al estar colapsado, el panel se reduce a una lengüeta de `24px` (`w-8`) con icono `last_page` y tipografía vertical `[writing-mode:vertical-lr]` con el texto *"Flujo"*. Esto otorga de forma inmediata más de 240px de espacio libre continuo al área de trabajo central (`main`).
+  - **Atajo Global de Teclado:** Alternancia rápida mediante `Ctrl + B` (Windows/Linux) o `Cmd + B` (macOS), con guardia contextual para evitar intercepciones mientras el usuario escribe en inputs o textareas.
+- **Encabezado:** Título `FLUJO DE TRABAJO` con badge indicador del paso activo.
+- **Contenedor de Botones de Paso (`.nav-step`), cada uno con icono temático, título en negrita y subtítulo explicativo:**
   - **Paso 1: Inicio (`view-chat`)**: Icono `chat_bubble`, *"Conversación — Captura de idea y alcance"*.
-  - **Paso 2: Requisitos (`view-reqs`)**: Icono `checklist`, *"Requisitos RF/RNF"*, badge ámbar con conteo dinámico.
-  - **Paso 3: Documentación (`view-docs`)**: Icono `description`, *"Documentos & ADRs"*, badge cyan con total de actas.
-  - **Paso 4: Modelador & Código (`view-canvas`)**: Icono `schema`, *"Canvas & Scripts — SQL, TypeScript, JSON, Py"*.
-- **Paso 5: Botón Inferior Anclado**: Botón full-width índigo destacado con icono `folder_zip` *"Compilar & Exportar"* que abre el modal OKF.
+  - **Paso 2: Requisitos (`view-reqs`)**: Icono `checklist`, *"Requisitos RF/RNF"*, badge con conteo dinámico.
+  - **Paso 3: Documentación (`view-docs`)**: Icono `description`, *"Documentos & ADRs"*, badge con total de actas.
+  - **Paso 4: Diagramas & Arquitectura (`view-diagrams`)**: Icono `hub`, *"Diagramas OKF — UML, Secuencia, Estados, BPMN"*, badge con modelos disponibles. Ubicado estratégicamente antes del modelador físico.
+  - **Paso 5: Modelador & Código (`view-canvas`)**: Icono `schema`, *"Canvas & Scripts — SQL 3FN, TypeScript, JSON, Py"*.
+- **Paso 6: Botón Inferior Anclado**: Botón full-width índigo destacado con icono `folder_zip` *"Compilar & Exportar"* que abre el modal OKF.
 
 ---
 
-#### 4.4.3. Panel Central: Workspace / Studio de 4 Vistas Activas
+#### 4.4.3. Panel Central: Workspace / Studio de 5 Vistas Activas
 
-##### Vista 1: Conversación Inicial & Entrevista de Alcance (`view-chat`)
-- **Propósito**: Dialogar en lenguaje natural con el *Arquitecto DevSculptor (IA)* para vaciar ideas de software, descubrir reglas de negocio implícitas y extraer automáticamente artefactos estructurados.
-- **Header**: Título "Conversación Inicial", descripción de alcance y badge de estado `EN CURSO`.
-- **Stream de Mensajes**:
-  - Mensajes del Asistente (`chat-bubble-assistant`): fondo translúcido, borde suave, con extracción destacada de requisitos detectados y tablas sugeridas.
-  - Mensajes del Usuario (`chat-bubble-user`): burbuja índigo alineada a la derecha.
-- **Chips de Sugerencia Rápida (Floating Chips)**:
-  - Píldoras con prompts rápidos con un solo clic: `+ Añadir tabla audit_logs`, `+ RNF Latencia < 500ms`, `🔍 Validar 3FN`.
-- **Input de Entrada Flotante**:
-  - Campo estilo Apple Input (`apple-input`) con botón circular de envío y atajo `Enter`.
+##### Vista 1: Conversación Inicial & Copiloto Asertivo (`view-chat`)
+- **Propósito**: Dialogar en lenguaje natural con el *Arquitecto DevSculptor (IA)* con discernimiento granular para extraer exclusivamente los artefactos requeridos o formular la suite completa.
+- **Header**:
+  - Título "Conversación Inicial" y badge de estado `EN CURSO`.
+  - **ComboBox de Modos Preset en Cabecera:** Selector contextual desplegable integrado con 5 perfiles de inferencia:
+    1. 🏛️ `General (Integral)`: Suite completa (Requisitos, Canvas ERD, Diagramas y ADRs).
+    2. 💬 `Conversación (Asesoría)`: Diálogo y asesoría técnica pura sin generación obligatoria de artefactos.
+    3. 📐 `Diagramado (UML / BPMN)`: Generación exclusiva de diagramas arquitectónicos y de procesos en Mermaid.
+    4. 🗄️ `Canvas ERD (Tablas 3FN)`: Modelado selectivo de entidades relacionales para el lienzo.
+    5. 📋 `Requisitos (IEEE-830)`: Requisitos funcionales y no funcionales estructurados.
+- **Stream de Mensajes e Inyección Asertiva:**
+  - Mensajes del Asistente (`chat-bubble-assistant`): fondo translúcido, borde suave, con renderizado condicional de tarjetas de acción según la categoría formulada.
+  - **Tarjetas de Diagramas Arquitectónicos (`AiSuggestedDiagram`):**
+    - Despliegue de título, tipo de diagrama y descripción técnica.
+    - **Botón `+ Inyectar` / `Inyectado ✓`:** Inyecta reactivamente el diagrama en la sesión activa (`useAiChatStore`) y emite notificación *toast* sin expulsar al usuario del chat ni forzar redirecciones.
+    - **Botón `Previsualizar / Ocultar`:** Renderiza interactivamente el diagrama embebido mediante `<MermaidVisualizer />` con controles de zoom y paneo.
+    - **Botón `Código`:** Copia el fuente Mermaid al portapapeles.
+    - **Botón `Estudio ↗`:** Enlace voluntario directo hacia el Estudio de Diagramas (`view-diagrams`).
+- **Barra de Estado y Accesos Rápidos:**
+  - Reemplazo de botones ejecutores redundantes por una barra informativa que indica el preset activo, atajo de envío (`Ctrl + Enter`) y enlaces de navegación directa hacia `Diagramas ↗`, `Canvas ↗` y `Requisitos ↗`.
+- **Input de Entrada Flotante:**
+  - Campo estilo Apple Input (`apple-input`) cuyo placeholder se adapta contextualmente al preset activo.
 
 ##### Vista 2: Matriz de Requisitos RF y RNF (`view-reqs`)
 - **Propósito**: Gestionar la lista formal de requisitos de ingeniería según el estándar IEEE-830.
@@ -990,8 +1010,12 @@ Es la pantalla central de DevSculptor. Su disposición replica el layout de **3 
   - Edición con autoguardado (debounce 800ms) y sincronización contra `PUT /api/v1/projects/:projectId/requirements/:id`.
 
 ##### Vista 3: Catálogo de Documentación & ADRs (`view-docs`)
-- **Propósito**: Formalizar y consultar las actas de decisión arquitectónica (Architecture Decision Records) mitigando la pérdida de contexto histórico.
-- **Header**: Título "Documentos Generados", subtítulo explicativo y botón `+ Nueva Acta`.
+- **Propósito**: Formalizar y consultar las actas de decisión arquitectónica (Architecture Decision Records) y la bóveda de documentos OKF con máxima ligereza visual.
+- **Refinamiento Visual y Ergonomía Documental:**
+  - **Eliminación de Ruido Visual:** Retiro de badges y etiquetas multicolores adyacentes al título que sobrecargaban la lectura.
+  - **Co-localización de Controles:** El selector de vista (`[Vista Ejecutiva | Diagrama | YAML & MD]`) se ubica inmediatamente a la derecha del título en una sola fila compacta y armónica.
+  - **Micro-botones de Acción:** Botones compactos con iconografía sutil para `Copiar`, `.md`, `.mmd`, `.html` e `Imprimir / PDF`.
+  - **Modo Pantalla Completa:** Despliegue de un Dock Flotante Glassmorphic (`top-4 right-4 z-50`) con elevación sutil para preservar el 100% del área de lectura sin barras fijas intrusivas.
 - **Visualizador de ADRs**:
   - Tarjetas de decisión técnica (`doc-card`) que exhiben:
     - Identificador: `ADR-01`, `ADR-02`.
@@ -1006,7 +1030,20 @@ Es la pantalla central de DevSculptor. Su disposición replica el layout de **3 
     - Cumplimiento estricto de inmutabilidad: si el ADR ya fue aceptado o rechazado, el estado se bloquea en la interfaz.
   - Especificaciones Complementarias: Tarjeta especial `SPEC-01: Contrato API REST OpenAPI 3.1`.
 
-##### Vista 4: Canvas ERD & Salidas de Scripts Multi-Lenguaje (`view-canvas`)
+##### Vista 4: Estudio de Diagramas Arquitectónicos (`view-diagrams`)
+- **Propósito**: Modelar, explorar y exportar la arquitectura visual formalizada del proyecto antes de descender al diseño de tablas físicas.
+- **Ubicación Estratégica:** Precede inmediatamente al *Modelador de Código & Canvas ERD*, garantizando la coherencia metodológica (Concepto $\to$ Arquitectura $\to$ Datos).
+- **Catálogo de 8 Modelos Normativos OKF del Proyecto:**
+  - Conexión 1:1 con las plantillas OKF: Modelo de Clases (`OKF-004`), Módulos (`OKF-006`), Secuencia E2E (`OKF-005`), Máquina de Estados ADR (`OKF-007`), C4 Contenedores (`OKF-008`), Topología Cloud (`OKF-009`), ERD Canvas (`OKF-010`) y Trazabilidad (`OKF-002`).
+  - Purga total de especificaciones internas de la plataforma: 100% contextualizado en el proyecto del usuario.
+- **Pestaña de Inyecciones IA (`OKF IA`):**
+  - Sincronización reactiva con `useAiChatStore.injectedDiagrams`. Despliega los diagramas sugeridos desde el chat con badge `OKF IA`, renderizado interactivo y soporte de exportación.
+- **Soporte Dual Theme (Claro / Oscuro):**
+  - Motores vectoriales `GraphCanvas.tsx` y `SequenceCanvas.tsx` leen reactivamente `useThemeStore.theme`, adaptando colores de fondo, grillas, nodos, agrupadores, conectores y partículas.
+  - `MermaidVisualizer.tsx` re-inicializa dinámicamente Mermaid con paletas específicas para modo claro y oscuro (`dark` vs `default`).
+- **Motor de Exportación Multi-Formato:** Dock de descarga directa en SVG vectorial, PNG en alta resolución, documento HTML autocontenido y PDF ejecutivo.
+
+##### Vista 5: Canvas ERD & Salidas de Scripts Multi-Lenguaje (`view-canvas`)
 - **Propósito**: Diseñar visualmente la base de datos relacional y generar en tiempo real código estandarizado listo para producción.
 - **Barra de Sub-pestañas de Formato**:
   - Selector conmutador:
@@ -1304,5 +1341,30 @@ devsculptor-frontend/
 
 ---
 
+## 10. Lineamientos de Ligereza Visual y Diagramas Reactivos (Sprint 6)
+
+### 10.1 Principio de Ligereza Visual en Visores Documentales
+1. **Cabeceras Despejadas**: Los visores de documentos ejecutivos o plantillas normativas deben priorizar el contenido textual y diagramático. Se prohíbe el uso de etiquetas de colores llamativas o badges redundantes junto al título del documento si no aportan funcionalidad crítica.
+2. **Co-localización de Controles**: El selector de modo de visualización (`[Vista Ejecutiva | YAML & MD]`) debe situarse en la misma línea inmediatamente al lado derecho del título, evitando barras secundarias de herramientas que consuman altura vertical de pantalla.
+3. **Micro-Botones de Acción**: Las acciones auxiliares (Copiar, Descargar `.md`, `.html`, Imprimir PDF) deben implementarse como micro-botones (`p-1.5`, texto `10px` o iconos vectoriales), con tooltips semánticos enriquecidos.
+4. **Dock Flotante Glassmorphic en Pantalla Completa**: Al ingresar en modo inmersivo a pantalla completa, la cabecera fija desaparece. Los controles se concentran en un **HUD Dock Flotante** (`position: fixed; top: 1rem; right: 1rem; z-index: 50`) con cristal translúcido y desenfoque, maximizando el área útil de lectura al 100%.
+
+### 10.2 Lineamientos de Adaptabilidad Dual Theme en Diagramas Vectoriales
+1. **Reactividad al Tema Global**: Los motores SVG (`GraphCanvas`, `SequenceCanvas`) y renderizadores (`MermaidVisualizer`) deben suscribirse reactivamente al almacén de temas (`useThemeStore.theme`).
+2. **Contraste en Modo Claro**:
+   - Fondo de lienzo: `#f8fafc` o `#f1f5f9`.
+   - Nodos estructurales: Superficie `#ffffff` con sutil borde coloreado por tipo de grupo (`rgba(..., 0.45)`).
+   - Títulos y tipografía: Mínimo `#0f172a` (contraste > 7:1) con subtítulos en `#475569`.
+   - Grilla de coordenadas: Puntos radiales con opacidad suave en tono índigo (`rgba(99, 102, 241, 0.20)`).
+3. **Contraste en Modo Oscuro**:
+   - Fondo de lienzo: `#070b16` o `#020617`.
+   - Nodos estructurales: Superficie `#0d1527` con reflejo de cristal (`border: 1px solid rgba(255,255,255,0.08)`).
+   - Títulos y tipografía: `#f8fafc` con subtítulos en `#94a3b8`.
+   - Partículas animadas: Flujos con resplandor `drop-shadow` adaptado.
+4. **Puntualidad en Mermaid**: Re-inicializar `mermaid.initialize({ theme: isDark ? 'dark' : 'default' })` antes de invocar `mermaid.render` para evitar colisiones de contraste en textos o nodos generados por SVG.
+
+---
+
 > **Regla de Oro para el Frontend de DevSculptor**:  
 > *«La interfaz debe sentirse como un instrumento de precisión arquitectónica. Si el usuario siente fricción, si el canvas se traba o si la gobernanza pre-código parece un trámite burocrático en lugar de una ventaja estratégica, el diseño debe ser refinado.»*
+

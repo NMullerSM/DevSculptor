@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useThemeStore, WALLPAPERS } from '@/stores/useThemeStore';
-import { useSettingsStore } from '@/stores/useSettingsStore';
+import { useSettingsStore, applyVisualEffectsToDom } from '@/stores/useSettingsStore';
 import { VisionButton } from '@/components/ui/VisionButton';
+import { GLASS_BLUR_RANGE, WINDOW_OPACITY_RANGE } from '@/utils/visualEffects';
 
 interface PlatformSettingsDrawerProps {
   isOpen: boolean;
@@ -35,7 +36,32 @@ export const PlatformSettingsDrawer: React.FC<PlatformSettingsDrawerProps> = ({
   useEffect(() => {
     setDraftBlur(glassBlur);
     setDraftOpacity(windowOpacity);
+    return () => {
+      // Revertir vista previa en vivo si se cierra o desmonta sin aplicar
+      applyVisualEffectsToDom(glassBlur, windowOpacity);
+    };
   }, [glassBlur, windowOpacity, isOpen]);
+
+  const handleBlurChange = (val: number) => {
+    setDraftBlur(val);
+    applyVisualEffectsToDom(val, draftOpacity);
+  };
+
+  const handleOpacityChange = (val: number) => {
+    setDraftOpacity(val);
+    applyVisualEffectsToDom(draftBlur, val);
+  };
+
+  const handleResetVisualEffects = () => {
+    setDraftBlur(GLASS_BLUR_RANGE.def);
+    setDraftOpacity(WINDOW_OPACITY_RANGE.def);
+    applyVisualEffectsToDom(GLASS_BLUR_RANGE.def, WINDOW_OPACITY_RANGE.def);
+  };
+
+  const handleClose = () => {
+    applyVisualEffectsToDom(glassBlur, windowOpacity);
+    onClose();
+  };
 
   if (!isOpen) return null;
 
@@ -66,7 +92,7 @@ export const PlatformSettingsDrawer: React.FC<PlatformSettingsDrawerProps> = ({
       {/* Backdrop con desenfoque suave para cerrar al hacer clic */}
       <div
         className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm transition-opacity animate-fade-in"
-        onClick={onClose}
+        onClick={handleClose}
       />
 
       {/* Drawer deslizante desde la izquierda (Left Slide-Over) */}
@@ -89,7 +115,7 @@ export const PlatformSettingsDrawer: React.FC<PlatformSettingsDrawerProps> = ({
 
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="vision-btn !p-1.5 text-muted hover:text-primary rounded-lg text-xs"
             title="Cerrar panel de configuración"
           >
@@ -257,17 +283,17 @@ export const PlatformSettingsDrawer: React.FC<PlatformSettingsDrawerProps> = ({
               </div>
               <input
                 type="range"
-                min="5"
-                max="45"
-                step="5"
+                min={GLASS_BLUR_RANGE.min}
+                max={GLASS_BLUR_RANGE.max}
+                step={GLASS_BLUR_RANGE.step}
                 value={draftBlur}
-                onChange={(e) => setDraftBlur(Number(e.target.value))}
+                onChange={(e) => handleBlurChange(Number(e.target.value))}
                 className="w-full accent-indigo-500 cursor-pointer select-auto"
               />
               <div className="flex justify-between text-[9px] font-mono text-muted">
-                <span>Sutil (5px)</span>
+                <span>Sin blur (0px)</span>
                 <span>Estándar (20px)</span>
-                <span>Profundo (45px)</span>
+                <span>Máximo (120px)</span>
               </div>
             </div>
 
@@ -284,29 +310,32 @@ export const PlatformSettingsDrawer: React.FC<PlatformSettingsDrawerProps> = ({
               </div>
               <input
                 type="range"
-                min="50"
-                max="98"
-                step="2"
+                min={WINDOW_OPACITY_RANGE.min}
+                max={WINDOW_OPACITY_RANGE.max}
+                step={WINDOW_OPACITY_RANGE.step}
                 value={draftOpacity}
-                onChange={(e) => setDraftOpacity(Number(e.target.value))}
+                onChange={(e) => handleOpacityChange(Number(e.target.value))}
                 className="w-full accent-indigo-500 cursor-pointer select-auto"
               />
               <div className="flex justify-between text-[9px] font-mono text-muted">
-                <span>Translúcido (50%)</span>
+                <span>Cristal (10%)</span>
                 <span>Equilibrado (85%)</span>
-                <span>Sólido (98%)</span>
+                <span>Sólido (100%)</span>
               </div>
+              <p className="text-[10px] text-muted font-sans pt-1">
+                El desenfoque se aprecia con mayor nitidez con opacidades menores al 70%.
+              </p>
             </div>
 
-            {/* Botón Explícito para Aplicar Efectos Visuales */}
-            <div className="pt-2 border-t border-glass-subtle">
+            {/* Botón Explícito para Aplicar Efectos Visuales y Restablecer */}
+            <div className="pt-2 border-t border-glass-subtle flex items-center gap-2">
               <VisionButton
                 type="button"
                 variant={hasVisualChanges ? 'primary' : 'secondary'}
                 size="sm"
                 onClick={handleApplyVisualEffects}
                 disabled={!hasVisualChanges && !isAppliedFeedback}
-                className="w-full justify-center !py-2 text-xs font-semibold cursor-pointer"
+                className="flex-1 justify-center !py-2 text-xs font-semibold cursor-pointer"
                 icon={isAppliedFeedback ? 'done' : 'check_circle'}
               >
                 {isAppliedFeedback
@@ -314,6 +343,17 @@ export const PlatformSettingsDrawer: React.FC<PlatformSettingsDrawerProps> = ({
                   : hasVisualChanges
                   ? 'Aplicar Cambios'
                   : 'Ajustes Aplicados'}
+              </VisionButton>
+              <VisionButton
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleResetVisualEffects}
+                title="Restablecer a valores estándar (20px blur / 85% opacidad)"
+                className="!py-2 !px-2.5 text-xs text-muted hover:text-primary cursor-pointer shrink-0"
+                icon="restart_alt"
+              >
+                Restablecer
               </VisionButton>
             </div>
           </div>
@@ -375,7 +415,7 @@ export const PlatformSettingsDrawer: React.FC<PlatformSettingsDrawerProps> = ({
 
         {/* Pie del Drawer */}
         <div className="p-3 border-t border-glass-subtle bg-black/15 flex items-center justify-end shrink-0">
-          <VisionButton variant="primary" onClick={onClose} size="sm" className="!py-1 !px-4">
+          <VisionButton variant="primary" onClick={handleClose} size="sm" className="!py-1 !px-4">
             Listo
           </VisionButton>
         </div>

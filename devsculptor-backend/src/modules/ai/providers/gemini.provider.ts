@@ -60,7 +60,7 @@ export class GeminiProvider implements IAiProvider {
       );
 
       const rawText = response.text || 'Sin respuesta del modelo.';
-      const { cleanText, suggestedRequirements, suggestedEntities, suggestedDecisions } =
+      const { cleanText, suggestedRequirements, suggestedEntities, suggestedDecisions, suggestedDiagrams } =
         parseDevSculptorActions(rawText);
 
       return {
@@ -72,10 +72,12 @@ export class GeminiProvider implements IAiProvider {
           requirements: suggestedRequirements,
           entities: suggestedEntities,
           decisions: suggestedDecisions,
+          diagrams: suggestedDiagrams,
         },
         suggestedRequirements,
         suggestedEntities,
         suggestedDecisions,
+        suggestedDiagrams,
       };
     } catch (err: unknown) {
       logger.warn(
@@ -113,7 +115,7 @@ Entrega un resumen ejecutivo de recomendaciones y, si detectas tablas faltantes 
       );
 
       const rawText = response.text || 'Auditoría completada sin observaciones.';
-      const { cleanText, suggestedRequirements, suggestedEntities, suggestedDecisions } =
+      const { cleanText, suggestedRequirements, suggestedEntities, suggestedDecisions, suggestedDiagrams } =
         parseDevSculptorActions(rawText);
 
       return {
@@ -125,10 +127,12 @@ Entrega un resumen ejecutivo de recomendaciones y, si detectas tablas faltantes 
           requirements: suggestedRequirements,
           entities: suggestedEntities,
           decisions: suggestedDecisions,
+          diagrams: suggestedDiagrams,
         },
         suggestedRequirements,
         suggestedEntities,
         suggestedDecisions,
+        suggestedDiagrams,
       };
     } catch (err: unknown) {
       logger.warn(

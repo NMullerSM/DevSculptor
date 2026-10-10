@@ -2,41 +2,66 @@ import React, { useEffect, useRef, useState, useId } from 'react';
 import mermaid from 'mermaid';
 import { sanitizeSvg } from '@/utils/sanitizeHtml';
 import { VisionButton } from '@/components/ui/VisionButton';
+import { useThemeStore } from '@/stores/useThemeStore';
 
-// Inicializar Mermaid una sola vez con tema oscuro y tipografía moderna
-let isMermaidInitialized = false;
+let lastInitializedTheme: 'dark' | 'light' | null = null;
 
-function ensureMermaidInitialized() {
-  if (isMermaidInitialized) return;
+function ensureMermaidInitialized(theme: 'dark' | 'light') {
+  if (lastInitializedTheme === theme) return;
+  const isDark = theme === 'dark';
+
   mermaid.initialize({
     startOnLoad: false,
-    theme: 'dark',
+    theme: isDark ? 'dark' : 'default',
     securityLevel: 'strict',
     fontFamily: 'JetBrains Mono, Inter, ui-sans-serif, system-ui',
-    themeVariables: {
-      darkMode: true,
-      background: '#090d16',
-      primaryColor: '#6366f1',
-      primaryTextColor: '#f8fafc',
-      primaryBorderColor: '#818cf8',
-      lineColor: '#38bdf8',
-      secondaryColor: '#0ea5e9',
-      tertiaryColor: '#1e1b4b',
-      mainBkg: '#0f172a',
-      nodeBorder: '#6366f1',
-      clusterBkg: 'rgba(30, 27, 75, 0.4)',
-      clusterBorder: '#818cf8',
-      defaultLinkColor: '#38bdf8',
-      titleColor: '#ffffff',
-      edgeLabelBackground: '#1e1b4b',
-      actorBkg: '#1e1b4b',
-      actorBorder: '#6366f1',
-      actorTextColor: '#ffffff',
-      signalColor: '#38bdf8',
-      signalTextColor: '#f8fafc',
-    },
+    themeVariables: isDark
+      ? {
+          darkMode: true,
+          background: '#090d16',
+          primaryColor: '#6366f1',
+          primaryTextColor: '#f8fafc',
+          primaryBorderColor: '#818cf8',
+          lineColor: '#38bdf8',
+          secondaryColor: '#0ea5e9',
+          tertiaryColor: '#1e1b4b',
+          mainBkg: '#0f172a',
+          nodeBorder: '#6366f1',
+          clusterBkg: 'rgba(30, 27, 75, 0.4)',
+          clusterBorder: '#818cf8',
+          defaultLinkColor: '#38bdf8',
+          titleColor: '#ffffff',
+          edgeLabelBackground: '#1e1b4b',
+          actorBkg: '#1e1b4b',
+          actorBorder: '#6366f1',
+          actorTextColor: '#ffffff',
+          signalColor: '#38bdf8',
+          signalTextColor: '#f8fafc',
+        }
+      : {
+          darkMode: false,
+          background: '#f8fafc',
+          primaryColor: '#4f46e5',
+          primaryTextColor: '#0f172a',
+          primaryBorderColor: '#6366f1',
+          lineColor: '#0284c7',
+          secondaryColor: '#0369a1',
+          tertiaryColor: '#f1f5f9',
+          mainBkg: '#ffffff',
+          nodeBorder: '#4f46e5',
+          clusterBkg: 'rgba(241, 245, 249, 0.7)',
+          clusterBorder: '#94a3b8',
+          defaultLinkColor: '#0284c7',
+          titleColor: '#0f172a',
+          edgeLabelBackground: '#ffffff',
+          actorBkg: '#f8fafc',
+          actorBorder: '#4f46e5',
+          actorTextColor: '#0f172a',
+          signalColor: '#0284c7',
+          signalTextColor: '#0f172a',
+        },
   });
-  isMermaidInitialized = true;
+  lastInitializedTheme = theme;
 }
 
 /**
@@ -44,19 +69,16 @@ function ensureMermaidInitialized() {
  */
 function extractMermaidCode(rawText: string): string {
   if (!rawText) return '';
-  // 1. Si contiene bloque ```mermaid ... ``` o ```mmd ... ```
   const blockMatch = rawText.match(/```(?:mermaid|mmd)\s*\n([\s\S]*?)```/i);
   if (blockMatch && blockMatch[1]) {
     return blockMatch[1].trim();
   }
 
-  // 2. Si contiene delimitadores genéricos ``` ... ```
   const genericMatch = rawText.match(/```\s*\n([\s\S]*?)```/i);
   if (genericMatch && genericMatch[1]) {
     return genericMatch[1].trim();
   }
 
-  // 3. Si contiene palabras clave de diagrama Mermaid
   const keywordMatch = rawText.match(
     /(?:^|\n)(classDiagram|flowchart|graph|erDiagram|sequenceDiagram|stateDiagram|pie|gantt|gitGraph|C4Context|C4Container|C4Component)[\s\S]*/
   );
@@ -86,6 +108,9 @@ export const MermaidVisualizer: React.FC<MermaidVisualizerProps> = ({
   const rawId = useId();
   const diagramId = `mermaid-${rawId.replace(/[^a-zA-Z0-9_-]/g, '')}`;
 
+  const currentTheme = useThemeStore((s) => s.theme);
+  const isDark = currentTheme === 'dark';
+
   const [svgContent, setSvgContent] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -97,7 +122,7 @@ export const MermaidVisualizer: React.FC<MermaidVisualizerProps> = ({
 
   useEffect(() => {
     let isCancelled = false;
-    ensureMermaidInitialized();
+    ensureMermaidInitialized(currentTheme);
 
     const renderDiagram = async () => {
       if (!cleanDiagramCode) {
@@ -110,7 +135,6 @@ export const MermaidVisualizer: React.FC<MermaidVisualizerProps> = ({
       setError(null);
 
       try {
-        // Renderizado determinista mediante mermaid.render con sanitización DOMPurify (perfil SVG)
         const renderResult = await mermaid.render(diagramId, cleanDiagramCode);
         if (!isCancelled) {
           const sanitized = sanitizeSvg(renderResult.svg);
@@ -135,15 +159,16 @@ export const MermaidVisualizer: React.FC<MermaidVisualizerProps> = ({
     return () => {
       isCancelled = true;
     };
-  }, [cleanDiagramCode, diagramId]);
+  }, [cleanDiagramCode, diagramId, currentTheme]);
 
   const handleCopyCode = async () => {
+    if (!cleanDiagramCode) return;
     try {
       await navigator.clipboard.writeText(cleanDiagramCode);
       setHasCopiedCode(true);
       setTimeout(() => setHasCopiedCode(false), 2000);
-    } catch {
-      // ignore
+    } catch (e) {
+      console.error('Error al copiar código Mermaid:', e);
     }
   };
 
@@ -153,36 +178,38 @@ export const MermaidVisualizer: React.FC<MermaidVisualizerProps> = ({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-diagram.svg`;
+    link.download = `${title.toLowerCase().replace(/\s+/g, '-')}.svg`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
 
-  const cleanDisplayCode = cleanDiagramCode;
+  const cleanDisplayCode = cleanDiagramCode || '// Definición de diagrama no disponible';
 
   return (
     <div
-      className={`rounded-2xl border border-glass-subtle bg-black/40 overflow-hidden shadow-2xl flex flex-col my-4 select-none ${className}`}
+      className={`vision-card !p-0 flex flex-col rounded-xl overflow-hidden border border-glass-subtle shadow-xl ${className}`}
     >
-      {/* Cabecera Principal del Módulo de Diagrama */}
-      <div className="p-3 border-b border-glass-subtle bg-gradient-to-r from-indigo-950/40 via-purple-950/20 to-black/40 flex items-center justify-between gap-2 shrink-0">
+      {/* Cabecera del Visualizador */}
+      <div className="px-3.5 py-2.5 border-b border-glass-subtle bg-white/[0.02] flex items-center justify-between gap-3 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-7 h-7 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
-            <span className="material-symbols-outlined text-[16px]">account_tree</span>
-          </div>
+          <span className="material-symbols-outlined text-indigo-400 text-[18px]">
+            account_tree
+          </span>
           <div className="min-w-0">
-            <h4 className="font-bold text-xs sm:text-sm text-primary truncate">{title}</h4>
-            <div className="flex items-center gap-1.5 text-[10px] text-muted font-mono">
-              <span className="text-cyan-400">{standard}</span>
+            <h4 className="text-xs sm:text-sm font-semibold text-primary truncate">{title}</h4>
+            <div className="flex items-center gap-1.5 text-[10px] font-mono text-muted">
+              <span className="px-1.5 py-0.2 rounded bg-indigo-500/15 text-indigo-300 font-semibold border border-indigo-500/30">
+                {standard}
+              </span>
               <span>•</span>
-              <span>Render Dinámico de Arquitectura</span>
+              <span>Motor Reactivo Mermaid</span>
             </div>
           </div>
         </div>
 
-        {/* Acciones de Cabecera */}
+        {/* Acciones Rápidas */}
         <div className="flex items-center gap-1.5 shrink-0">
           <VisionButton
             variant="secondary"
@@ -210,17 +237,15 @@ export const MermaidVisualizer: React.FC<MermaidVisualizerProps> = ({
         </div>
       </div>
 
-      {/* ==================================================================== */}
-      {/* SECCIÓN 1: CÓDIGO FORMAL VISUALMENTE EXPRESADO                       */}
-      {/* ==================================================================== */}
+      {/* SECCIÓN 1: CÓDIGO FORMAL */}
       {showCode && (
-        <div className="border-b border-glass-subtle bg-black/30">
+        <div className="border-b border-glass-subtle bg-black/10 dark:bg-black/30">
           <div
             className="px-3 py-1.5 flex items-center justify-between bg-white/[0.02] border-b border-white/[0.04] cursor-pointer hover:bg-white/[0.04] transition-colors"
             onClick={() => setIsCodeCollapsed((prev) => !prev)}
             title="Clic para plegar o desplegar el código fuente del diagrama"
           >
-            <div className="flex items-center gap-1.5 text-[10.5px] font-mono font-semibold text-indigo-300">
+            <div className="flex items-center gap-1.5 text-[10.5px] font-mono font-semibold text-indigo-500 dark:text-indigo-300">
               <span className="material-symbols-outlined text-[14px]">code</span>
               <span>Definición de Código Formal ({standard})</span>
             </div>
@@ -235,8 +260,12 @@ export const MermaidVisualizer: React.FC<MermaidVisualizerProps> = ({
           </div>
 
           {!isCodeCollapsed && (
-            <div className="p-3 max-h-48 overflow-y-auto custom-scrollbar font-mono text-[11.5px] leading-relaxed bg-[#060a14]">
-              <pre className="text-emerald-300/90 whitespace-pre selection:bg-indigo-500/30">
+            <div
+              className={`p-3 max-h-48 overflow-y-auto custom-scrollbar font-mono text-[11.5px] leading-relaxed ${
+                isDark ? 'bg-[#060a14] text-emerald-300/90' : 'bg-slate-100 text-slate-800'
+              }`}
+            >
+              <pre className="whitespace-pre selection:bg-indigo-500/30">
                 <code>{cleanDisplayCode}</code>
               </pre>
             </div>
@@ -244,23 +273,25 @@ export const MermaidVisualizer: React.FC<MermaidVisualizerProps> = ({
         </div>
       )}
 
-      {/* ==================================================================== */}
-      {/* SECCIÓN 2: DIAGRAMA VISUAL EXPRESADO ABAJO                            */}
-      {/* ==================================================================== */}
-      <div className="flex-1 flex flex-col min-h-[300px] bg-[#070b16] relative overflow-hidden">
-        {/* Barra de Herramientas de Visualización (Zoom / Reset) */}
-        <div className="px-3 py-1.5 border-b border-white/[0.05] bg-white/[0.015] flex items-center justify-between gap-2 shrink-0">
+      {/* SECCIÓN 2: DIAGRAMA VISUAL */}
+      <div
+        className={`flex-1 flex flex-col min-h-[300px] ${
+          isDark ? 'bg-[#070b16]' : 'bg-slate-50'
+        } relative overflow-hidden`}
+      >
+        {/* Barra de Herramientas de Visualización */}
+        <div className="px-3 py-1.5 border-b border-glass-subtle bg-white/[0.015] flex items-center justify-between gap-2 shrink-0">
           <div className="flex items-center gap-1.5 text-[10.5px] font-semibold text-secondary">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             <span>Representación Gráfica del Diagrama</span>
           </div>
 
           {/* Controles de Zoom */}
-          <div className="flex items-center gap-1 bg-black/50 p-0.5 rounded-lg border border-white/10">
+          <div className="flex items-center gap-1 bg-black/10 dark:bg-black/50 p-0.5 rounded-lg border border-glass-subtle">
             <button
               type="button"
               onClick={() => setZoomLevel((z) => Math.max(0.5, Number((z - 0.15).toFixed(2))))}
-              className="px-2 py-0.5 rounded text-[11px] text-secondary hover:text-white hover:bg-white/10 transition-colors font-mono"
+              className="px-2 py-0.5 rounded text-[11px] text-secondary hover:text-primary hover:bg-white/10 transition-colors font-mono"
               title="Alejar (Zoom Out)"
             >
               -
@@ -271,7 +302,7 @@ export const MermaidVisualizer: React.FC<MermaidVisualizerProps> = ({
             <button
               type="button"
               onClick={() => setZoomLevel((z) => Math.min(2.5, Number((z + 0.15).toFixed(2))))}
-              className="px-2 py-0.5 rounded text-[11px] text-secondary hover:text-white hover:bg-white/10 transition-colors font-mono"
+              className="px-2 py-0.5 rounded text-[11px] text-secondary hover:text-primary hover:bg-white/10 transition-colors font-mono"
               title="Acercar (Zoom In)"
             >
               +
@@ -287,7 +318,7 @@ export const MermaidVisualizer: React.FC<MermaidVisualizerProps> = ({
           </div>
         </div>
 
-        {/* Superficie de Visualización del Diagrama */}
+        {/* Superficie de Visualización */}
         <div
           ref={containerRef}
           className="flex-1 overflow-auto p-6 flex items-center justify-center custom-scrollbar min-h-[260px] max-h-[600px]"
