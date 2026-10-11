@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../../app';
 import { signToken } from '../../shared/utils/jwt';
+import { AuthRepository } from '../../modules/auth/auth.repository';
 
 describe('Security & Resilience Integration Suite', () => {
   const app = createApp();
@@ -63,7 +64,14 @@ describe('Security & Resilience Integration Suite', () => {
   });
 
   describe('SEC-01: Recuperación de Contraseña & Anti-Enumeración', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
     it('debe retornar respuesta genérica idéntica y no exponer token para correos no registrados', async () => {
+      // Simular que el correo no se encuentra registrado sin depender de una base de datos activa en CI
+      vi.spyOn(AuthRepository.prototype, 'findByEmail').mockResolvedValue(null);
+
       const res = await request(app)
         .post('/api/v1/auth/forgot-password')
         .send({ email: 'nonexistent-user-audit-test@domain-fake-99218.com' });
