@@ -73,7 +73,18 @@ apiClient.interceptors.response.use(
 
       // Si el backend devolvió el envelope estándar de error
       if (data && data.error) {
-        return Promise.reject(new Error(data.error.message || 'Error en la solicitud'));
+        let msg = data.error.message || 'Error en la solicitud';
+        const details = (data.error as unknown as { details?: Array<{ field?: string; message: string }> }).details;
+        if (Array.isArray(details) && details.length > 0) {
+          const formattedDetails = details
+            .map((d) => (d.field ? `${d.field}: ${d.message}` : d.message))
+            .filter(Boolean)
+            .join(', ');
+          if (formattedDetails) {
+            msg = `${msg} (${formattedDetails})`;
+          }
+        }
+        return Promise.reject(new Error(msg));
       }
     } else if (error.request) {
       if (error.code === 'ECONNABORTED' || error.message?.toLowerCase().includes('timeout')) {

@@ -162,13 +162,25 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
     });
 
     try {
-      // Filtrar a historial relevante para enviar a la API
-      const historyPayload = updatedMessages
+      // Filtrar a historial relevante para enviar a la API (ventana deslizante de 30 mensajes max)
+      const rawRelevant = updatedMessages
         .filter((m) => m.id !== 'msg-initial-greeting')
-        .map((m) => ({
-          role: m.role,
-          content: m.content,
-        }));
+        .slice(-30);
+
+      const historyPayload = rawRelevant.map((m) => {
+        let safeContent = (m.content || '').trim();
+        if (!safeContent) {
+          safeContent = '(Mensaje sin contenido)';
+        }
+        if (safeContent.length > 16000) {
+          safeContent = safeContent.slice(0, 16000) + '... [contenido truncado por longitud]';
+        }
+        const safeRole = m.role === 'user' ? 'user' : 'assistant';
+        return {
+          role: safeRole as 'user' | 'assistant',
+          content: safeContent,
+        };
+      });
 
       const result: AiChatResult = await aiService.chat(projectId, {
         messages: historyPayload,
@@ -181,11 +193,11 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
         content: result.reply || result.content || 'Sin respuesta del modelo.',
         provider: result.provider,
         model: result.model,
-        actions: result.actions || {
-          requirements: result.suggestedRequirements,
-          entities: result.suggestedEntities,
-          decisions: result.suggestedDecisions,
-          diagrams: result.suggestedDiagrams,
+        actions: {
+          requirements: result.actions?.requirements || result.suggestedRequirements,
+          entities: result.actions?.entities || result.suggestedEntities,
+          decisions: result.actions?.decisions || result.suggestedDecisions,
+          diagrams: result.actions?.diagrams || result.suggestedDiagrams,
         },
         timestamp: Date.now(),
       };

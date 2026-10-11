@@ -1173,10 +1173,10 @@ He evaluado tu consulta técnica para el proyecto **${context.projectName}** (Es
         'gracias', 'procede', 'estructura', 'artefactos', 'tablas', 'entidades', 'acuerdo',
         'diagrama', 'diagramas', 'mermaid', 'unicamente', 'solamente', 'solo', 'solos',
         'sola', 'solas', 'quiero', 'quisiera', 'necesito', 'pedi', 'pido', 'pedir',
-        'generar', 'crear', 'disenar', 'disena', 'hazme', 'hacer', 'dame', 'dar',
+        'generar', 'crear', 'disenar', 'disena', 'hazme', 'hacer', 'hagas', 'haga', 'haces', 'hagan', 'dame', 'dar',
         'poner', 'mostrar', 'muestra', 'bpmn', 'flujo', 'flowchart', 'secuencia',
         'sequence', 'clases', 'estados', 'state', 'c4', 'uml', 'accion', 'acciones',
-        'inyecta', 'inyectar', 'inyeccion', 'inyecciones', 'estudio', 'visualizador',
+        'inyecta', 'inyectar', 'inyectes', 'inyecte', 'inyectan', 'inyeccion', 'inyecciones', 'estudio', 'visualizador',
         'como', 'cual', 'donde', 'cuando', 'porque', 'para', 'pero', 'este', 'esta'
       ]);
       const words = scopeText.replace(/[^\w\sáéíóúÁÉÍÓÚñÑ]/g, '').split(/\s+/).filter((w) => w.length > 3 && !STOPWORDS.has(w));

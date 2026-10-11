@@ -6,10 +6,11 @@ import { canvasService } from '@/services/canvas.service';
 import { Requirement } from '@/types/requirement.types';
 import { Decision } from '@/types/decision.types';
 import { CanvasEntity } from '@/types/canvas.types';
-import { ENTERPRISE_TEMPLATES } from './okfTemplates';
+import { ENTERPRISE_TEMPLATES, EnterpriseTemplateDef } from './okfTemplates';
 import { documentExportService, triggerFileDownload } from './documentExportService';
 import { MermaidVisualizer } from '@/components/diagrams/MermaidVisualizer';
 import { useThemeStore } from '@/stores/useThemeStore';
+import { useAiChatStore } from '@/stores/useAiChatStore';
 
 interface ConsolidatedDocumentsViewProps {
   projectId: string;
@@ -20,6 +21,11 @@ type PreviewMode = 'executive' | 'diagram' | 'source';
 
 export const ConsolidatedDocumentsView: React.FC<ConsolidatedDocumentsViewProps> = ({ projectId }) => {
   const { activeProject, metrics } = useProjectStore();
+  const projectSession = useAiChatStore((s) => (projectId ? s.sessions[projectId] : undefined));
+  const injectedAiDiagrams = useMemo(
+    () => projectSession?.injectedDiagrams || [],
+    [projectSession?.injectedDiagrams]
+  );
   const theme = useThemeStore((s) => s.theme);
   const isDark = theme === 'dark';
 
@@ -112,9 +118,52 @@ export const ConsolidatedDocumentsView: React.FC<ConsolidatedDocumentsViewProps>
     };
   }, [projectId]);
 
-  // Filtrado del catálogo de las 13 plantillas
+  // Catálogo unificado: 19 plantillas base OKF + diagramas inyectados por el Copiloto IA
+  const allTemplates = useMemo<EnterpriseTemplateDef[]>(() => {
+    const aiTemplates: EnterpriseTemplateDef[] = injectedAiDiagrams.map((diag) => {
+      const templateId = `ai-${diag.code.toLowerCase()}`;
+      return {
+        id: templateId,
+        title: `${diag.title} (${diag.code})`,
+        category: 'diagrams',
+        standard: `UML / BPMN (${diag.type.toUpperCase()})`,
+        canonicalPath: `architecture/diagrams/${diag.code.toLowerCase()}.md`,
+        tags: ['diagram', 'uml', 'mermaid', 'ai-generated', diag.type],
+        description: diag.description || `Diagrama arquitectónico ${diag.type} inyectado por el Copiloto IA.`,
+        aiHooks: ['ai.diagrams', `diagram.${diag.code}`],
+        generate: (project) => {
+          const frontmatter = `---
+template_id: "${diag.code}"
+canonical_path: "architecture/diagrams/${diag.code.toLowerCase()}.md"
+document_type: "ARCHITECTURAL_DIAGRAM"
+standard: "UML / BPMN (${diag.type.toUpperCase()})"
+title: "${diag.title}"
+project_name: "${project.name}"
+version: "1.0.0"
+generated_at: "${new Date().toISOString()}"
+ai_context_hooks:
+  - "ai.diagrams"
+tags:
+  - "diagram"
+  - "mermaid"
+  - "${diag.type}"
+---`;
+          const body = `# ${diag.title}\n\n**Código:** ${diag.code} | **Tipo:** ${diag.type.toUpperCase()}\n\n${diag.description ? `> ${diag.description}\n\n` : ''}\`\`\`mermaid\n${diag.mermaidCode}\n\`\`\`\n`;
+          return {
+            markdown: body,
+            yamlFrontmatter: frontmatter,
+            fullContent: `${frontmatter}\n\n${body}`,
+          };
+        },
+      };
+    });
+
+    return [...ENTERPRISE_TEMPLATES, ...aiTemplates];
+  }, [injectedAiDiagrams]);
+
+  // Filtrado del catálogo unificado
   const filteredTemplates = useMemo(() => {
-    return ENTERPRISE_TEMPLATES.filter((tpl) => {
+    return allTemplates.filter((tpl) => {
       const matchesCategory = categoryFilter === 'all' || tpl.category === categoryFilter;
       const q = searchQuery.toLowerCase().trim();
       const matchesSearch =
@@ -126,14 +175,15 @@ export const ConsolidatedDocumentsView: React.FC<ConsolidatedDocumentsViewProps>
         tpl.description.toLowerCase().includes(q);
       return matchesCategory && matchesSearch;
     });
-  }, [categoryFilter, searchQuery]);
+  }, [allTemplates, categoryFilter, searchQuery]);
 
   const selectedTemplate = useMemo(() => {
     return (
-      ENTERPRISE_TEMPLATES.find((t) => t.id === selectedTemplateId) ||
+      allTemplates.find((t) => t.id === selectedTemplateId) ||
+      allTemplates[0] ||
       ENTERPRISE_TEMPLATES[0]
     );
-  }, [selectedTemplateId]);
+  }, [allTemplates, selectedTemplateId]);
 
   // Contenido generado en tiempo real
   const generatedContent = useMemo(() => {
@@ -223,19 +273,19 @@ export const ConsolidatedDocumentsView: React.FC<ConsolidatedDocumentsViewProps>
   // Contadores dinámicos por categoría
   const categoryCounts = useMemo(() => {
     const counts = {
-      all: ENTERPRISE_TEMPLATES.length,
+      all: allTemplates.length,
       requirements: 0,
       architecture: 0,
       diagrams: 0,
       quality: 0,
     };
-    ENTERPRISE_TEMPLATES.forEach((t) => {
+    allTemplates.forEach((t) => {
       if (t.category in counts) {
         counts[t.category as keyof typeof counts] += 1;
       }
     });
     return counts;
-  }, []);
+  }, [allTemplates]);
 
   if (!activeProject) {
     return (
@@ -271,7 +321,7 @@ export const ConsolidatedDocumentsView: React.FC<ConsolidatedDocumentsViewProps>
             <span className="material-symbols-outlined text-[15px]">
               {isCatalogOpen ? 'chevron_left' : 'view_sidebar'}
             </span>
-            <span>{isCatalogOpen ? 'Ocultar' : `Catálogo (${ENTERPRISE_TEMPLATES.length})`}</span>
+            <span>{isCatalogOpen ? 'Ocultar' : `Catálogo (${allTemplates.length})`}</span>
           </button>
 
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -279,7 +329,7 @@ export const ConsolidatedDocumentsView: React.FC<ConsolidatedDocumentsViewProps>
             Espacio de Documentos Consolidados (OKF Enterprise)
           </span>
           <span className="text-[9.5px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-            {ENTERPRISE_TEMPLATES.length} PLANTILLAS FORMALES
+            {allTemplates.length} DOCUMENTOS FORMALES
           </span>
         </div>
 

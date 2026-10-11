@@ -189,7 +189,7 @@ Ejemplo ilustrativo de bloque de acciones articuladas y conexas (Modo Formalizac
 \`\`\`
 `;
 
-export function buildSystemInstruction(context: AiProjectContext): string {
+export function buildSystemInstruction(context: AiProjectContext, actionContext?: string): string {
   const reqsSummary = context.requirements.length > 0
     ? context.requirements.map((r) => `- [${r.code}] (${r.type} - ${r.priority}) ${r.title}`).join('\n')
     : 'No hay requisitos registrados aún.';
@@ -207,7 +207,46 @@ export function buildSystemInstruction(context: AiProjectContext): string {
     ? context.decisions.map((d) => `- [${d.code}] [${d.status}] ${d.title}`).join('\n')
     : 'No hay actas ADR registradas aún.';
 
+  let modeDirective = '';
+  if (actionContext === 'diagrams') {
+    modeDirective = `
+---
+[DIRECTIVA PRIORITARIA: MODO DIAGRAMADO ACTIVO]
+El usuario tiene seleccionado explícitamente el "Modo: Diagramado".
+1. Tu respuesta DEBE orientarse a generar diagramas de arquitectura en Mermaid v10+ (sequenceDiagram, flowchart TD/TB para flujos de proceso/BPMN, classDiagram, stateDiagram-v2, erDiagram, C4Context).
+2. Si el usuario solicita un diagrama BPMN o de procesos de negocio: utiliza Mermaid 'flowchart TD' o 'flowchart TB' con subgraphs que representen los carriles (swimlanes), compuertas de decisión XOR / AND ({¿Condición?}), eventos de inicio (([Inicio])) y fin (([Fin])).
+3. DEBES incluir SIEMPRE al final de tu respuesta el bloque estructurado:
+\`\`\`json:devsculptor-actions
+{
+  "suggestedDiagrams": [
+    {
+      "code": "DIAG-01",
+      "title": "Título descriptivo del diagrama",
+      "type": "flowchart",
+      "format": "mermaid",
+      "mermaidCode": "código mermaid sin fences markdown",
+      "description": "Breve descripción técnica del diagrama"
+    }
+  ]
+}
+\`\`\`
+Esta inclusión es OBLIGATORIA para permitir la inyección interactiva en el proyecto del usuario.`;
+  } else if (actionContext === 'canvas') {
+    modeDirective = `
+---
+[DIRECTIVA PRIORITARIA: MODO CANVAS ERD ACTIVO]
+El usuario tiene seleccionado el "Modo: Canvas ERD".
+Genera EXCLUSIVAMENTE 'suggestedEntities' en el bloque json:devsculptor-actions con tablas en 3FN, claves primarias y foráneas explícitas.`;
+  } else if (actionContext === 'requirements') {
+    modeDirective = `
+---
+[DIRECTIVA PRIORITARIA: MODO REQUISITOS ACTIVO]
+El usuario tiene seleccionado el "Modo: Requisitos".
+Genera EXCLUSIVAMENTE 'suggestedRequirements' bajo norma IEEE-830 en el bloque json:devsculptor-actions.`;
+  }
+
   return `${SYSTEM_INSTRUCTION_ARCHITECT}
+${modeDirective}
 
 ---
 CONTEXTO VIVO DEL PROYECTO ACTUAL (IN-MEMORY RAG):
@@ -236,7 +275,7 @@ export function parseDevSculptorActions(rawText: string): {
   // 1. Buscar bloque con etiqueta devsculptor-actions (3 o 4 backticks, con o sin "json:")
   const taggedRegex = /`{3,4}(?:json:)?devsculptor-actions\s*([\s\S]*?)\s*`{3,4}/i;
   let match = rawText.match(taggedRegex);
-  let regexUsed = taggedRegex;
+  let regexUsed: RegExp | null = taggedRegex;
 
   // 2. Si no se encontró bloque explícito devsculptor-actions, buscar si generó un bloque json con artefactos técnicos
   if (!match) {
@@ -245,54 +284,102 @@ export function parseDevSculptorActions(rawText: string): {
     if (genericMatch) {
       match = genericMatch;
       regexUsed = genericJsonRegex;
+    } else {
+      regexUsed = null;
     }
   }
 
-  if (!match) {
-    return { cleanText: rawText.trim() };
+  const cleanText = regexUsed ? rawText.replace(regexUsed, '').trim() : rawText.trim();
+  let rawReqs: unknown;
+  let rawEntities: unknown;
+  let rawDecisions: unknown;
+  let rawDiagrams: unknown;
+
+  if (match) {
+    try {
+      // Sanear posibles trailing commas de JSON inválido antes de parsear
+      const sanitizedJson = match[1].replace(/,\s*([}\]])/g, '$1');
+      const parsed = JSON.parse(sanitizedJson);
+
+      rawReqs = parsed.suggestedRequirements || parsed.requirements;
+      rawEntities = parsed.suggestedEntities || parsed.entities;
+      rawDecisions = parsed.suggestedDecisions || parsed.decisions;
+      rawDiagrams = parsed.suggestedDiagrams || parsed.diagrams;
+    } catch {
+      // JSON malformado en bloque match
+    }
   }
 
-  const cleanText = rawText.replace(regexUsed, '').trim();
-  try {
-    // Sanear posibles trailing commas de JSON inválido antes de parsear
-    const sanitizedJson = match[1].replace(/,\s*([}\]])/g, '$1');
-    const parsed = JSON.parse(sanitizedJson);
+  let sanitizedDiagrams: AiSuggestedDiagram[] | undefined = undefined;
+  if (Array.isArray(rawDiagrams) && rawDiagrams.length > 0) {
+    sanitizedDiagrams = rawDiagrams.map((d: Record<string, unknown>, index: number) => {
+      let code = String(d.mermaidCode || d.code || d.diagram || '');
+      // Limpiar fences markdown si el LLM las anidó en la cadena
+      code = code.replace(/^```[a-z0-9_-]*\s*\n?/i, '').replace(/\n?```$/i, '').trim();
+      const rawType = String(d.type || 'sequence').toLowerCase();
+      const validTypes = ['class', 'sequence', 'er', 'state', 'c4', 'deployment', 'activity', 'flowchart'];
+      const safeType = validTypes.includes(rawType) ? (rawType as AiSuggestedDiagram['type']) : 'sequence';
 
-    const rawReqs = parsed.suggestedRequirements || parsed.requirements;
-    const rawEntities = parsed.suggestedEntities || parsed.entities;
-    const rawDecisions = parsed.suggestedDecisions || parsed.decisions;
-    const rawDiagrams = parsed.suggestedDiagrams || parsed.diagrams;
+      return {
+        code: String(d.code || `DIAG-${String(index + 1).padStart(2, '0')}`),
+        title: String(d.title || 'Diagrama Arquitectónico OKF'),
+        type: safeType,
+        format: 'mermaid' as const,
+        mermaidCode: code,
+        description: d.description ? String(d.description) : undefined,
+      };
+    });
+  }
 
-    let sanitizedDiagrams: AiSuggestedDiagram[] | undefined = undefined;
-    if (Array.isArray(rawDiagrams) && rawDiagrams.length > 0) {
-      sanitizedDiagrams = rawDiagrams.map((d: Record<string, unknown>, index: number) => {
-        let code = String(d.mermaidCode || d.code || d.diagram || '');
-        // Limpiar fences markdown si el LLM las anidó en la cadena
-        code = code.replace(/^```[a-z0-9_-]*\s*\n?/i, '').replace(/\n?```$/i, '').trim();
-        const rawType = String(d.type || 'sequence').toLowerCase();
-        const validTypes = ['class', 'sequence', 'er', 'state', 'c4', 'deployment', 'activity', 'flowchart'];
-        const safeType = validTypes.includes(rawType) ? (rawType as AiSuggestedDiagram['type']) : 'sequence';
+  // 3. FALLBACK RESILIENTE: Si no se detectaron diagramas en bloque JSON, pero el texto incluye bloques ```mermaid
+  if (!sanitizedDiagrams || sanitizedDiagrams.length === 0) {
+    const mermaidRegex = /`{3,4}mermaid\s*\n([\s\S]*?)\n`{3,4}/gi;
+    let mMatch: RegExpExecArray | null;
+    let diagIndex = 1;
+    const extractedDiagrams: AiSuggestedDiagram[] = [];
 
-        return {
-          code: String(d.code || `DIAG-${String(index + 1).padStart(2, '0')}`),
-          title: String(d.title || 'Diagrama Arquitectónico OKF'),
-          type: safeType,
-          format: 'mermaid' as const,
-          mermaidCode: code,
-          description: d.description ? String(d.description) : undefined,
-        };
+    while ((mMatch = mermaidRegex.exec(rawText)) !== null) {
+      const mCode = mMatch[1].trim();
+      if (!mCode) continue;
+
+      let inferredType: AiSuggestedDiagram['type'] = 'flowchart';
+      if (/^sequenceDiagram/i.test(mCode)) inferredType = 'sequence';
+      else if (/^classDiagram/i.test(mCode)) inferredType = 'class';
+      else if (/^erDiagram/i.test(mCode)) inferredType = 'er';
+      else if (/^stateDiagram/i.test(mCode)) inferredType = 'state';
+      else if (/^C4Context|^C4Container/i.test(mCode) || mCode.includes('Person(')) inferredType = 'c4';
+      else if (/^flowchart|^graph/i.test(mCode)) inferredType = 'flowchart';
+
+      let title = `Diagrama ${inferredType.toUpperCase()} de Arquitectura`;
+      const titleComment = mCode.match(/^%%\s*(?:title:)?\s*([^\n\r]+)/i);
+      if (titleComment) {
+        title = titleComment[1].trim();
+      } else if (mCode.toLowerCase().includes('subgraph') || mCode.toLowerCase().includes('lane')) {
+        title = 'Diagrama de Procesos BPMN / Flujo Operativo';
+      }
+
+      extractedDiagrams.push({
+        code: `DIAG-${String(diagIndex).padStart(2, '0')}`,
+        title,
+        type: inferredType,
+        format: 'mermaid',
+        mermaidCode: mCode,
+        description: 'Diagrama Mermaid detectado y extraído automáticamente para inyección en el proyecto.',
       });
+      diagIndex++;
     }
 
-    return {
-      cleanText,
-      suggestedRequirements: Array.isArray(rawReqs) && rawReqs.length > 0 ? rawReqs : undefined,
-      suggestedEntities: Array.isArray(rawEntities) && rawEntities.length > 0 ? rawEntities : undefined,
-      suggestedDecisions: Array.isArray(rawDecisions) && rawDecisions.length > 0 ? rawDecisions : undefined,
-      suggestedDiagrams: sanitizedDiagrams,
-    };
-  } catch {
-    return { cleanText };
+    if (extractedDiagrams.length > 0) {
+      sanitizedDiagrams = extractedDiagrams;
+    }
   }
+
+  return {
+    cleanText,
+    suggestedRequirements: Array.isArray(rawReqs) && rawReqs.length > 0 ? (rawReqs as AiSuggestedRequirement[]) : undefined,
+    suggestedEntities: Array.isArray(rawEntities) && rawEntities.length > 0 ? (rawEntities as AiSuggestedEntity[]) : undefined,
+    suggestedDecisions: Array.isArray(rawDecisions) && rawDecisions.length > 0 ? (rawDecisions as AiSuggestedDecision[]) : undefined,
+    suggestedDiagrams: sanitizedDiagrams,
+  };
 }
 

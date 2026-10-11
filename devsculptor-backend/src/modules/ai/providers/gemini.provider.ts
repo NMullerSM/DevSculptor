@@ -40,7 +40,7 @@ export class GeminiProvider implements IAiProvider {
     options?: { temperature?: number; actionContext?: string }
   ): Promise<AiChatResult> {
     try {
-      const systemInstruction = buildSystemInstruction(context);
+      const systemInstruction = buildSystemInstruction(context, options?.actionContext);
 
       const contents = messages.map((m) => ({
         role: m.role === 'model' ? 'model' : 'user',

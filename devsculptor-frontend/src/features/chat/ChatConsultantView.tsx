@@ -72,6 +72,37 @@ const MODE_PRESET_OPTIONS: ModePresetOption[] = [
   },
 ];
 
+function extractMermaidFromText(text: string): AiSuggestedDiagram[] {
+  if (!text || !text.includes('```mermaid')) return [];
+  const regex = /`{3,4}mermaid\s*\n([\s\S]*?)\n`{3,4}/gi;
+  const list: AiSuggestedDiagram[] = [];
+  let match: RegExpExecArray | null;
+  let idx = 1;
+  while ((match = regex.exec(text)) !== null) {
+    const code = match[1].trim();
+    if (!code) continue;
+    let inferredType: AiSuggestedDiagram['type'] = 'flowchart';
+    if (/^sequenceDiagram/i.test(code)) inferredType = 'sequence';
+    else if (/^classDiagram/i.test(code)) inferredType = 'class';
+    else if (/^erDiagram/i.test(code)) inferredType = 'er';
+    else if (/^stateDiagram/i.test(code)) inferredType = 'state';
+    else if (/^C4Context|^C4Container/i.test(code) || code.includes('Person(')) inferredType = 'c4';
+
+    list.push({
+      code: `DIAG-EXT-${idx}`,
+      title: code.toLowerCase().includes('subgraph') || code.toLowerCase().includes('lane')
+        ? 'Diagrama de Procesos BPMN / Flujo'
+        : `Diagrama ${inferredType.toUpperCase()} de Arquitectura`,
+      type: inferredType,
+      format: 'mermaid',
+      mermaidCode: code,
+      description: 'Diagrama Mermaid detectado en el mensaje del copiloto',
+    });
+    idx++;
+  }
+  return list;
+}
+
 export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNavigateStep, isCompact = false }) => {
   const { activeProject } = useProjectStore();
   const {
@@ -95,6 +126,7 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
   const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
   const [expandedDiagramCodes, setExpandedDiagramCodes] = useState<Record<string, boolean>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const lastSentTextRef = useRef<string>('');
 
   const currentPreset = MODE_PRESET_OPTIONS.find((p) => p.value === activeMode) || MODE_PRESET_OPTIONS[0];
 
@@ -211,6 +243,7 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
     const text = textToSend || inputVal;
     if (!text.trim() || isLoading) return;
 
+    lastSentTextRef.current = text;
     if (!textToSend) setInputVal('');
     const actionContext = activeMode === 'general' ? undefined : activeMode;
     await sendMessage(activeProject.id, text, actionContext);
@@ -337,7 +370,7 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
             <span>{error}</span>
           </div>
           <button
-            onClick={() => handleSend(inputVal)}
+            onClick={() => handleSend(lastSentTextRef.current)}
             className="text-[10px] underline hover:text-rose-300 cursor-pointer"
           >
             Reintentar
@@ -349,12 +382,24 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
       <div className="flex-1 overflow-y-auto space-y-3.5 pr-1 flex flex-col custom-scrollbar">
         {messages.map((m) => {
           if (m.role === 'assistant') {
+            const extractedDiagrams = extractMermaidFromText(m.content);
+            const effectiveDiagrams =
+              m.actions?.diagrams && m.actions.diagrams.length > 0
+                ? m.actions.diagrams
+                : extractedDiagrams;
+
+            const effectiveActions: DevSculptorActions = {
+              requirements: m.actions?.requirements || [],
+              entities: m.actions?.entities || [],
+              decisions: m.actions?.decisions || [],
+              diagrams: effectiveDiagrams,
+            };
+
             const hasActions =
-              m.actions &&
-              ((m.actions.requirements && m.actions.requirements.length > 0) ||
-                (m.actions.entities && m.actions.entities.length > 0) ||
-                (m.actions.decisions && m.actions.decisions.length > 0) ||
-                (m.actions.diagrams && m.actions.diagrams.length > 0));
+              (effectiveActions.requirements && effectiveActions.requirements.length > 0) ||
+              (effectiveActions.entities && effectiveActions.entities.length > 0) ||
+              (effectiveActions.decisions && effectiveActions.decisions.length > 0) ||
+              (effectiveActions.diagrams && effectiveActions.diagrams.length > 0);
 
             return (
               <div
@@ -404,7 +449,7 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
                 </div>
 
                 {/* Bloque de Acciones Inyectables (devsculptor-actions) */}
-                {hasActions && m.actions && (
+                {hasActions && (
                   <div className="mt-3 p-3.5 rounded-[8px] bg-black/5 dark:bg-white/[0.03] border border-indigo-500/25 space-y-3">
                     <div className="flex items-center justify-between border-b border-glass-subtle pb-2">
                       <div className="flex items-center gap-2">
@@ -416,7 +461,7 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
                       <VisionButton
                         size="sm"
                         icon="bolt"
-                        onClick={() => handleInjectAll(m.actions!)}
+                        onClick={() => handleInjectAll(effectiveActions)}
                         className="text-indigo-400 hover:text-indigo-300 font-mono text-[10.5px]"
                       >
                         Inyectar Todo
@@ -424,17 +469,17 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
                     </div>
 
                     {/* Requisitos Sugeridos */}
-                    {m.actions.requirements && m.actions.requirements.length > 0 && (
+                    {effectiveActions.requirements && effectiveActions.requirements.length > 0 && (
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
                           <div className="text-[9.5px] font-mono text-muted uppercase tracking-wider">
-                            Requisitos IEEE-830 Sugeridos ({m.actions.requirements.length})
+                            Requisitos IEEE-830 Sugeridos ({effectiveActions.requirements.length})
                           </div>
                           <button
                             onClick={() =>
                               handleCopyText(
                                 `reqs-all-${m.id}`,
-                                m.actions!.requirements!
+                                effectiveActions.requirements!
                                   .map(
                                     (r) =>
                                       `* [${r.code}] ${r.title} (${r.type} | Prioridad: ${r.priority})\n  ${r.description || ''}`
@@ -452,7 +497,7 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
                           </button>
                         </div>
                         <div className="grid grid-cols-1 gap-1.5">
-                          {m.actions.requirements.map((req, i) => {
+                          {effectiveActions.requirements.map((req, i) => {
                             const isInjected = isItemInjected(`req:${req.code}`);
                             return (
                               <div
@@ -505,17 +550,17 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
                     )}
 
                     {/* Entidades Sugeridas */}
-                    {m.actions.entities && m.actions.entities.length > 0 && (
+                    {effectiveActions.entities && effectiveActions.entities.length > 0 && (
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
                           <div className="text-[9.5px] font-mono text-muted uppercase tracking-wider">
-                            Entidades Relacionales Canvas ({m.actions.entities.length})
+                            Entidades Relacionales Canvas ({effectiveActions.entities.length})
                           </div>
                           <button
                             onClick={() =>
                               handleCopyText(
                                 `entities-all-${m.id}`,
-                                JSON.stringify(m.actions!.entities, null, 2)
+                                JSON.stringify(effectiveActions.entities, null, 2)
                               )
                             }
                             className="text-[9.5px] font-mono text-muted hover:text-primary flex items-center gap-1 cursor-pointer transition-colors"
@@ -528,7 +573,7 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
                           </button>
                         </div>
                         <div className="grid grid-cols-1 gap-1.5">
-                          {m.actions.entities.map((ent, i) => {
+                          {effectiveActions.entities.map((ent, i) => {
                             const isInjected = isItemInjected(`entity:${ent.tableName}`);
                             return (
                               <div
@@ -563,13 +608,13 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
                     )}
 
                     {/* Decisiones Sugeridas */}
-                    {m.actions.decisions && m.actions.decisions.length > 0 && (
+                    {effectiveActions.decisions && effectiveActions.decisions.length > 0 && (
                       <div className="space-y-1.5">
                         <div className="text-[9.5px] font-mono text-muted uppercase tracking-wider">
-                          Actas de Decisión (ADRs)
+                          Actas de Decisión (ADRs) ({effectiveActions.decisions.length})
                         </div>
                         <div className="grid grid-cols-1 gap-1.5">
-                          {m.actions.decisions.map((dec, i) => {
+                          {effectiveActions.decisions.map((dec, i) => {
                             const isInjected = isItemInjected(`decision:${dec.code}`);
                             return (
                               <div
@@ -601,18 +646,18 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
                     )}
 
                     {/* Diagramas Arquitectónicos (Mermaid UML) */}
-                    {m.actions.diagrams && m.actions.diagrams.length > 0 && (
+                    {effectiveActions.diagrams && effectiveActions.diagrams.length > 0 && (
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <div className="text-[9.5px] font-mono text-muted uppercase tracking-wider flex items-center gap-1.5">
                             <span className="material-symbols-outlined text-[13px] text-fuchsia-400">schema</span>
-                            <span>Diagramas Arquitectónicos OKF ({m.actions.diagrams.length})</span>
+                            <span>Diagramas Arquitectónicos OKF ({effectiveActions.diagrams.length})</span>
                           </div>
                           <button
                             onClick={() =>
                               handleCopyText(
                                 `diagrams-all-${m.id}`,
-                                m.actions!.diagrams!
+                                effectiveActions.diagrams!
                                   .map((d) => `%% ${d.title} (${d.code})\n${d.mermaidCode}`)
                                   .join('\n\n')
                               )
@@ -627,7 +672,7 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
                           </button>
                         </div>
                         <div className="grid grid-cols-1 gap-2">
-                          {m.actions.diagrams.map((diag, i) => {
+                          {effectiveActions.diagrams.map((diag, i) => {
                             const isInjected = isItemInjected(`diagram:${diag.code}`);
                             const isExpanded = !!expandedDiagramCodes[`${m.id}-${diag.code}`];
 

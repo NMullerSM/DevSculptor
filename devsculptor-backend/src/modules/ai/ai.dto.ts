@@ -1,18 +1,18 @@
 import { z } from 'zod';
 
 export const chatMessageDtoSchema = z.object({
-  role: z.enum(['user', 'model', 'assistant']),
+  role: z.enum(['user', 'model', 'assistant', 'system']),
   content: z
     .string()
     .min(1, 'El mensaje no puede estar vacío')
-    .max(8000, 'El mensaje no puede exceder 8000 caracteres'),
+    .max(32000, 'El mensaje no puede exceder 32000 caracteres'),
 });
 
 export const chatRequestDtoSchema = z.object({
   messages: z
     .array(chatMessageDtoSchema)
     .min(1, 'Debe proporcionar al menos un mensaje')
-    .max(40, 'No puede enviar más de 40 mensajes en el historial de conversación'),
+    .max(100, 'No puede enviar más de 100 mensajes en el historial de conversación'),
   actionContext: z.enum(['general', 'requirements', 'canvas', 'decisions', 'diagrams', 'conversation']).optional().default('general'),
   temperature: z.number().min(0).max(2).optional(),
 });
