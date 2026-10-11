@@ -27,7 +27,13 @@ const envSchema = z
     DB_PASSWORD: z.string().default(''),
     DB_NAME: z.string().default('postgres'),
     DB_SSL: booleanPreprocess(false),
-    JWT_SECRET: z.string().min(32, 'JWT_SECRET debe tener al menos 32 caracteres'),
+    JWT_SECRET:
+      process.env.NODE_ENV === 'test' || Boolean(process.env.VITEST)
+        ? z
+            .string()
+            .min(32, 'JWT_SECRET debe tener al menos 32 caracteres')
+            .default('test_jwt_secret_devsculptor_super_secure_32_characters_minimum')
+        : z.string().min(32, 'JWT_SECRET debe tener al menos 32 caracteres'),
     JWT_EXPIRES_IN: z.string().default('8h'),
     CORS_ORIGINS: z.string().default('http://localhost:3000,http://localhost:5173'),
     RATE_LIMIT_WINDOW_MS: z.coerce.number().default(900000),
@@ -90,6 +96,11 @@ const parsed = envSchema.safeParse(process.env);
 if (!parsed.success) {
   console.error('❌ Error de validación en variables de entorno:');
   console.error(JSON.stringify(parsed.error.format(), null, 2));
+  if (process.env.NODE_ENV === 'test' || Boolean(process.env.VITEST)) {
+    throw new Error(
+      `Error de validación en variables de entorno en testing: ${JSON.stringify(parsed.error.format())}`
+    );
+  }
   process.exit(1);
 }
 

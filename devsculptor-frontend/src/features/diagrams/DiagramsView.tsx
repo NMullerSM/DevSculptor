@@ -48,11 +48,11 @@ export const DiagramsView: React.FC<DiagramsViewProps> = ({ projectId }) => {
   const [error, setError] = useState<string | null>(null);
 
   // Estados de navegación
-  const [activeTab, setActiveTab] = useState<MainTab>('interactive');
+  const [activeTab, setActiveTab] = useState<MainTab>('mermaid');
   const [selectedInteractiveId, setSelectedInteractiveId] = useState<string>(
     DIAGRAM_CATALOG[0].id
   );
-  const [selectedMermaidId, setSelectedMermaidId] = useState<string>('okf-004-uml-class');
+  const [selectedMermaidId, setSelectedMermaidId] = useState<string>('class-diagram');
   const [isCatalogOpen, setIsCatalogOpen] = useState<boolean>(false);
   const [kindFilter, setKindFilter] = useState<KindFilter>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -182,6 +182,30 @@ export const DiagramsView: React.FC<DiagramsViewProps> = ({ projectId }) => {
     );
   }, []);
 
+  const filteredUmlTemplates = useMemo(() => {
+    if (!searchQuery.trim()) return umlTemplates;
+    const q = searchQuery.toLowerCase();
+    return umlTemplates.filter(
+      (t) =>
+        t.title.toLowerCase().includes(q) ||
+        t.description.toLowerCase().includes(q) ||
+        t.standard.toLowerCase().includes(q) ||
+        t.id.toLowerCase().includes(q)
+    );
+  }, [umlTemplates, searchQuery]);
+
+  const filteredAiDiagrams = useMemo(() => {
+    if (!searchQuery.trim()) return injectedAiDiagrams;
+    const q = searchQuery.toLowerCase();
+    return injectedAiDiagrams.filter(
+      (d) =>
+        d.title.toLowerCase().includes(q) ||
+        (d.description && d.description.toLowerCase().includes(q)) ||
+        d.code.toLowerCase().includes(q) ||
+        d.type.toLowerCase().includes(q)
+    );
+  }, [injectedAiDiagrams, searchQuery]);
+
   const activeInteractiveItem = useMemo(() => {
     return (
       DIAGRAM_CATALOG.find((d) => d.id === selectedInteractiveId) || DIAGRAM_CATALOG[0]
@@ -222,31 +246,105 @@ export const DiagramsView: React.FC<DiagramsViewProps> = ({ projectId }) => {
 
   // Handlers de Exportación
   const handleExportSvg = () => {
-    if (!activeSvgRef.current) return;
-    downloadSvg(activeSvgRef.current, activeInteractiveSpec.id);
+    if (activeTab === 'interactive') {
+      if (!activeSvgRef.current) return;
+      downloadSvg(activeSvgRef.current, activeInteractiveSpec.id);
+    } else {
+      const mermaidSvg = containerRef.current?.querySelector('.mermaid-render-container svg') as SVGSVGElement | null;
+      if (mermaidSvg) {
+        downloadSvg(mermaidSvg, selectedMermaidId);
+      }
+    }
     setIsExportMenuOpen(false);
   };
 
   const handleExportPng = async () => {
-    if (!activeSvgRef.current) return;
-    setIsExporting(true);
-    try {
-      await downloadPng(activeSvgRef.current, activeInteractiveSpec.id);
-    } catch (e) {
-      console.error('Error al exportar PNG:', e);
-    } finally {
-      setIsExporting(false);
-      setIsExportMenuOpen(false);
+    if (activeTab === 'interactive') {
+      if (!activeSvgRef.current) return;
+      setIsExporting(true);
+      try {
+        await downloadPng(activeSvgRef.current, activeInteractiveSpec.id);
+      } catch (e) {
+        console.error('Error al exportar PNG:', e);
+      } finally {
+        setIsExporting(false);
+        setIsExportMenuOpen(false);
+      }
+    } else {
+      const mermaidSvg = containerRef.current?.querySelector('.mermaid-render-container svg') as SVGSVGElement | null;
+      if (mermaidSvg) {
+        setIsExporting(true);
+        try {
+          await downloadPng(mermaidSvg, selectedMermaidId);
+        } catch (e) {
+          console.error('Error al exportar PNG:', e);
+        } finally {
+          setIsExporting(false);
+          setIsExportMenuOpen(false);
+        }
+      }
     }
   };
 
   const handleExportHtml = () => {
-    if (!activeSvgRef.current) return;
-    downloadStandaloneHtml(
-      activeSvgRef.current,
-      activeInteractiveSpec,
-      activeInteractiveSpec.id
-    );
+    if (activeTab === 'interactive') {
+      if (!activeSvgRef.current) return;
+      downloadStandaloneHtml(
+        activeSvgRef.current,
+        activeInteractiveSpec,
+        activeInteractiveSpec.id
+      );
+    } else {
+      const cleanCode = activeMermaidCode
+        .replace(/^```[a-z0-9_-]*\n/i, '')
+        .replace(/\n```$/, '')
+        .trim();
+      const htmlContent = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>${activeMermaidTitle} — DevSculptor</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #0b0f19; color: #f8fafc; padding: 2rem; display: flex; flex-direction: column; align-items: center; }
+    h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+    p { font-size: 0.875rem; color: #94a3b8; margin-bottom: 2rem; }
+    .mermaid { background: #0f172a; padding: 2rem; border-radius: 1rem; border: 1px solid #1e293b; max-width: 100%; overflow: auto; }
+  </style>
+</head>
+<body>
+  <h1>${activeMermaidTitle}</h1>
+  <p>Estándar: ${activeMermaidStandard} | Proyecto: ${activeProject?.name || 'DevSculptor'}</p>
+  <div class="mermaid">
+${cleanCode}
+  </div>
+  <script>mermaid.initialize({ startOnLoad: true, theme: 'dark' });</script>
+</body>
+</html>`;
+      const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${selectedMermaidId}.html`;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+    setIsExportMenuOpen(false);
+  };
+
+  const handleExportMmd = () => {
+    if (!activeMermaidCode) return;
+    const cleanCode = activeMermaidCode
+      .replace(/^```[a-z0-9_-]*\n/i, '')
+      .replace(/\n```$/, '')
+      .trim();
+    const blob = new Blob([cleanCode], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${selectedMermaidId}.mmd`;
+    link.click();
+    URL.revokeObjectURL(url);
     setIsExportMenuOpen(false);
   };
 
@@ -323,22 +421,6 @@ export const DiagramsView: React.FC<DiagramsViewProps> = ({ projectId }) => {
         >
           <button
             type="button"
-            onClick={() => setActiveTab('interactive')}
-            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
-              activeTab === 'interactive'
-                ? 'bg-indigo-600 text-white shadow-sm font-semibold'
-                : isDark
-                  ? 'text-slate-400 hover:text-white'
-                  : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[15px]">insights</span>
-            <span>Interactivos</span>
-            <span className="text-[9.5px] font-mono px-1 py-0.2 rounded bg-white/20">8</span>
-          </button>
-
-          <button
-            type="button"
             onClick={() => setActiveTab('mermaid')}
             className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
               activeTab === 'mermaid'
@@ -349,9 +431,27 @@ export const DiagramsView: React.FC<DiagramsViewProps> = ({ projectId }) => {
             }`}
           >
             <span className="material-symbols-outlined text-[15px]">account_tree</span>
-            <span>UML OKF (Mermaid)</span>
+            <span>Diagramas UML (Mermaid)</span>
             <span className="text-[9.5px] font-mono px-1 py-0.2 rounded bg-white/20">
               {umlTemplates.length + injectedAiDiagrams.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('interactive')}
+            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
+              activeTab === 'interactive'
+                ? 'bg-indigo-600 text-white shadow-sm font-semibold'
+                : isDark
+                  ? 'text-slate-400 hover:text-white'
+                  : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[15px]">insights</span>
+            <span>Interactivos SVG</span>
+            <span className="text-[9.5px] font-mono px-1 py-0.2 rounded bg-white/20">
+              {DIAGRAM_CATALOG.length}
             </span>
           </button>
         </div>
@@ -410,6 +510,20 @@ export const DiagramsView: React.FC<DiagramsViewProps> = ({ projectId }) => {
                     <div className="text-[9.5px] text-muted">Alta resolución para reportes</div>
                   </div>
                 </button>
+
+                {activeTab === 'mermaid' && (
+                  <button
+                    type="button"
+                    onClick={handleExportMmd}
+                    className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-white/10 text-primary flex items-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-sm text-fuchsia-400">code_blocks</span>
+                    <div className="flex-1">
+                      <div className="font-semibold">Código Mermaid (.mmd)</div>
+                      <div className="text-[9.5px] text-muted">Definición UML/BPMN en texto puro</div>
+                    </div>
+                  </button>
+                )}
 
                 <button
                   type="button"
@@ -498,25 +612,25 @@ export const DiagramsView: React.FC<DiagramsViewProps> = ({ projectId }) => {
             </button>
           </div>
 
-          {/* Filtros para diagramas interactivos */}
-          {activeTab === 'interactive' && (
-            <div
-              className={`p-2 border-b space-y-2 ${
-                isDark ? 'border-white/10' : 'border-slate-200'
+          {/* Barra de búsqueda universal y Filtros */}
+          <div
+            className={`p-2 border-b space-y-2 ${
+              isDark ? 'border-white/10' : 'border-slate-200'
+            }`}
+          >
+            <input
+              type="text"
+              placeholder={activeTab === 'interactive' ? 'Buscar interactivo...' : 'Buscar diagrama UML o BPMN...'}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={`w-full px-2.5 py-1 text-xs rounded-lg border focus:outline-none focus:border-indigo-500 ${
+                isDark
+                  ? 'bg-black/30 border-white/10 text-white placeholder-slate-500'
+                  : 'bg-slate-100 border-slate-300 text-slate-900 placeholder-slate-400'
               }`}
-            >
-              <input
-                type="text"
-                placeholder="Buscar diagrama..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={`w-full px-2.5 py-1 text-xs rounded-lg border focus:outline-none focus:border-indigo-500 ${
-                  isDark
-                    ? 'bg-black/30 border-white/10 text-white placeholder-slate-500'
-                    : 'bg-slate-100 border-slate-300 text-slate-900 placeholder-slate-400'
-                }`}
-              />
+            />
 
+            {activeTab === 'interactive' && (
               <div className="flex items-center gap-1">
                 <button
                   type="button"
@@ -558,8 +672,8 @@ export const DiagramsView: React.FC<DiagramsViewProps> = ({ projectId }) => {
                   Secuencia (2)
                 </button>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Lista de Tarjetas */}
           <div className="flex-1 overflow-y-auto p-2 space-y-1.5 custom-scrollbar">
@@ -611,13 +725,57 @@ export const DiagramsView: React.FC<DiagramsViewProps> = ({ projectId }) => {
               })
             ) : (
               <>
+                {/* Sección 1: Modelos de Arquitectura OKF Vivos */}
+                <div className="space-y-1.5 pb-2 mb-2 border-b border-glass-subtle">
+                  <div className="text-[9.5px] font-mono text-indigo-400 font-semibold uppercase px-1 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[13px]">schema</span>
+                    <span>Modelos de Arquitectura OKF ({filteredUmlTemplates.length})</span>
+                  </div>
+                  {filteredUmlTemplates.map((tpl) => {
+                    const isSelected = tpl.id === activeMermaidTemplate.id && !activeAiDiagram;
+                    return (
+                      <button
+                        key={tpl.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedMermaidId(tpl.id);
+                          setIsCatalogOpen(false);
+                        }}
+                        className={`w-full text-left p-2.5 rounded-xl border transition-all flex flex-col gap-1 cursor-pointer ${
+                          isSelected
+                            ? 'bg-indigo-500/15 border-indigo-500/40 shadow-sm shadow-indigo-500/20'
+                            : isDark
+                              ? 'bg-white/[0.02] hover:bg-white/[0.05] border-transparent'
+                              : 'bg-slate-50 hover:bg-slate-100 border-slate-200'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-1.5">
+                          <span className="text-[9px] font-mono font-semibold px-1.5 py-0.2 rounded bg-purple-500/15 text-purple-400 border border-purple-500/20">
+                            {tpl.standard}
+                          </span>
+                          <span className="text-[9px] font-mono text-muted">
+                            OKF VIVO
+                          </span>
+                        </div>
+                        <div className="text-xs font-semibold text-primary mt-0.5">
+                          {tpl.title}
+                        </div>
+                        <div className="text-[10px] text-secondary line-clamp-2">
+                          {tpl.description}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Sección 2: Diagramas Inyectados por el Copiloto IA */}
                 {injectedAiDiagrams.length > 0 && (
-                  <div className="space-y-1.5 pb-2 mb-2 border-b border-glass-subtle">
+                  <div className="space-y-1.5 pb-2 mb-2">
                     <div className="text-[9.5px] font-mono text-fuchsia-400 font-semibold uppercase px-1 flex items-center gap-1">
                       <span className="material-symbols-outlined text-[13px]">smart_toy</span>
-                      <span>Inyectados por IA ({injectedAiDiagrams.length})</span>
+                      <span>Inyectados por Copiloto IA ({filteredAiDiagrams.length})</span>
                     </div>
-                    {injectedAiDiagrams.map((diag) => {
+                    {filteredAiDiagrams.map((diag) => {
                       const isSelected = selectedMermaidId === `ai-${diag.code}`;
                       return (
                         <button
@@ -657,41 +815,11 @@ export const DiagramsView: React.FC<DiagramsViewProps> = ({ projectId }) => {
                   </div>
                 )}
 
-                {umlTemplates.map((tpl) => {
-                  const isSelected = tpl.id === activeMermaidTemplate.id && !activeAiDiagram;
-                  return (
-                    <button
-                      key={tpl.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedMermaidId(tpl.id);
-                        setIsCatalogOpen(false);
-                      }}
-                      className={`w-full text-left p-2.5 rounded-xl border transition-all flex flex-col gap-1 cursor-pointer ${
-                        isSelected
-                          ? 'bg-indigo-500/15 border-indigo-500/40 shadow-sm shadow-indigo-500/20'
-                          : isDark
-                            ? 'bg-white/[0.02] hover:bg-white/[0.05] border-transparent'
-                            : 'bg-slate-50 hover:bg-slate-100 border-slate-200'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-1.5">
-                        <span className="text-[9px] font-mono font-semibold px-1.5 py-0.2 rounded bg-purple-500/15 text-purple-400 border border-purple-500/20">
-                          {tpl.standard}
-                        </span>
-                        <span className="text-[9px] font-mono text-muted">
-                          OKF UML
-                        </span>
-                      </div>
-                      <div className="text-xs font-semibold text-primary mt-0.5">
-                        {tpl.title}
-                      </div>
-                      <div className="text-[10px] text-secondary line-clamp-2">
-                        {tpl.description}
-                      </div>
-                    </button>
-                  );
-                })}
+                {filteredUmlTemplates.length === 0 && filteredAiDiagrams.length === 0 && (
+                  <div className="p-4 text-center text-xs text-muted">
+                    No se encontraron diagramas con "{searchQuery}"
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -721,7 +849,19 @@ export const DiagramsView: React.FC<DiagramsViewProps> = ({ projectId }) => {
                 isDark ? 'bg-[#070b16]' : 'bg-slate-50'
               }`}
             >
-              <div className="max-w-5xl mx-auto">
+              <div className="max-w-5xl mx-auto space-y-3">
+                {entities.length === 0 &&
+                  (selectedMermaidId === 'class-diagram' || selectedMermaidId === 'erd-relational-model') && (
+                    <div className="p-3 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs flex items-center justify-between gap-3 animate-fade-in">
+                      <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-sm">info</span>
+                        <span>
+                          Aún no se han definido tablas en el Canvas relacional. El diagrama se actualizará automáticamente cuando agregues entidades o solicites al Copiloto generarlas.
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
                 <MermaidVisualizer
                   code={activeMermaidCode}
                   title={activeMermaidTitle}

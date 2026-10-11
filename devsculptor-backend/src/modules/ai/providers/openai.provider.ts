@@ -35,7 +35,7 @@ export class OpenAiProvider implements IAiProvider {
     context: AiProjectContext,
     options?: { temperature?: number; actionContext?: string }
   ): Promise<AiChatResult> {
-    const systemInstruction = buildSystemInstruction(context);
+    const systemInstruction = buildSystemInstruction(context, options?.actionContext);
 
     // Mapeo canónico a formato chat completions (OpenAI / DeepSeek compatible)
     const formattedMessages = [

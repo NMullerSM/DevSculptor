@@ -100,7 +100,7 @@ export class AiService {
 
     return provider.generateChat(
       dto.messages.map((m) => ({
-        role: m.role === 'assistant' ? 'model' : m.role,
+        role: m.role === 'assistant' ? ('model' as const) : ('user' as const),
         content: m.content,
       })),
       context,

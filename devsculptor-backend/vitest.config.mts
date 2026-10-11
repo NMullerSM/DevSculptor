@@ -9,6 +9,11 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.test.ts', 'src/**/*.spec.ts'],
     testTimeout: 15000,
+    env: {
+      NODE_ENV: 'test',
+      JWT_SECRET: 'test_jwt_secret_devsculptor_super_secure_32_characters_minimum',
+      MFA_ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+    },
   },
   resolve: {
     alias: {
