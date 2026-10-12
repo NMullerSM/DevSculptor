@@ -1,9 +1,30 @@
 import { getPool } from '../../config/database';
 import { logger } from '../../config/logger';
 
+export interface RequestContext {
+  ip?: string | null;
+  userAgent?: string | null;
+}
+
+export const SecurityEventType = {
+  LOGIN_SUCCESS: 'LOGIN_SUCCESS',
+  LOGIN_FAILED: 'LOGIN_FAILED',
+  ACCOUNT_LOCKED: 'ACCOUNT_LOCKED',
+  LOGIN_BLOCKED: 'LOGIN_BLOCKED',
+  MFA_REQUIRED: 'MFA_REQUIRED',
+  MFA_FAILED: 'MFA_FAILED',
+  MFA_ENABLED: 'MFA_ENABLED',
+  MFA_DISABLED: 'MFA_DISABLED',
+  PASSWORD_RESET_REQUESTED: 'PASSWORD_RESET_REQUESTED',
+  PASSWORD_RESET_COMPLETED: 'PASSWORD_RESET_COMPLETED',
+  PASSWORD_CHANGED: 'PASSWORD_CHANGED',
+} as const;
+
+export type SecurityEventType = (typeof SecurityEventType)[keyof typeof SecurityEventType];
+
 export interface RecordSecurityEventParams {
   userId?: string | null;
-  eventType: string;
+  eventType: SecurityEventType | string;
   ip?: string | null;
   userAgent?: string | null;
   metadata?: Record<string, unknown>;

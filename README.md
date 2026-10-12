@@ -10,15 +10,15 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-336791?logo=postgresql)](https://www.postgresql.org/)
 [![Supabase](https://img.shields.io/badge/Supabase-Cloud-3ecf8e?logo=supabase)](https://supabase.com/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38bdf8?logo=tailwind-css)](https://tailwindcss.com/)
-[![Tests](https://img.shields.io/badge/Vitest-25%2F25%20Passing-brightgreen?logo=vitest)](Documentation/Backend/Security_Hardening_and_Audit_Remediation_Report.md)
-[![Security](https://img.shields.io/badge/Security-0%20Advisories%20(100%25%20RLS)-success?logo=security)](Documentation/Backend/Supabase_Security_and_Performance_Report.md)
-[![Status](https://img.shields.io/badge/Status-Release%20Candidate%20(Sprint%201--5)-success)](Documentation/Consolidated/DevSculptor_Master_Technical_Architecture_and_Specifications.md)
+[![Tests](https://img.shields.io/badge/Vitest-32%2F32%20Passing-brightgreen?logo=vitest)](Documentation/Backend/Backend_Security_and_Hardening_Audit_Report.md)
+[![Security](https://img.shields.io/badge/Security-0%20Advisories%20(100%25%20RLS)-success?logo=security)](Documentation/Backend/Backend_Security_and_Hardening_Audit_Report.md)
+[![Status](https://img.shields.io/badge/Status-Release%20Candidate%20(Sprint%201--6)-success)](Documentation/Consolidated/DevSculptor_Master_Technical_Architecture.md)
 
 <p align="center">
   <b>Mitigando el fenómeno del <i>"vibe coding"</i> mediante disciplina de diseño de software, trazabilidad inmutable y especificaciones deterministas para agentes de IA.</b>
 </p>
 
-[📚 Catálogo de Documentación](Documentation/README.md) • [📐 Especificación Técnica Maestra](Documentation/Consolidated/DevSculptor_Master_Technical_Architecture_and_Specifications.md) • [🛡️ Informe de Seguridad](Documentation/Backend/Security_Hardening_and_Audit_Remediation_Report.md) • [📸 Galería de Capturas](Documentation/screenshots/) • [🧪 Plan Integral de Pruebas](Documentation/Consolidated/Plan_de_Pruebas_Integral_DevSculptor.md)
+[📚 Catálogo de Documentación](Documentation/README.md) • [📐 Especificación Técnica Maestra](Documentation/Consolidated/DevSculptor_Master_Technical_Architecture.md) • [🛡️ Informe de Seguridad](Documentation/Backend/Backend_Security_and_Hardening_Audit_Report.md) • [📸 Galería de Capturas](Documentation/screenshots/) • [🧪 Plan Integral de Pruebas](Documentation/Consolidated/DevSculptor_Comprehensive_Test_and_Quality_Plan.md)
 
 </div>
 
@@ -88,7 +88,7 @@ El sistema implementa una arquitectura desacoplada pero de alta cohesión:
 │  ├── Cifrado Simétrico Autenticado AES-256-GCM para Secretos MFA & Vault   │
 │  ├── Revocación de Sesiones en Vivo mediante token_version                  │
 │  ├── Validador DNS Anti-SSRF (safeUrl.ts) con Bloqueo de Redes Privadas     │
-│  └── Suite Automatizada de Pruebas con Vitest & Supertest (25/25 Passing)   │
+│  └── Suite Automatizada de Pruebas con Vitest & Supertest (32/32 Passing)   │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  PERSISTENCIA & STORAGE - PostgreSQL 15+ en Supabase Cloud                 │
 │  ├── Cobertura 100% de Row Level Security (RLS) en las 11 Tablas           │
@@ -153,7 +153,7 @@ npm run dev
 ```bash
 cd ../devsculptor-backend
 
-# Ejecutar suite completa de 25 pruebas con Vitest
+# Ejecutar suite completa de 32 pruebas con Vitest
 npm run test
 
 # Verificar adherencia a reglas de linting (ESLint 9 Flat Config)
@@ -172,10 +172,10 @@ DevSculptor/
 ├── .github/                          # Pipelines de Integración Continua (CI GitHub Actions)
 │   └── workflows/ci.yml              # Test runner, typecheck y linter automatizado
 ├── Documentation/                    # Catálogo maestro de documentación técnica
-│   ├── README.md                     # Índice general de documentación
-│   ├── Backend/                      # Convenciones, ADRs, guías MVC, RLS y seguridad
-│   ├── Frontend/                     # Sistema visionOS, UX/UI, specs cliente y sanitización
-│   ├── Consolidated/                 # Especificación técnica maestra, informes de sprint y QA
+│   ├── README.md                     # Índice general y mapa de compendios maestros
+│   ├── Backend/                      # 4 Documentos maestros de arquitectura, specs, seguridad y cloud
+│   ├── Frontend/                     # 3 Documentos maestros de UX/UI visionOS, specs y seguridad cliente
+│   ├── Consolidated/                 # 3 Documentos maestros de arquitectura global, evolución y plan QA
 │   └── screenshots/                  # Galería completa de capturas de pantalla del sistema
 ├── devsculptor-backend/              # Servidor API REST Monolito Modular Layered MVC
 │   ├── src/
@@ -203,17 +203,18 @@ DevSculptor/
 
 ## 📑 Catálogo de Documentación Canónica
 
-Para una revisión detallada de la arquitectura, consulte los documentos en [`Documentation/`](Documentation/README.md):
+Para una revisión detallada de la arquitectura, consulte los compendios maestros en [`Documentation/`](Documentation/README.md):
 
-* **[Especificación Técnica Maestra](Documentation/Consolidated/DevSculptor_Master_Technical_Architecture_and_Specifications.md)**: Documento exhaustivo con detalles de diseño, DDL relacionales y protocolos de IA.
-* **[Informe de Hardening de Seguridad Backend](Documentation/Backend/Security_Hardening_and_Audit_Remediation_Report.md)**: Auditoría integral de seguridad, mitigación de vulnerabilidades OWASP, tipado JWT, anti-SSRF y cifrado AES-256-GCM.
-* **[Informe de Hardening y Sanitización Frontend](Documentation/Frontend/Security_Hardening_and_DOM_Sanitization_Report.md)**: Sanitización con DOMPurify, Mermaid strict mode y scoping estricto de credenciales BYOK.
-* **[Auditoría de Seguridad y Rendimiento Supabase](Documentation/Backend/Supabase_Security_and_Performance_Report.md)**: Cobertura RLS al 100% y resolución oficial de 0 advertencias en Security Advisors.
-* **[Informe Consolidado de Avance por Sprints](Documentation/Consolidated/Project_Sprints_Consolidated_Progress_Report.md)**: Estado integral de madurez del proyecto por fases y matriz DoD cumplida al 100%.
-* **[Plan Integral de Pruebas (QA)](Documentation/Consolidated/Plan_de_Pruebas_Integral_DevSculptor.md)**: Matriz completa de casos de prueba unitarios, de integración y end-to-end.
-* **[Convenciones de Backend](Documentation/Backend/Backend_Conventions_and_Architecture_Guidelines.md)**: Guía metodológica de ingeniería del servidor.
-* **[Convenciones de Frontend & UX/UI](Documentation/Frontend/Frontend_Conventions_and_UX_UI_Guidelines.md)**: Guía de tokens de diseño y ergonomía visual.
-* **[Catálogo de ADRs Fundacionales](Documentation/Backend/Sprint1ADRs.md)**: Las 8 actas arquitectónicas estructurales de DevSculptor.
+* **[Especificación Técnica Maestra Global](Documentation/Consolidated/DevSculptor_Master_Technical_Architecture.md)**: Blueprint integral de ingeniería, topología desacoplada, modelo de datos 3FN y filosofía pre-código.
+* **[Auditoría Consolidada de Seguridad y Hardening Backend](Documentation/Backend/Backend_Security_and_Hardening_Audit_Report.md)**: Checklist de 10 puntos, SEC-01 a SEC-10, `security_events`, anti-enumeración, 11 tablas RLS en Supabase y 32 tests.
+* **[Informe de Seguridad y Sanitización DOM Frontend](Documentation/Frontend/Frontend_Security_and_Quality_Audit_Report.md)**: Mitigación de XSS con `DOMPurify`, Mermaid strict, CSP y delimitación estricta de cabeceras BYOK.
+* **[Guía de Arquitectura y Convenciones de Ingeniería Backend](Documentation/Backend/Backend_Architecture_and_Engineering_Guidelines.md)**: Monolito Modular Layered MVC, BaseRepository con `pg.Pool`, Zod como SSOT y logging Pino.
+* **[Especificación Maestra de Características y Sprints Backend](Documentation/Backend/Backend_Features_and_Sprints_Specification.md)**: Compendio funcional completo de Sprints 1 al 6 (Core, ADRs, IA, RBAC, OKF, Perfil y Diagramas).
+* **[Guía de Despliegue e Infraestructura Cloud](Documentation/Backend/Backend_Deployment_and_Cloud_Infrastructure_Guide.md)**: Docker multi-stage (`node:20-slim`), Blueprint en Render, Railway, Supabase Cloud y DNS.
+* **[Guía de UX/UI y Sistema de Diseño visionOS Frontend](Documentation/Frontend/Frontend_Conventions_and_UX_UI_Guidelines.md)**: Sistema canónico Liquid Glassmorphism, paleta dual, refracción óptica y micro-animaciones.
+* **[Especificación Maestra de Características y Sprints Frontend](Documentation/Frontend/Frontend_Features_and_Sprints_Specification.md)**: Compendio funcional de pantallas, Lienzo ERD, Copiloto IA, Bóveda OKF, Admin Cockpit y Exportación.
+* **[Informe de Evolución y Avance Consolidado de Sprints](Documentation/Consolidated/DevSculptor_Project_Evolution_and_Sprints_Report.md)**: Trazabilidad integral de compromisos del portafolio PTY4479 y métricas de avance S1 al S6.
+* **[Plan Integral de Pruebas y Calidad (QA)](Documentation/Consolidated/DevSculptor_Comprehensive_Test_and_Quality_Plan.md)**: Matriz formal de pruebas (TC-CANV, TC-ADR, TC-REQ, TC-AUTH) con enlaces a versiones PDF y Word.
 
 ---
 

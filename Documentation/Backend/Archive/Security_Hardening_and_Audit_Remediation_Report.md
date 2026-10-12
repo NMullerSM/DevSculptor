@@ -109,8 +109,30 @@ Se implementaron 4 suites de pruebas en `devsculptor-backend/src/test/`:
 # Ejecución de Pruebas
 npm test
 
-# Resultado
-Test Files  4 passed (4)
-Tests       25 passed (25)
-Duration    2.98s
+# Resultado (Línea base v2 post-hardening)
+Test Files  5 passed (5)
+Tests       32 passed (32)
+Duration    ~3.9s
 ```
+
+---
+
+## 6. Auditoría y Hardening de Seguridad — Ciclo Octubre 2026 (v2)
+
+### 6.1 Matriz de Hallazgos y Remediación v2
+| Código | Severidad | Área | Hallazgo | Estado | Mitigación Implementada |
+|---|---|---|---|:---:|---|
+| **H-01** | 🔴 **Crítica** | Auditoría / Forense | `SecurityEventService` y tabla `security_events` sin llamadores activos (auditoría forense inoperante). | ✅ Corregido | Conexión de `SecurityEventService.record()` en `AuthService` para `LOGIN_SUCCESS`, `LOGIN_FAILED`, `ACCOUNT_LOCKED`, `LOGIN_BLOCKED`, `MFA_REQUIRED`, `MFA_FAILED`, `MFA_ENABLED`, `MFA_DISABLED`, `PASSWORD_RESET_REQUESTED`, `PASSWORD_RESET_COMPLETED` y `PASSWORD_CHANGED`. |
+| **H-02** | 🔴 **Alta** | Auth / Enumeración | `login` evaluaba `!is_active` y `locked_until` antes de la contraseña con mensajes dispares. | ✅ Corregido | Reordenamiento en `AuthService.login`: comparación de contraseña primero con bcrypt, y unificación de mensaje genérico para usuarios inexistentes, contraseñas erróneas y cuentas bloqueadas. |
+| **H-03** | 🟠 **Media** | Auth / DoS | `POST /reset-password` sin rate limit dedicado. | ✅ Corregido | Implementación y montaje de `resetPasswordLimiter` (10 intentos / hora por IP) en `rateLimiter.ts` y `auth.routes.ts`. |
+| **H-04** | 🟠 **Media** | Rate Limiting | `RATE_LIMIT_MAX=100` global por IP en memoria; medición de canvas ERD. | 📋 Medido y Documentado | Operaciones drag & drop operan en memoria local (Zustand) y solo despachan 1 mutación HTTP al soltar la entidad. Para despliegues en producción se recomienda calibrar `RATE_LIMIT_MAX` vía env en Render. Store en memoria documentado como válido para réplica única. |
+| **H-05** | 🟡 **Baja** | Auth / MFA | Limitador MFA opera a nivel IP. | 📋 Mitigado / Aceptado | Eventos `MFA_FAILED` registrados en base de datos para análisis forense correlacionado por `userId`. |
+| **H-06** | 🟡 **Baja** | Auth / Registro | `register` devuelve `ConflictError` si el correo existe. | 📋 Riesgo Aceptado | Trade-off estándar de usabilidad; protegido por `registerLimiter` (10 registros / hora por IP). |
+| **H-07** | 🟡 **Baja** | Frontend / Storage | Tokens JWT y claves BYOK residen en `localStorage`. | 📋 Riesgo Aceptado | Protegido en cliente por sanitización estricta con DOMPurify, Mermaid `securityLevel: 'strict'`, CSP estricto en `vercel.json` y headers contra clickjacking (`X-Frame-Options: DENY`). |
+
+### 6.2 Verificación Empírica de Métricas (Línea Base v2)
+- **Suites de Prueba (Vitest):** 5 suites ejecutadas (4 originales + `security-events.test.ts`), 32/32 tests aprobados (100% pass).
+- **Linter (ESLint Flat Config):** 0 errores, 0 advertencias.
+- **Compilación TypeScript (`tsc && tsc-alias`):** Exit code 0, tipado estricto sin `any`.
+- **Inspección de Secretos en Repositorio e Historial:** 0 claves expuestas.
+

@@ -67,6 +67,18 @@ export const forgotPasswordLimiter = rateLimit({
   ),
 });
 
+// 4b. Limitador de restablecimiento de contraseña (10 intentos / hora por IP) (H-03)
+export const resetPasswordLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  handler: buildRateLimitHandler(
+    'TOO_MANY_RESET_ATTEMPTS',
+    'Demasiados intentos de restablecimiento de contraseña. Intente en 1 hora.'
+  ),
+});
+
 // 5. Limitador de creación de cuentas (10 registros / hora por IP)
 export const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,

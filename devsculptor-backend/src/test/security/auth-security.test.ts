@@ -136,4 +136,20 @@ describe('Security & Resilience Integration Suite', () => {
       expect(res.body.data.environment).toBeDefined();
     });
   });
+
+  describe('SEC-04 & H-03: Rate Limiting Protection', () => {
+    it('debe responder con HTTP 429 y envelope estándar cuando se supera la cuota de /reset-password', async () => {
+      let lastRes;
+      for (let i = 0; i < 11; i++) {
+        lastRes = await request(app)
+          .post('/api/v1/auth/reset-password')
+          .send({ token: 'fake-test-token-limit', new_password: 'Password123!' });
+      }
+
+      expect(lastRes?.status).toBe(429);
+      expect(lastRes?.body.success).toBe(false);
+      expect(lastRes?.body.error.code).toBe('TOO_MANY_RESET_ATTEMPTS');
+      expect(lastRes?.body.error.message).toContain('Demasiados intentos de restablecimiento');
+    });
+  });
 });

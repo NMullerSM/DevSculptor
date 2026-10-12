@@ -180,4 +180,23 @@ Con la incorporación de nuevos módulos en los Sprints 4 y 5 (Bóveda Documenta
 - **Advertencias:** 0
 - **Informativos:** 11 avisos esperados `rls_enabled_no_policy` correspondientes al 100% de las tablas del esquema público (bloqueo total a PostgREST sin bypass para clientes externos).
 
+### 7.3 Verificación Empírica Directa en Motor Cloud (Auditoría v2)
+Mediante consultas SQL directas sobre el catálogo relacional de Supabase (`gtcuhxhwwqzfhleoozlz`):
+1. **Tablas públicas sin RLS:** 0 filas devueltas.
+2. **Inventario verificado de tablas con RLS activo (11/11, 100%):**
+   - `_migrations` (RLS: true)
+   - `architecture_decisions` (RLS: true)
+   - `audit_logs` (RLS: true)
+   - `canvas_entities` (RLS: true)
+   - `global_vault_templates` (RLS: true)
+   - `okf_documents` (RLS: true)
+   - `password_resets` (RLS: true)
+   - `projects` (RLS: true)
+   - `requirements` (RLS: true)
+   - `security_events` (RLS: true)
+   - `users` (RLS: true)
+3. **Funciones SECURITY DEFINER sin `search_path` inmutable:** 0 funciones vulnerables.
+4. **PostgREST Defense-in-Depth:** Al no existir directivas `CREATE POLICY`, el motor PostgreSQL deniega por defecto todo acceso de filas a los roles web (`anon`, `authenticated`), forzando que el tráfico opere exclusivamente a través de la conexión directa de pool Express.
+
+
 
