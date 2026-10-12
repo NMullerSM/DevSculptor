@@ -7,6 +7,7 @@ import {
   loginLimiter,
   mfaLimiter,
   forgotPasswordLimiter,
+  resetPasswordLimiter,
 } from '../../middlewares/rateLimiter';
 import {
   registerSchema,
@@ -47,6 +48,7 @@ router.post(
 
 router.post(
   '/reset-password',
+  resetPasswordLimiter,
   validateRequest({ body: resetPasswordSchema }),
   controller.resetPassword
 );

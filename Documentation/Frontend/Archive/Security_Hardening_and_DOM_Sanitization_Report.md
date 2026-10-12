@@ -101,7 +101,22 @@ Los focos principales abordados fueron:
 
 ---
 
+### 2.5. Auditoría de Secretos en Bundle y Gestión de Almacenamiento (Octubre 2026 v2)
+- **Inspección de Artefactos de Producción (`dist/assets/*.js`):**
+  - Búsqueda exhaustiva por expresiones regulares (`AIza...`, `sk-...`, `supabase.co`, `service_role`).
+  - **Resultado:** 0 credenciales ni secretos hardcodeados en el bundle compilado. Únicamente existen los placeholders de interfaz de usuario (`AIzaSy...`, `sk-or-v1-...`).
+- **Análisis de Riesgo Aceptado — JWT y BYOK en `localStorage`:**
+  - En arquitecturas SPA puras sin backend BFF (*Backend-For-Frontend* con cookies `HttpOnly`), los tokens de sesión y las claves BYOK se almacenan en `localStorage`.
+  - **Defensa en Profundidad Implementada:**
+    1. Neutralización de vectores XSS mediante `DOMPurify` en todos los visores de documentos.
+    2. Configuración inmutable de Mermaid en modo estricto (`securityLevel: 'strict'`).
+    3. Cabecera `Content-Security-Policy` en `vercel.json` restringiendo orígenes de conexión y ejecución.
+    4. Interceptor reactivo en `apiClient.ts` que purga instantáneamente `devsculptor_token`, `devsculptor_user` y credenciales activas ante cualquier respuesta HTTP 401.
+
+---
+
 ## 3. Verificación de Compilación y Calidad
 
 - **Linter de Frontend (Oxlint):** 0 errores, 0 advertencias.
-- **Compilador TypeScript & Vite:** Compilación limpia completada en ~2.5 segundos generando bundles optimizados en `dist/`.
+- **Compilador TypeScript & Vite:** Compilación limpia completada sin errores (`npm run build` exit code 0).
+
