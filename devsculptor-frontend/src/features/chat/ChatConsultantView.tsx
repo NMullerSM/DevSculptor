@@ -1,6 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAiChatStore } from '@/stores/useAiChatStore';
 import { useProjectStore } from '@/stores/useProjectStore';
+import { useCanvasStore } from '@/stores/useCanvasStore';
+import { requirementsService } from '@/services/requirements.service';
+import { decisionsService } from '@/services/decisions.service';
+import { Requirement } from '@/types/requirement.types';
+import { Decision } from '@/types/decision.types';
 import { VisionPill } from '@/components/ui/VisionPill';
 import { VisionButton } from '@/components/ui/VisionButton';
 import { MermaidVisualizer } from '@/components/diagrams/MermaidVisualizer';
@@ -128,6 +133,10 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastSentTextRef = useRef<string>('');
 
+  const canvasEntities = useCanvasStore((s) => s.entities);
+  const [existingReqs, setExistingReqs] = useState<Requirement[]>([]);
+  const [existingDecisions, setExistingDecisions] = useState<Decision[]>([]);
+
   const currentPreset = MODE_PRESET_OPTIONS.find((p) => p.value === activeMode) || MODE_PRESET_OPTIONS[0];
 
   const handleCopyText = async (id: string, text: string) => {
@@ -226,10 +235,13 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
 
-  // Aislamiento y conmutación reactiva de la sesión de chat por proyecto activo
+  // Aislamiento y conmutación reactiva con hidratación de datos existentes desde PostgreSQL
   useEffect(() => {
     if (activeProject?.id) {
       switchProject(activeProject.id);
+      requirementsService.getAllByProject(activeProject.id).then(setExistingReqs).catch(() => []);
+      decisionsService.getAllByProject(activeProject.id).then(setExistingDecisions).catch(() => []);
+      useCanvasStore.getState().fetchEntities(activeProject.id).catch(() => {});
     }
   }, [activeProject?.id, switchProject]);
 
@@ -253,6 +265,19 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
     if (!activeProject) return;
     try {
       await injectRequirement(activeProject.id, req);
+      setExistingReqs((prev) => [
+        ...prev,
+        {
+          id: `temp-${Date.now()}`,
+          project_id: activeProject.id,
+          code: req.code,
+          title: req.title,
+          type: req.type,
+          priority: req.priority,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      ]);
       showToast(`Requisito ${req.code} inyectado exitosamente`);
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Error al inyectar requisito');
@@ -273,6 +298,18 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
     if (!activeProject) return;
     try {
       await injectDecision(activeProject.id, decision);
+      setExistingDecisions((prev) => [
+        ...prev,
+        {
+          id: `temp-${Date.now()}`,
+          project_id: activeProject.id,
+          code: decision.code,
+          title: decision.title,
+          status: decision.status,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        } as Decision,
+      ]);
       showToast(`Decisión ${decision.code} inyectada en Actas`);
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Error al inyectar decisión');
@@ -498,7 +535,13 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
                         </div>
                         <div className="grid grid-cols-1 gap-1.5">
                           {effectiveActions.requirements.map((req, i) => {
-                            const isInjected = isItemInjected(`req:${req.code}`);
+                            const isInjected =
+                              isItemInjected(`req:${req.code}`) ||
+                              existingReqs.some(
+                                (r) =>
+                                  r.code?.toLowerCase() === req.code?.toLowerCase() ||
+                                  r.title?.toLowerCase().trim() === req.title?.toLowerCase().trim()
+                              );
                             return (
                               <div
                                 key={i}
@@ -574,7 +617,11 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
                         </div>
                         <div className="grid grid-cols-1 gap-1.5">
                           {effectiveActions.entities.map((ent, i) => {
-                            const isInjected = isItemInjected(`entity:${ent.tableName}`);
+                            const isInjected =
+                              isItemInjected(`entity:${ent.tableName}`) ||
+                              canvasEntities.some(
+                                (e) => e.table_name?.toLowerCase().trim() === ent.tableName.toLowerCase().trim()
+                              );
                             return (
                               <div
                                 key={i}
@@ -615,7 +662,13 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
                         </div>
                         <div className="grid grid-cols-1 gap-1.5">
                           {effectiveActions.decisions.map((dec, i) => {
-                            const isInjected = isItemInjected(`decision:${dec.code}`);
+                            const isInjected =
+                              isItemInjected(`decision:${dec.code}`) ||
+                              existingDecisions.some(
+                                (d) =>
+                                  d.code?.toLowerCase() === dec.code?.toLowerCase() ||
+                                  d.title?.toLowerCase().trim() === dec.title?.toLowerCase().trim()
+                              );
                             return (
                               <div
                                 key={i}

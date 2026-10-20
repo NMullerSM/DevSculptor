@@ -3,6 +3,7 @@ import { ProjectsService } from '../projects/projects.service';
 import { AiProviderFactory } from './providers/provider.factory';
 import { AiProjectContext, AiChatResult, UserAiOverride } from './providers/ai-provider.interface';
 import { ChatRequestDto } from './ai.dto';
+import { sanitizeAiResponse } from './ai.validator';
 import { logger } from '../../config/logger';
 
 export class AiService {
@@ -20,7 +21,7 @@ export class AiService {
 
     // 2. Obtener requisitos del proyecto
     const reqsResult = await pool.query(
-      `SELECT code, title, type, priority, description 
+      `SELECT code, title, type, priority, description, entity_relation 
        FROM requirements 
        WHERE project_id = $1 
        ORDER BY created_at ASC`,
@@ -38,19 +39,37 @@ export class AiService {
 
     // 4. Obtener decisiones (ADRs)
     const decisionsResult = await pool.query(
-      `SELECT title, status, context, decision 
+      `SELECT code, title, status, context, decision 
        FROM architecture_decisions 
        WHERE project_id = $1 
        ORDER BY created_at ASC`,
       [projectId]
     );
 
-    const requirements = reqsResult.rows.map((r: { code: string; title: string; type: string; priority: string; description?: string | null }) => ({
+    // 5. Obtener documentos de la bóveda OKF
+    const okfResult = await pool.query(
+      `SELECT canonical_path, title, document_type, content_preview, content_markdown
+       FROM okf_documents
+       WHERE project_id = $1
+       ORDER BY canonical_path ASC
+       LIMIT 40`,
+      [projectId]
+    );
+
+    const requirements = reqsResult.rows.map((r: {
+      code: string;
+      title: string;
+      type: string;
+      priority: string;
+      description?: string | null;
+      entity_relation?: string[] | null;
+    }) => ({
       code: r.code,
       title: r.title,
       type: r.type,
       priority: r.priority,
       description: r.description || undefined,
+      entityRelation: Array.isArray(r.entity_relation) ? r.entity_relation : undefined,
     }));
 
     const entities = entitiesResult.rows.map((e: { table_name: string; columns_json: unknown }) => ({
@@ -60,10 +79,10 @@ export class AiService {
 
     const decisions = decisionsResult.rows.map(
       (
-        d: { title: string; status: string; context?: string | null; decision?: string | null },
+        d: { code?: string | null; title: string; status: string; context?: string | null; decision?: string | null },
         index: number
       ) => ({
-        code: `ADR-${String(index + 1).padStart(3, '0')}`,
+        code: d.code || `ADR-${String(index + 1).padStart(2, '0')}`,
         title: d.title,
         status: d.status,
         context: d.context || undefined,
@@ -71,13 +90,51 @@ export class AiService {
       })
     );
 
+    const okfDocuments = okfResult.rows.map((d: {
+      canonical_path: string;
+      title: string;
+      document_type: string;
+      content_preview?: string | null;
+      content_markdown?: string | null;
+    }) => ({
+      canonicalPath: d.canonical_path,
+      title: d.title,
+      documentType: d.document_type,
+      preview: d.content_preview || '',
+      contentMarkdown: d.content_markdown || undefined,
+    }));
+
+    // Cálculo determinista de los siguientes códigos secuenciales
+    const extractMax = (items: string[], prefix: string): number => {
+      let max = 0;
+      const regex = new RegExp(`^${prefix}-(\\d+)$`, 'i');
+      for (const item of items) {
+        const match = item?.match(regex);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (!isNaN(num) && num > max) max = num;
+        }
+      }
+      return max;
+    };
+
+    const maxRf = extractMax(requirements.filter((r) => r.type === 'RF').map((r) => r.code), 'RF');
+    const maxRnf = extractMax(requirements.filter((r) => r.type === 'RNF').map((r) => r.code), 'RNF');
+    const maxAdr = extractMax(decisions.map((d) => d.code), 'ADR');
+
     return {
       projectName: project.name,
       projectDescription: project.description || undefined,
+      organization: project.organization || undefined,
+      leadArchitect: project.lead_architect || undefined,
       architectureStyle: project.architecture_style || 'Monolito Modular Layered MVC',
       requirements,
       entities,
       decisions,
+      okfDocuments,
+      nextRfCode: `RF-${String(maxRf + 1).padStart(2, '0')}`,
+      nextRnfCode: `RNF-${String(maxRnf + 1).padStart(2, '0')}`,
+      nextAdrCode: `ADR-${String(maxAdr + 1).padStart(2, '0')}`,
     };
   }
 
@@ -98,7 +155,7 @@ export class AiService {
       'Invocando motor de consultoría IA'
     );
 
-    return provider.generateChat(
+    const rawResult = await provider.generateChat(
       dto.messages.map((m) => ({
         role: m.role === 'assistant' ? ('model' as const) : ('user' as const),
         content: m.content,
@@ -109,6 +166,8 @@ export class AiService {
         actionContext: dto.actionContext,
       }
     );
+
+    return sanitizeAiResponse(rawResult, context, dto.actionContext);
   }
 
   /**
@@ -127,7 +186,8 @@ export class AiService {
       'Invocando auditoría relacional con IA'
     );
 
-    return provider.analyzeSchema(context);
+    const rawResult = await provider.analyzeSchema(context);
+    return sanitizeAiResponse(rawResult, context, 'canvas');
   }
 
   /**
@@ -147,7 +207,8 @@ export class AiService {
       'Invocando síntesis de requisitos IEEE-830 con IA'
     );
 
-    return provider.suggestRequirements(prompt, context);
+    const rawResult = await provider.suggestRequirements(prompt, context);
+    return sanitizeAiResponse(rawResult, context, 'requirements');
   }
 
   /**

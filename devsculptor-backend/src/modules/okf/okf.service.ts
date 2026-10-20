@@ -56,6 +56,7 @@ export class OkfService {
       title: d.title,
       tags: d.tags,
       content_preview: d.contentPreview || null,
+      content_markdown: d.contentMarkdown || null,
       state_hash: d.stateHash,
       freshness_status: d.freshnessStatus,
       storage_path: d.storagePath || null,

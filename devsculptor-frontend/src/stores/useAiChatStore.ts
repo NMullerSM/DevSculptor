@@ -13,6 +13,7 @@ import { requirementsService } from '@/services/requirements.service';
 import { decisionsService } from '@/services/decisions.service';
 import { useCanvasStore } from './useCanvasStore';
 import { useProjectStore } from './useProjectStore';
+import { okfService } from '@/services/okf.service';
 
 export interface ProjectChatSession {
   messages: AiChatMessage[];
@@ -331,6 +332,7 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
       type: safeType,
       priority: safePriority,
       description: req.description || '',
+      entity_relation: req.entityRelation || [],
     });
 
     const updatedKeys = { ...get().injectedKeys, [key]: true };
@@ -360,7 +362,26 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
     const key = `entity:${entity.tableName}`;
     if (get().injectedKeys[key]) return;
 
-    const existingEntities = useCanvasStore.getState().entities;
+    // Hidratar el canvasStore desde la base de datos si no ha sido cargado previamente
+    const canvasStore = useCanvasStore.getState();
+    let existingEntities = canvasStore.entities;
+    if (!existingEntities || existingEntities.length === 0) {
+      try {
+        await canvasStore.fetchEntities(projectId);
+        existingEntities = useCanvasStore.getState().entities;
+      } catch {
+        existingEntities = [];
+      }
+    }
+
+    // Prevención de duplicados en PostgreSQL
+    const tableNorm = entity.tableName.toLowerCase().trim();
+    if (existingEntities.some((e) => e.table_name.toLowerCase().trim() === tableNorm)) {
+      const updatedKeys = { ...get().injectedKeys, [key]: true };
+      set({ injectedKeys: updatedKeys });
+      return;
+    }
+
     const count = existingEntities.length;
     // Ubicación en cuadrícula limpia para no amontonar las tablas
     const posX = 40 + (count % 3) * 270;
@@ -518,6 +539,29 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
       injectedKeys: updatedKeys,
       sessions: updatedSessions,
     });
+
+    // Persistir el diagrama arquitectónico en la Bóveda OKF (PostgreSQL)
+    try {
+      const slug = diagram.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const canonicalPath = `02-architecture-diagrams/${slug || 'diagram'}.md`;
+      const markdown = `# ${diagram.title}\n\n**Tipo:** ${diagram.type}\n**Formato:** Mermaid UML\n\n${diagram.description ? `${diagram.description}\n\n` : ''}\`\`\`mermaid\n${diagram.mermaidCode}\n\`\`\`\n`;
+
+      await okfService.syncVault(projectId, [
+        {
+          documentId: diagram.code || `DIAG-${Date.now()}`,
+          documentType: 'DIAGRAM',
+          canonicalPath,
+          title: diagram.title,
+          tags: ['diagram', diagram.type, 'architecture', 'mermaid'],
+          contentPreview: diagram.description || diagram.title,
+          contentMarkdown: markdown,
+          stateHash: `hash-${Date.now()}`,
+          freshnessStatus: 'FRESH',
+        },
+      ]);
+    } catch {
+      // Ignorar errores no críticos de persistencia de diagrama
+    }
   },
 
   injectAllActions: async (projectId: string, actions: DevSculptorActions) => {
@@ -537,7 +581,38 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
     }
 
     if (actions.entities && actions.entities.length > 0) {
+      // Ordenamiento topológico: tablas referenciadas van primero
+      const entityMap = new Map<string, AiSuggestedEntity>();
       for (const ent of actions.entities) {
+        entityMap.set(ent.tableName.toLowerCase(), ent);
+      }
+
+      const visited = new Set<string>();
+      const orderedEntities: AiSuggestedEntity[] = [];
+
+      const visit = (ent: AiSuggestedEntity) => {
+        const tName = ent.tableName.toLowerCase();
+        if (visited.has(tName)) return;
+        visited.add(tName);
+
+        for (const col of ent.columns || []) {
+          const colRec = col as unknown as Record<string, unknown>;
+          const ref = (col.referencesTable || col.references || colRec.targetTable) as string | undefined;
+          if (ref) {
+            const parent = entityMap.get(ref.toLowerCase());
+            if (parent && parent.tableName.toLowerCase() !== tName) {
+              visit(parent);
+            }
+          }
+        }
+        orderedEntities.push(ent);
+      };
+
+      for (const ent of actions.entities) {
+        visit(ent);
+      }
+
+      for (const ent of orderedEntities) {
         if (!get().injectedKeys[`entity:${ent.tableName}`]) {
           await get().injectEntity(projectId, ent);
           count++;

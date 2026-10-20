@@ -133,6 +133,16 @@ Ejemplo ilustrativo de bloque de acciones articuladas y conexas (Modo Formalizac
   ],
   "suggestedEntities": [
     {
+      "tableName": "users",
+      "columns": [
+        { "name": "id", "type": "UUID", "isPk": true },
+        { "name": "email", "type": "VARCHAR(255)", "unique": true, "nullable": false },
+        { "name": "full_name", "type": "VARCHAR(150)", "nullable": false },
+        { "name": "role", "type": "VARCHAR(50)", "nullable": false },
+        { "name": "created_at", "type": "TIMESTAMP", "nullable": false }
+      ]
+    },
+    {
       "tableName": "dark_stores",
       "columns": [
         { "name": "id", "type": "UUID", "isPk": true },
@@ -191,24 +201,62 @@ Ejemplo ilustrativo de bloque de acciones articuladas y conexas (Modo Formalizac
 
 export function buildSystemInstruction(context: AiProjectContext, actionContext?: string): string {
   const reqsSummary = context.requirements.length > 0
-    ? context.requirements.map((r) => `- [${r.code}] (${r.type} - ${r.priority}) ${r.title}`).join('\n')
+    ? context.requirements.map((r) => {
+        let line = `- [${r.code}] (${r.type} - ${r.priority}) ${r.title}`;
+        if (r.entityRelation && r.entityRelation.length > 0) {
+          line += ` [Entidades vinculadas: ${r.entityRelation.join(', ')}]`;
+        }
+        if (r.description) {
+          line += `\n    Detalle: ${r.description}`;
+        }
+        return line;
+      }).join('\n')
     : 'No hay requisitos registrados aún.';
 
   const entitiesSummary = context.entities.length > 0
     ? context.entities.map((e) => {
         const colNames = Array.isArray(e.columns)
-          ? e.columns.map((c) => `${c.name}:${c.type}${c.isPk || c.is_pk ? ' (PK)' : ''}${c.isFk || c.is_fk ? ' (FK)' : ''}`).join(', ')
+          ? e.columns.map((c) => {
+              let colStr = `${c.name}:${c.type}`;
+              if (c.isPk || c.is_pk) colStr += ' (PK)';
+              if (c.isFk || c.is_fk) {
+                const targetTable = c.referencesTable || c.references_table || 'tabla';
+                const targetCol = c.referencesColumn || c.references_column || 'id';
+                const card = c.cardinality || '1:N';
+                colStr += ` (FK -> ${targetTable}.${targetCol} [${card}])`;
+              }
+              return colStr;
+            }).join(', ')
           : 'sin columnas';
         return `- Tabla "${e.tableName}": [${colNames}]`;
       }).join('\n')
     : 'No hay tablas en el canvas relacional aún.';
 
   const decisionsSummary = context.decisions.length > 0
-    ? context.decisions.map((d) => `- [${d.code}] [${d.status}] ${d.title}`).join('\n')
+    ? context.decisions.map((d) => {
+        let line = `- [${d.code}] [${d.status}] ${d.title}`;
+        if (d.decision) line += ` -> Decisión: ${d.decision}`;
+        return line;
+      }).join('\n')
     : 'No hay actas ADR registradas aún.';
 
+  const okfSummary = context.okfDocuments && context.okfDocuments.length > 0
+    ? context.okfDocuments.map((doc) => {
+        const previewExcerpt = doc.preview ? doc.preview.replace(/\r?\n/g, ' ').slice(0, 150) : 'Sin vista previa';
+        return `- [${doc.documentType}] ${doc.canonicalPath} - "${doc.title}" (Extracto: ${previewExcerpt}...)`;
+      }).join('\n')
+    : 'No hay documentos en la bóveda OKF aún.';
+
   let modeDirective = '';
-  if (actionContext === 'diagrams') {
+  if (actionContext === 'conversation') {
+    modeDirective = `
+---
+[DIRECTIVA PRIORITARIA: MODO ASESORÍA / CONVERSACIÓN PURA ACTIVO]
+El usuario tiene seleccionado el "Modo: Conversación".
+1. Actúa como Consultor y Arquitecto de Software Senior en diálogo técnico puro.
+2. REGLA INVIOLABLE: ESTÁ ESTRICTAMENTE PROHIBIDO INCLUIR EL BLOQUE \`\`\`json:devsculptor-actions.
+3. Responde en prosa técnica clara, estructurada con markdown, analizando pros, contras, trade-offs y proponiendo soluciones conceptuales.`;
+  } else if (actionContext === 'diagrams') {
     modeDirective = `
 ---
 [DIRECTIVA PRIORITARIA: MODO DIAGRAMADO ACTIVO]
@@ -230,19 +278,31 @@ El usuario tiene seleccionado explícitamente el "Modo: Diagramado".
   ]
 }
 \`\`\`
-Esta inclusión es OBLIGATORIA para permitir la inyección interactiva en el proyecto del usuario.`;
+Esta inclusión es OBLIGATORIA para permitir la inyección interactiva en el proyecto del usuario. PROHIBIDO incluir suggestedRequirements, suggestedEntities o suggestedDecisions.`;
   } else if (actionContext === 'canvas') {
     modeDirective = `
 ---
 [DIRECTIVA PRIORITARIA: MODO CANVAS ERD ACTIVO]
 El usuario tiene seleccionado el "Modo: Canvas ERD".
-Genera EXCLUSIVAMENTE 'suggestedEntities' en el bloque json:devsculptor-actions con tablas en 3FN, claves primarias y foráneas explícitas.`;
+Genera EXCLUSIVAMENTE 'suggestedEntities' en el bloque json:devsculptor-actions con tablas en 3FN, claves primarias y foráneas explícitas. PROHIBIDO incluir suggestedRequirements, suggestedDecisions o suggestedDiagrams.`;
   } else if (actionContext === 'requirements') {
     modeDirective = `
 ---
 [DIRECTIVA PRIORITARIA: MODO REQUISITOS ACTIVO]
 El usuario tiene seleccionado el "Modo: Requisitos".
-Genera EXCLUSIVAMENTE 'suggestedRequirements' bajo norma IEEE-830 en el bloque json:devsculptor-actions.`;
+Genera EXCLUSIVAMENTE 'suggestedRequirements' bajo norma IEEE-830 en el bloque json:devsculptor-actions, comenzando por el próximo código correlativo (${context.nextRfCode || 'RF-01'} para funcionales o ${context.nextRnfCode || 'RNF-01'} para no funcionales). PROHIBIDO incluir suggestedEntities, suggestedDecisions o suggestedDiagrams.`;
+  } else if (actionContext === 'adr') {
+    modeDirective = `
+---
+[DIRECTIVA PRIORITARIA: MODO ADR / DECISIONES ARQUITECTÓNICAS ACTIVO]
+El usuario tiene seleccionado el "Modo: Decisiones (ADR)".
+Genera EXCLUSIVAMENTE 'suggestedDecisions' en formato Michael Nygard (contexto, decisión, consecuencias) en estado PROPOSED en el bloque json:devsculptor-actions, comenzando por el próximo código correlativo (${context.nextAdrCode || 'ADR-01'}). PROHIBIDO incluir suggestedRequirements, suggestedEntities o suggestedDiagrams.`;
+  } else if (actionContext === 'code_generator') {
+    modeDirective = `
+---
+[DIRECTIVA PRIORITARIA: MODO GENERADOR DE CÓDIGO / ANDAMIAJE PRE-CÓDIGO ACTIVO]
+El usuario tiene seleccionado el "Modo: Andamiaje de Código".
+Orienta tu respuesta a la estructura de directorios, capas y módulos según el estilo arquitectónico del proyecto (${context.architectureStyle}).`;
   }
 
   return `${SYSTEM_INSTRUCTION_ARCHITECT}
@@ -251,8 +311,14 @@ ${modeDirective}
 ---
 CONTEXTO VIVO DEL PROYECTO ACTUAL (IN-MEMORY RAG):
 - **Nombre del Proyecto:** ${context.projectName}
+- **Organización / Empresa:** ${context.organization || 'No especificada'}
+- **Arquitecto Líder:** ${context.leadArchitect || 'No asignado'}
 - **Estilo Arquitectónico:** ${context.architectureStyle}
 - **Descripción:** ${context.projectDescription || 'Sin descripción previa.'}
+- **Próximos Códigos Correlativos Deterministas:**
+  - Próximo RF: ${context.nextRfCode || 'RF-01'}
+  - Próximo RNF: ${context.nextRnfCode || 'RNF-01'}
+  - Próximo ADR: ${context.nextAdrCode || 'ADR-01'}
 
 ESTADO ACTUAL DE REQUISITOS (IEEE-830):
 ${reqsSummary}
@@ -262,6 +328,9 @@ ${entitiesSummary}
 
 ESTADO ACTUAL DE DECISIONES DE ARQUITECTURA (ADRs):
 ${decisionsSummary}
+
+ESTADO ACTUAL DE LA BÓVEDA DOCUMENTAL (OKF VAULT):
+${okfSummary}
 ---`;
 }
 

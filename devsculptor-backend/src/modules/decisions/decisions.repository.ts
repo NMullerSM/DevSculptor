@@ -5,6 +5,7 @@ import { DecisionStatus } from './decisions.dto';
 export interface ArchitectureDecision {
   id: string;
   project_id: string;
+  code: string | null;
   title: string;
   context: string | null;
   decision: string;
@@ -15,7 +16,7 @@ export interface ArchitectureDecision {
 
 export class DecisionsRepository extends BaseRepository<ArchitectureDecision> {
   constructor() {
-    super('architecture_decisions', ['project_id', 'title', 'context', 'decision', 'status']);
+    super('architecture_decisions', ['project_id', 'code', 'title', 'context', 'decision', 'status']);
   }
 
   async findAllByProjectId(

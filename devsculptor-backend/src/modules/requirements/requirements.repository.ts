@@ -9,12 +9,13 @@ export interface Requirement {
   description: string | null;
   type: 'RF' | 'RNF';
   priority: 'HIGH' | 'MEDIUM' | 'LOW';
+  entity_relation?: string[];
   created_at: Date;
 }
 
 export class RequirementsRepository extends BaseRepository<Requirement> {
   constructor() {
-    super('requirements', ['project_id', 'code', 'title', 'description', 'type', 'priority']);
+    super('requirements', ['project_id', 'code', 'title', 'description', 'type', 'priority', 'entity_relation']);
   }
 
   async findAllByProjectId(

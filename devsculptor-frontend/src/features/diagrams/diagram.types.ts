@@ -93,6 +93,8 @@ export type DiagramSpec = GraphSpec | SequenceSpec;
 export interface ProjectDiagramContext {
   projectId: string;
   projectName?: string;
+  organization?: string;
+  leadArchitect?: string;
   architectureStyle?: string;
   reqsCount: number;
   adrsCount: number;
@@ -100,6 +102,8 @@ export interface ProjectDiagramContext {
   adrsAccepted: number;
   adrsRejected: number;
   tablesCount: number;
+  requirements?: Array<{ code: string; title: string; type: string; priority: string }>;
+  decisions?: Array<{ code: string; title: string; status: string }>;
   tables: Array<{
     id: string;
     name: string;

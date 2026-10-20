@@ -3,6 +3,7 @@ import { z } from 'zod';
 export const decisionStatusEnum = z.enum(['PROPOSED', 'ACCEPTED', 'REJECTED']);
 
 export const createDecisionSchema = z.object({
+  code: z.string().optional(),
   title: z.string().min(1, 'El título es requerido').max(255),
   context: z.string().optional(),
   decision: z.string().min(1, 'La decisión es requerida'),
@@ -11,6 +12,7 @@ export const createDecisionSchema = z.object({
 
 export const updateDecisionSchema = z
   .object({
+    code: z.string().optional(),
     title: z.string().min(1, 'El título no puede estar vacío').max(255).optional(),
     context: z.string().optional(),
     decision: z.string().min(1, 'La decisión no puede estar vacía').optional(),

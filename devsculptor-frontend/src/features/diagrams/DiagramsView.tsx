@@ -3,9 +3,11 @@ import { useProjectStore } from '@/stores/useProjectStore';
 import { requirementsService } from '@/services/requirements.service';
 import { decisionsService } from '@/services/decisions.service';
 import { canvasService } from '@/services/canvas.service';
+import { okfService } from '@/services/okf.service';
 import { Requirement } from '@/types/requirement.types';
 import { Decision } from '@/types/decision.types';
 import { CanvasEntity } from '@/types/canvas.types';
+import { AiSuggestedDiagram } from '@/types/ai.types';
 import { ENTERPRISE_TEMPLATES, EnterpriseTemplateDef } from '@/features/export/okfTemplates';
 import { DIAGRAM_CATALOG } from './catalog/diagramCatalog';
 import { DiagramSpec, ProjectDiagramContext } from './diagram.types';
@@ -33,10 +35,19 @@ type KindFilter = 'all' | 'graph' | 'sequence';
 export const DiagramsView: React.FC<DiagramsViewProps> = ({ projectId }) => {
   const { activeProject, metrics } = useProjectStore();
   const projectSession = useAiChatStore((s) => (projectId ? s.sessions[projectId] : undefined));
-  const injectedAiDiagrams = useMemo(
-    () => projectSession?.injectedDiagrams || [],
-    [projectSession?.injectedDiagrams]
-  );
+  const [persistedAiDiagrams, setPersistedAiDiagrams] = useState<AiSuggestedDiagram[]>([]);
+
+  const injectedAiDiagrams = useMemo(() => {
+    const sessionDiags = projectSession?.injectedDiagrams || [];
+    const combined = [...sessionDiags];
+    persistedAiDiagrams.forEach((pd) => {
+      if (!combined.some((c) => c.title.toLowerCase() === pd.title.toLowerCase())) {
+        combined.push(pd);
+      }
+    });
+    return combined;
+  }, [projectSession?.injectedDiagrams, persistedAiDiagrams]);
+
   const theme = useThemeStore((s) => s.theme);
   const isDark = theme === 'dark';
 
@@ -74,16 +85,34 @@ export const DiagramsView: React.FC<DiagramsViewProps> = ({ projectId }) => {
       setIsLoading(true);
       setError(null);
       try {
-        const [reqs, decs, ents] = await Promise.all([
+        const [reqs, decs, ents, diagramDocs] = await Promise.all([
           requirementsService.getAllByProject(projectId).catch(() => []),
           decisionsService.getAllByProject(projectId).catch(() => []),
           canvasService.getAllByProject(projectId).catch(() => []),
+          okfService.getDocuments(projectId, { documentType: 'DIAGRAM' }).catch(() => []),
         ]);
 
         if (!isMounted) return;
         setRequirements(reqs || []);
         setDecisions(decs || []);
         setEntities(ents || []);
+
+        const loadedDiagrams: AiSuggestedDiagram[] = (diagramDocs || []).map((doc, idx) => {
+          const raw = doc.content_markdown || doc.content_preview || '';
+          const mermaidMatch = raw.match(/```mermaid([\s\S]*?)```/);
+          const mermaidCode = mermaidMatch ? mermaidMatch[1].trim() : raw;
+          const validTypes = ['class', 'sequence', 'er', 'state', 'c4', 'deployment', 'activity', 'flowchart'] as const;
+          const matchedType = validTypes.find((vt) => doc.tags?.includes(vt)) || 'class';
+          return {
+            code: `DIAG-DB-${idx + 1}`,
+            title: doc.title,
+            type: matchedType,
+            format: 'mermaid',
+            mermaidCode,
+            description: doc.content_preview || undefined,
+          };
+        });
+        setPersistedAiDiagrams(loadedDiagrams);
       } catch (err) {
         if (!isMounted) return;
         console.error('Error al sincronizar datos para el generador de diagramas:', err);
@@ -130,6 +159,8 @@ export const DiagramsView: React.FC<DiagramsViewProps> = ({ projectId }) => {
     return {
       projectId,
       projectName: activeProject?.name || 'DevSculptor Architecture',
+      organization: activeProject?.organization || undefined,
+      leadArchitect: activeProject?.lead_architect || undefined,
       architectureStyle: activeProject?.architecture_style,
       reqsCount: requirements.length,
       adrsCount: decisions.length,
@@ -137,6 +168,17 @@ export const DiagramsView: React.FC<DiagramsViewProps> = ({ projectId }) => {
       adrsAccepted: accepted,
       adrsRejected: rejected,
       tablesCount: entities.length,
+      requirements: requirements.map((r) => ({
+        code: r.code,
+        title: r.title,
+        type: r.type,
+        priority: r.priority,
+      })),
+      decisions: decisions.map((d) => ({
+        code: d.code,
+        title: d.title,
+        status: d.status,
+      })),
       tables: entities.map((e) => {
         const cols = e.columns_json || [];
         return {

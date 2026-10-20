@@ -10,6 +10,7 @@ import { decisionsService } from '@/services/decisions.service';
 import { canvasService } from '@/services/canvas.service';
 import { useProjectStore } from '@/stores/useProjectStore';
 import { useCanvasStore } from '@/stores/useCanvasStore';
+import { useAiChatStore } from '@/stores/useAiChatStore';
 import { SqlDialect } from '@/features/canvas/scriptGenerators';
 import { okfService } from '@/services/okf.service';
 import { SyncVaultItemPayload, SyncVaultResponse, ConvertedOkfResponse } from '@/types/okf.types';
@@ -49,14 +50,36 @@ export const okfVaultService = {
     }
 
     // 1. Obtener datos en paralelo
-    const [requirements, decisions, canvasEntities] = await Promise.all([
+    const [requirements, decisions, canvasEntities, diagramDocs] = await Promise.all([
       requirementsService.getAllByProject(projectId).catch(() => []),
       decisionsService.getAllByProject(projectId).catch(() => []),
       // Priorizar entidades del canvasStore si están activas y editadas en memoria
       useCanvasStore.getState().entities.length > 0
         ? Promise.resolve(useCanvasStore.getState().entities)
         : canvasService.getAllByProject(projectId).catch(() => []),
+      okfService.getDocuments(projectId, { documentType: 'DIAGRAM' }).catch(() => []),
     ]);
+
+    // Combinar diagramas de sesión con diagramas persistidos en BD
+    const sessionDiags = useAiChatStore.getState().sessions[projectId]?.injectedDiagrams || [];
+    const combinedDiagrams = [...sessionDiags];
+    (diagramDocs || []).forEach((doc, idx) => {
+      if (!combinedDiagrams.some((d) => d.title.toLowerCase() === doc.title.toLowerCase())) {
+        const raw = doc.content_markdown || doc.content_preview || '';
+        const mermaidMatch = raw.match(/```mermaid([\s\S]*?)```/);
+        const mermaidCode = mermaidMatch ? mermaidMatch[1].trim() : raw;
+        const validTypes = ['class', 'sequence', 'er', 'state', 'c4', 'deployment', 'activity', 'flowchart'] as const;
+        const matchedType = validTypes.find((vt) => doc.tags?.includes(vt)) || 'class';
+        combinedDiagrams.push({
+          code: `DIAG-DB-${idx + 1}`,
+          title: doc.title,
+          type: matchedType,
+          format: 'mermaid',
+          mermaidCode,
+          description: doc.content_preview || undefined,
+        });
+      }
+    });
 
     // 2. Procesar con el motor determinista OKF
     const input: OkfProcessorInput = {
@@ -67,6 +90,7 @@ export const okfVaultService = {
       metrics,
       sqlDialect: dialect,
       customVerifier: verifier || activeProject.lead_architect || undefined,
+      injectedDiagrams: combinedDiagrams,
     };
 
     const documents = await processProjectOkfVault(input);

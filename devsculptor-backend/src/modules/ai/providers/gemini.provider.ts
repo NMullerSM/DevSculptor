@@ -53,7 +53,7 @@ export class GeminiProvider implements IAiProvider {
           contents,
           config: {
             systemInstruction,
-            temperature: options?.temperature ?? 0.4,
+            temperature: options?.temperature ?? 0.15,
           },
         }),
         env.AI_TIMEOUT_MS

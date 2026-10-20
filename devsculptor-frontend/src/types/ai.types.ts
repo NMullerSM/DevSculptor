@@ -6,15 +6,21 @@ export interface AiSuggestedRequirement {
   type: 'RF' | 'RNF';
   priority: 'HIGH' | 'MEDIUM' | 'LOW';
   description?: string;
+  entityRelation?: string[];
 }
 
 export interface AiSuggestedColumn {
   name: string;
   type: string;
   isPrimary?: boolean;
+  isPk?: boolean;
+  isFk?: boolean;
   isNullable?: boolean;
   isUnique?: boolean;
   references?: string;
+  referencesTable?: string;
+  referencesColumn?: string;
+  cardinality?: '1:1' | '1:N' | 'N:M';
   defaultValue?: string;
   description?: string;
 }

@@ -9,6 +9,7 @@ export const okfDocumentTypeSchema = z.enum([
   'KNOWLEDGE_BASE',
   'ARCHITECTURE_PATTERN',
   'DOCUMENT_TEMPLATE',
+  'DIAGRAM',
 ]);
 
 export const freshnessStatusSchema = z.enum(['FRESH', 'STALE', 'DRIFT_DETECTED']);
@@ -20,6 +21,7 @@ export const syncVaultDocumentItemSchema = z.object({
   title: z.string().min(1, 'El título es requerido').max(255),
   tags: z.array(z.string().min(1)).default([]),
   contentPreview: z.string().optional().nullable(),
+  contentMarkdown: z.string().optional().nullable(),
   stateHash: z.string().min(1, 'El stateHash es requerido').max(64),
   freshnessStatus: freshnessStatusSchema.default('FRESH'),
   storagePath: z.string().max(255).optional().nullable(),
