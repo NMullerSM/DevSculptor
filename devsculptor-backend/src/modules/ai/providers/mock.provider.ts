@@ -355,8 +355,7 @@ He evaluado tu consulta técnica para el proyecto **${context.projectName}** (Es
       });
     };
 
-    const conversationHistoryText = messages.map((m) => m.content).join(' ').toLowerCase();
-    const scopeText = `${lower} ${conversationHistoryText} ${(context.projectDescription || '').toLowerCase()} ${context.projectName.toLowerCase()}`;
+    const scopeText = `${lower} ${(context.projectDescription || '').toLowerCase()} ${context.projectName.toLowerCase()}`;
 
     let reply: string;
 
@@ -407,6 +406,20 @@ He evaluado tu consulta técnica para el proyecto **${context.projectName}** (Es
         const reqs = formatReqs(dynamicReqs);
 
         const entities: AiSuggestedEntity[] = [
+          ...(!existingTableNames.includes('products')
+            ? [
+                {
+                  tableName: 'products',
+                  columns: [
+                    { name: 'id', type: 'UUID', isPk: true },
+                    { name: 'name', type: 'VARCHAR(150)', nullable: false },
+                    { name: 'price', type: 'DECIMAL(10,2)', nullable: false },
+                    { name: 'stock', type: 'INTEGER', nullable: false },
+                    { name: 'created_at', type: 'TIMESTAMP', nullable: false },
+                  ],
+                },
+              ]
+            : []),
           {
             tableName: 'orders',
             columns: [

@@ -1,6 +1,8 @@
 export interface AiProjectContext {
   projectName: string;
   projectDescription?: string;
+  organization?: string;
+  leadArchitect?: string;
   architectureStyle: string;
   requirements: Array<{
     code: string;
@@ -8,6 +10,7 @@ export interface AiProjectContext {
     type: string;
     priority: string;
     description?: string;
+    entityRelation?: string[];
   }>;
   entities: Array<{
     tableName: string;
@@ -20,6 +23,16 @@ export interface AiProjectContext {
     context?: string;
     decision?: string;
   }>;
+  okfDocuments?: Array<{
+    canonicalPath: string;
+    title: string;
+    documentType: string;
+    preview: string;
+    contentMarkdown?: string;
+  }>;
+  nextRfCode?: string;
+  nextRnfCode?: string;
+  nextAdrCode?: string;
 }
 
 export interface AiSuggestedRequirement {
@@ -28,6 +41,7 @@ export interface AiSuggestedRequirement {
   type: 'RF' | 'RNF';
   priority: 'HIGH' | 'MEDIUM' | 'LOW';
   description?: string;
+  entityRelation?: string[];
 }
 
 export interface AiSuggestedEntity {

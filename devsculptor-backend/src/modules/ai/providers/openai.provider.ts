@@ -68,7 +68,7 @@ export class OpenAiProvider implements IAiProvider {
         body: JSON.stringify({
           model: this.model,
           messages: formattedMessages,
-          temperature: options?.temperature ?? 0.4,
+          temperature: options?.temperature ?? 0.15,
         }),
       });
 

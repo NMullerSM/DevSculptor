@@ -27,7 +27,8 @@ export type OkfDocumentType =
   | 'REQUIREMENT_SPEC'
   | 'DECISION_ADR'
   | 'DATABASE_SCHEMA'
-  | 'AGENT_SKILL';
+  | 'AGENT_SKILL'
+  | 'DIAGRAM';
 
 export type OkfFreshnessStatus = 'FRESH' | 'STALE' | 'DRIFT_DETECTED';
 
@@ -79,6 +80,7 @@ export interface OkfProcessorInput {
   metrics: ProjectMetrics | null;
   sqlDialect?: SqlDialect;
   customVerifier?: string;
+  injectedDiagrams?: Array<{ code: string; title: string; type: string; mermaidCode: string; description?: string }>;
 }
 
 /**
@@ -636,6 +638,57 @@ export async function processProjectOkfVault(input: OkfProcessorInput): Promise<
     stateHash: mermaidHash,
     freshnessStatus: 'FRESH',
   });
+
+  // =========================================================================
+  // 5.5. Diagramas de Arquitectura Asistidos por IA -> /documentation/diagrams/
+  // =========================================================================
+  if (input.injectedDiagrams && input.injectedDiagrams.length > 0) {
+    for (const diag of input.injectedDiagrams) {
+      const slug = sanitizeCanonicalSlug(diag.title || diag.code);
+      const filename = `${diag.code}_${slug}.md`;
+      const relPath = `documentation/diagrams/${filename}`;
+
+      let diagBody = `# ${diag.title} (${diag.code})\n\n`;
+      diagBody += `* **Proyecto:** ${project.name}\n`;
+      diagBody += `* **Tipo de Diagrama:** \`${diag.type}\`\n`;
+      diagBody += `* **Formato:** \`Mermaid UML\`\n\n`;
+      if (diag.description) {
+        diagBody += `> ${diag.description}\n\n`;
+      }
+      diagBody += `\`\`\`mermaid\n${diag.mermaidCode}\n\`\`\`\n`;
+
+      const diagHash = await computeSha256(diagBody);
+      const diagHeader: OkfMetadataHeader = {
+        okf_spec: '1.0',
+        document_id: `DOC-DIAG-${diag.code}`,
+        document_type: 'DIAGRAM',
+        project_id: project.id,
+        project_name: project.name,
+        title: `${diag.code}: ${diag.title}`,
+        canonical_path: relPath,
+        tags: ['okf', 'diagram', 'mermaid', diag.type, 'ai-generated'],
+        freshness: {
+          status: 'FRESH',
+          last_verified: now,
+          state_hash: diagHash,
+          verified_by: verifier,
+        },
+      };
+
+      documents.push({
+        id: diagHeader.document_id,
+        path: relPath,
+        filename,
+        category: 'documentation',
+        description: `Diagrama de arquitectura ${diag.type}: ${diag.title}`,
+        content: `${formatYamlFrontmatter(diagHeader)}${diagBody}`,
+        header: diagHeader,
+        rawBody: diagBody,
+        stateHash: diagHash,
+        freshnessStatus: 'FRESH',
+      });
+    }
+  }
 
   // =========================================================================
   // 6. Skill Metodológico -> /skills/devsculptor-architect.md

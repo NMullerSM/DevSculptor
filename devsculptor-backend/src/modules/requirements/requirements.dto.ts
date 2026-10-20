@@ -15,6 +15,7 @@ export const createRequirementSchema = z.object({
     errorMap: () => ({ message: "El tipo debe ser 'RF' o 'RNF'" }),
   }),
   priority: z.enum(['HIGH', 'MEDIUM', 'LOW']).default('MEDIUM'),
+  entity_relation: z.array(z.string()).optional().default([]),
 });
 
 export const updateRequirementSchema = z
@@ -30,6 +31,7 @@ export const updateRequirementSchema = z
     description: z.string().optional(),
     type: z.enum(['RF', 'RNF']).optional(),
     priority: z.enum(['HIGH', 'MEDIUM', 'LOW']).optional(),
+    entity_relation: z.array(z.string()).optional(),
   })
   .refine(
     (data) => Object.keys(data).length > 0,

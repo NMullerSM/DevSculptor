@@ -37,6 +37,7 @@ export class RequirementsService {
       description: dto.description?.trim() || null,
       type: dto.type,
       priority: dto.priority,
+      entity_relation: dto.entity_relation || [],
     });
   }
 
@@ -88,6 +89,7 @@ export class RequirementsService {
       description: dto.description !== undefined ? dto.description.trim() || null : undefined,
       type: dto.type,
       priority: dto.priority,
+      entity_relation: dto.entity_relation,
     });
 
     if (!updated) {

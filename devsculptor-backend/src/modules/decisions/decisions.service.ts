@@ -23,8 +23,22 @@ export class DecisionsService {
   ): Promise<ArchitectureDecision> {
     await this.projectsService.findById(userId, projectId);
 
+    let code = dto.code ? dto.code.toUpperCase().trim() : undefined;
+    if (!code) {
+      const existing = await this.decisionsRepository.findAllByProjectId(projectId, undefined, { limit: 100 });
+      let maxNum = 0;
+      for (const d of existing.data) {
+        if (d.code) {
+          const m = d.code.match(/\d+/);
+          if (m) maxNum = Math.max(maxNum, parseInt(m[0], 10));
+        }
+      }
+      code = `ADR-${String(maxNum + 1).padStart(3, '0')}`;
+    }
+
     return this.decisionsRepository.create({
       project_id: projectId,
+      code,
       title: dto.title.trim(),
       context: dto.context?.trim() || null,
       decision: dto.decision.trim(),
@@ -64,6 +78,7 @@ export class DecisionsService {
     await this.findById(userId, projectId, decisionId);
 
     const updated = await this.decisionsRepository.update(decisionId, {
+      code: dto.code ? dto.code.toUpperCase().trim() : undefined,
       title: dto.title?.trim(),
       context: dto.context !== undefined ? dto.context.trim() || null : undefined,
       decision: dto.decision?.trim(),

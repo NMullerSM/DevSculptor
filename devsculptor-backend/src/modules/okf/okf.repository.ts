@@ -11,6 +11,7 @@ export interface OkfDocumentRecord {
   title: string;
   tags: string[];
   content_preview: string | null;
+  content_markdown?: string | null;
   state_hash: string;
   freshness_status: 'FRESH' | 'STALE' | 'DRIFT_DETECTED';
   storage_path: string | null;
@@ -37,6 +38,7 @@ export class OkfRepository extends BaseRepository<OkfDocumentRecord> {
       'title',
       'tags',
       'content_preview',
+      'content_markdown',
       'state_hash',
       'freshness_status',
       'storage_path',
@@ -57,6 +59,7 @@ export class OkfRepository extends BaseRepository<OkfDocumentRecord> {
       title: string;
       tags: string[];
       content_preview?: string | null;
+      content_markdown?: string | null;
       state_hash: string;
       freshness_status?: string;
       storage_path?: string | null;
@@ -75,19 +78,21 @@ export class OkfRepository extends BaseRepository<OkfDocumentRecord> {
         title,
         tags,
         content_preview,
+        content_markdown,
         state_hash,
         freshness_status,
         storage_path,
         verified_by,
         last_verified_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP)
       ON CONFLICT (project_id, canonical_path) DO UPDATE SET
         document_id = EXCLUDED.document_id,
         document_type = EXCLUDED.document_type,
         title = EXCLUDED.title,
         tags = EXCLUDED.tags,
         content_preview = EXCLUDED.content_preview,
+        content_markdown = COALESCE(EXCLUDED.content_markdown, okf_documents.content_markdown),
         state_hash = EXCLUDED.state_hash,
         freshness_status = EXCLUDED.freshness_status,
         storage_path = COALESCE(EXCLUDED.storage_path, okf_documents.storage_path),
@@ -104,6 +109,7 @@ export class OkfRepository extends BaseRepository<OkfDocumentRecord> {
       doc.title,
       doc.tags,
       doc.content_preview || null,
+      doc.content_markdown || null,
       doc.state_hash,
       doc.freshness_status || 'FRESH',
       doc.storage_path || null,
@@ -126,6 +132,7 @@ export class OkfRepository extends BaseRepository<OkfDocumentRecord> {
       title: string;
       tags: string[];
       content_preview?: string | null;
+      content_markdown?: string | null;
       state_hash: string;
       freshness_status?: string;
       storage_path?: string | null;

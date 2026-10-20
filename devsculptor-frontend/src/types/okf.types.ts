@@ -6,7 +6,8 @@ export type OkfDocumentType =
   | 'AGENT_SKILL'
   | 'KNOWLEDGE_BASE'
   | 'ARCHITECTURE_PATTERN'
-  | 'DOCUMENT_TEMPLATE';
+  | 'DOCUMENT_TEMPLATE'
+  | 'DIAGRAM';
 
 export type OkfFreshnessStatus = 'FRESH' | 'STALE' | 'DRIFT_DETECTED';
 
@@ -19,6 +20,7 @@ export interface OkfDocumentRecord {
   title: string;
   tags: string[];
   content_preview: string | null;
+  content_markdown?: string | null;
   state_hash: string;
   freshness_status: OkfFreshnessStatus;
   storage_path: string | null;
@@ -70,6 +72,7 @@ export interface SyncVaultItemPayload {
   title: string;
   tags: string[];
   contentPreview?: string | null;
+  contentMarkdown?: string | null;
   stateHash: string;
   freshnessStatus: OkfFreshnessStatus;
   storagePath?: string | null;

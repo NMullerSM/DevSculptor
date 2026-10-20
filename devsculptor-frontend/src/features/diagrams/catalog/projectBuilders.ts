@@ -88,7 +88,7 @@ export function buildProjectUmlClassesSpec(ctx: ProjectDiagramContext): GraphSpe
     if (tbl.foreignKeys && tbl.foreignKeys.length > 0) {
       tbl.foreignKeys.forEach((fk, fkIdx) => {
         const target = tables.find(
-          (t) => t.id === fk.targetTable || t.name === fk.targetTable
+          (t) => t.id === fk.targetTable || t.name.toLowerCase() === fk.targetTable?.toLowerCase()
         );
         if (target) {
           edges.push({
@@ -104,20 +104,6 @@ export function buildProjectUmlClassesSpec(ctx: ProjectDiagramContext): GraphSpe
       });
     }
   });
-
-  if (edges.length === 0 && tables.length > 1) {
-    for (let i = 0; i < tables.length - 1; i++) {
-      edges.push({
-        id: `assoc-auto-${i}`,
-        from: tables[i].id || `cls-${tables[i].name}`,
-        to: tables[i + 1].id || `cls-${tables[i + 1].name}`,
-        label: 'Asociación 1:N',
-        protocol: 'UML Association',
-        animated: true,
-        variant: 'default',
-      });
-    }
-  }
 
   return {
     id: 'project-uml-classes',
@@ -154,56 +140,56 @@ export function buildProjectModularPackagesSpec(ctx: ProjectDiagramContext): Gra
       {
         id: 'pkg-presentation',
         label: 'package presentation',
-        subtitle: 'Routers, Controllers, DTOs',
+        subtitle: `${ctx.projectName || 'App'} Routers, Controllers, DTOs`,
         group: 'frontend',
         badge: 'PRESENTATION',
         status: 'ok',
         layer: 0,
-        description: 'Manejo de rutas HTTP, endpoints de API y serialización.',
+        description: `Manejo de rutas HTTP, endpoints de API y serialización para ${ctx.projectName || 'el sistema'}.`,
         metrics: [
+          { label: 'Organización', value: ctx.organization || 'Enterprise' },
           { label: 'Capa', value: 'API Gateway' },
-          { label: 'Acoplamiento', value: 'Bajo' },
         ],
       },
       {
         id: 'pkg-core-services',
         label: 'package core.services',
-        subtitle: 'Business Services, Use Cases',
+        subtitle: ctx.tables?.[0]?.name ? `${ctx.tables[0].name.toUpperCase()} & Business Services` : 'Business Services, Use Cases',
         group: 'backend',
         badge: 'APPLICATION',
         status: 'ok',
         layer: 1,
         description: 'Coordinación de reglas de negocio, transacciones y lógica de dominio.',
         metrics: [
-          { label: 'Servicios', value: 'Activos' },
+          { label: 'Requisitos', value: `${ctx.reqsCount} RF/RNF` },
           { label: 'Testing', value: 'Unit / Integration' },
         ],
       },
       {
         id: 'pkg-domain-models',
         label: 'package domain.models',
-        subtitle: 'Entities, Value Objects',
+        subtitle: ctx.tables?.length ? ctx.tables.slice(0, 3).map((t) => t.name).join(', ') : 'Entities, Value Objects',
         group: 'governance',
         badge: 'DOMAIN',
         status: 'ok',
         layer: 2,
         description: 'Entidades puras del dominio de negocio sin dependencias externas.',
         metrics: [
-          { label: 'Pureza', value: 'TypeScript Puro' },
-          { label: 'Reglas', value: 'Invariantes' },
+          { label: 'Entidades', value: `${ctx.tablesCount} 3FN` },
+          { label: 'Pureza', value: 'TypeScript Strict' },
         ],
       },
       {
         id: 'pkg-infrastructure',
         label: 'package infrastructure',
-        subtitle: 'Database Repositories, SDKs',
+        subtitle: `PostgreSQL Repositories (${ctx.tablesCount} tablas)`,
         group: 'database',
         badge: 'INFRA',
         status: 'ok',
         layer: 3,
         description: 'Acceso a datos PostgreSQL, almacenamiento y clientes de red.',
         metrics: [
-          { label: 'Persistencia', value: 'PostgreSQL' },
+          { label: 'ADRs', value: `${ctx.adrsAccepted} Aceptados` },
           { label: 'Seguridad', value: 'RLS Policies' },
         ],
       },
@@ -244,10 +230,14 @@ export function buildProjectModularPackagesSpec(ctx: ProjectDiagramContext): Gra
  * 3. Diagrama de Secuencia E2E (OKF-006 / Interacción de Componentes)
  */
 export function buildProjectSequenceE2eSpec(ctx: ProjectDiagramContext): SequenceSpec {
+  const mainEntity = ctx.tables?.[0]?.name || 'resource';
+  const entityLabel = mainEntity.charAt(0).toUpperCase() + mainEntity.slice(1);
+  const primaryReq = ctx.requirements?.[0]?.title || `Gestión transaccional de ${mainEntity}`;
+
   return {
     id: 'project-sequence-e2e',
     title: `Diagrama de Secuencia E2E: ${ctx.projectName || 'Proyecto'}`,
-    subtitle: 'Formalizado en OKF-006-UML-SEQUENCE (Simulación Interactiva Paso a Paso)',
+    subtitle: `Formalizado en OKF-006-UML-SEQUENCE (${primaryReq})`,
     description:
       'Interacción temporal completa: Solicitud de cliente, intermediación de API, validación de negocio y persistencia ACID.',
     kind: 'sequence',
@@ -258,21 +248,21 @@ export function buildProjectSequenceE2eSpec(ctx: ProjectDiagramContext): Sequenc
       {
         id: 'seq-actor',
         label: 'Cliente / Navegador',
-        subtitle: 'SPA React 18',
+        subtitle: `${ctx.projectName || 'App'} Web Client`,
         group: 'client',
         icon: 'person',
       },
       {
         id: 'seq-api',
         label: 'API Gateway',
-        subtitle: 'Express Controllers',
+        subtitle: ctx.architectureStyle || 'Express Router',
         group: 'frontend',
         icon: 'dns',
       },
       {
         id: 'seq-service',
         label: 'Capa de Negocio',
-        subtitle: 'Services / UseCases',
+        subtitle: `${entityLabel}Service`,
         group: 'backend',
         icon: 'settings_suggest',
       },
@@ -289,7 +279,7 @@ export function buildProjectSequenceE2eSpec(ctx: ProjectDiagramContext): Sequenc
         id: 'sm-1',
         from: 'seq-actor',
         to: 'seq-api',
-        label: '1. HTTPS POST /api/v1/resource { data }',
+        label: `1. HTTPS POST /api/v1/${mainEntity} { data }`,
         detail: 'Headers: Authorization Bearer JWT',
         type: 'sync',
       },
@@ -305,7 +295,7 @@ export function buildProjectSequenceE2eSpec(ctx: ProjectDiagramContext): Sequenc
         id: 'sm-3',
         from: 'seq-api',
         to: 'seq-service',
-        label: '3. executeUseCase(validatedPayload, userContext)',
+        label: `3. executeCommand(${primaryReq})`,
         detail: 'In-Memory Service Call',
         type: 'sync',
       },
@@ -313,7 +303,7 @@ export function buildProjectSequenceE2eSpec(ctx: ProjectDiagramContext): Sequenc
         id: 'sm-4',
         from: 'seq-service',
         to: 'seq-db',
-        label: '4. BEGIN Transaction; INSERT INTO table (...)',
+        label: `4. BEGIN Transaction; INSERT INTO ${mainEntity} (...)`,
         detail: 'SQL Transaccional con RLS Context',
         type: 'sync',
       },
@@ -452,19 +442,19 @@ export function buildProjectC4ComponentsSpec(ctx: ProjectDiagramContext): GraphS
     nodes: [
       {
         id: 'c4-spa',
-        label: 'Componente: UI Client',
+        label: `Componente: UI Client (${ctx.projectName || 'App'})`,
         subtitle: 'React UI Views & Hooks',
         group: 'frontend',
         badge: 'SPA UI',
         status: 'ok',
         layer: 0,
-        description: 'Vistas interactivas, componentes React y gestión de estado.',
+        description: `Vistas interactivas, componentes React y gestión de estado para ${ctx.projectName || 'el sistema'}.`,
         metrics: [{ label: 'Render', value: 'Vite / React' }],
       },
       {
         id: 'c4-api-gateway',
         label: 'Componente: API Router',
-        subtitle: 'Express Route Handlers',
+        subtitle: ctx.architectureStyle || 'Express Route Handlers',
         group: 'backend',
         badge: 'GATEWAY',
         status: 'ok',
@@ -475,7 +465,7 @@ export function buildProjectC4ComponentsSpec(ctx: ProjectDiagramContext): GraphS
       {
         id: 'c4-domain-services',
         label: 'Componente: Domain Service',
-        subtitle: 'Business Rules & Logic',
+        subtitle: ctx.tables?.[0]?.name ? `${ctx.tables[0].name.toUpperCase()} Domain Service` : 'Business Rules & Logic',
         group: 'governance',
         badge: 'DOMAIN',
         status: 'ok',
@@ -486,7 +476,7 @@ export function buildProjectC4ComponentsSpec(ctx: ProjectDiagramContext): GraphS
       {
         id: 'c4-database',
         label: 'Componente: DB Repository',
-        subtitle: 'PostgreSQL Relational DB',
+        subtitle: `PostgreSQL (${ctx.tablesCount} tablas 3FN)`,
         group: 'database',
         badge: 'PERSISTENCE',
         status: 'ok',
@@ -534,7 +524,7 @@ export function buildProjectCloudDeploymentSpec(ctx: ProjectDiagramContext): Gra
   return {
     id: 'project-cloud-deployment',
     title: `Diagrama de Despliegue en la Nube: ${ctx.projectName || 'Proyecto'}`,
-    subtitle: 'Formalizado en OKF-009-UML-DEPLOYMENT (Nodos de Infraestructura)',
+    subtitle: `Formalizado en OKF-009-UML-DEPLOYMENT (${ctx.organization || 'DevSculptor Enterprise'})`,
     description:
       'Topología física y lógica de los nodos de cómputo, redes de distribución de contenido y persistencia en la nube.',
     kind: 'graph',
@@ -545,7 +535,7 @@ export function buildProjectCloudDeploymentSpec(ctx: ProjectDiagramContext): Gra
       {
         id: 'node-cdn',
         label: 'Node: Global Edge CDN',
-        subtitle: 'Vercel Edge Network / Cloudflare',
+        subtitle: `${ctx.projectName || 'App'} Edge Network / Cloudflare`,
         group: 'client',
         badge: 'EDGE CDN',
         status: 'ok',
@@ -556,7 +546,7 @@ export function buildProjectCloudDeploymentSpec(ctx: ProjectDiagramContext): Gra
       {
         id: 'node-app-runner',
         label: 'Node: API Container',
-        subtitle: 'Node.js 20 LTS Runtime',
+        subtitle: `${ctx.architectureStyle || 'Node.js 20 LTS Runtime'}`,
         group: 'backend',
         badge: 'APP SERVER',
         status: 'ok',
@@ -567,7 +557,7 @@ export function buildProjectCloudDeploymentSpec(ctx: ProjectDiagramContext): Gra
       {
         id: 'node-db-cluster',
         label: 'Node: PostgreSQL Cluster',
-        subtitle: 'Managed Supabase Cloud DB',
+        subtitle: `PostgreSQL Cluster (${ctx.tablesCount} tablas 3FN)`,
         group: 'database',
         badge: 'DATABASE',
         status: 'ok',
@@ -578,7 +568,7 @@ export function buildProjectCloudDeploymentSpec(ctx: ProjectDiagramContext): Gra
       {
         id: 'node-vault-storage',
         label: 'Node: Object Storage',
-        subtitle: 'Encrypted S3 / Vault Storage',
+        subtitle: `Encrypted S3 / ${ctx.organization || 'DevSculptor'} Vault`,
         group: 'security',
         badge: 'VAULT S3',
         status: 'ok',
@@ -705,7 +695,7 @@ export function buildProjectErdMapSpec(ctx: ProjectDiagramContext): GraphSpec {
     if (tbl.foreignKeys && tbl.foreignKeys.length > 0) {
       tbl.foreignKeys.forEach((fk, fkIdx) => {
         const targetTbl = tablesToRender.find(
-          (t) => t.id === fk.targetTable || t.name === fk.targetTable
+          (t) => t.id === fk.targetTable || t.name.toLowerCase() === fk.targetTable?.toLowerCase()
         );
         if (targetTbl) {
           const targetId = targetTbl.id || `tbl-${targetTbl.name}`;
@@ -722,22 +712,6 @@ export function buildProjectErdMapSpec(ctx: ProjectDiagramContext): GraphSpec {
       });
     }
   });
-
-  if (edges.length === 0 && tablesToRender.length > 1) {
-    for (let i = 0; i < tablesToRender.length - 1; i++) {
-      const src = tablesToRender[i].id || `tbl-${tablesToRender[i].name}`;
-      const dst = tablesToRender[i + 1].id || `tbl-${tablesToRender[i + 1].name}`;
-      edges.push({
-        id: `fk-auto-${i}`,
-        from: src,
-        to: dst,
-        label: 'Relación 1:N',
-        protocol: 'Foreign Key',
-        animated: true,
-        variant: 'default',
-      });
-    }
-  }
 
   return {
     id: 'project-erd-map',

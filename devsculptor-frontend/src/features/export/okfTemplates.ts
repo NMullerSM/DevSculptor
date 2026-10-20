@@ -26,6 +26,14 @@ export interface EnterpriseTemplateDef {
   };
 }
 
+const toPascalCase = (name: string): string => {
+  return name
+    .split(/[-_\s]/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join('');
+};
+
 const buildYamlFrontmatter = (params: {
   template_id: string;
   canonical_path: string;
@@ -316,11 +324,11 @@ ${decisions.map((d) => `- **${d.title}** (Estado: \`${d.status}\`)`).join('\n')}
 
       let mermaid = 'classDiagram\n';
       entities.forEach((e) => {
-        const className = e.table_name.charAt(0).toUpperCase() + e.table_name.slice(1);
+        const className = toPascalCase(e.table_name);
         mermaid += `  class ${className} {\n`;
         (e.columns_json || []).forEach((col) => {
           const colRecord = col as unknown as Record<string, unknown>;
-          const type = (col.type || 'string').replace(/\(.*\)/, '');
+          const type = (col.type || 'string').replace(/\(.*\)/, '').replace(/\s+/g, '_');
           const isPk = Boolean(colRecord.isPk || colRecord.is_pk);
           mermaid += `    +${type} ${col.name} ${isPk ? '[PK]' : ''}\n`;
         });
@@ -330,6 +338,29 @@ ${decisions.map((d) => `- **${d.title}** (Estado: \`${d.status}\`)`).join('\n')}
       if (entities.length === 0) {
         mermaid += `  class SystemEntity {\n    +string id\n    +string name\n  }\n`;
       }
+
+      // Conexiones de Claves Foráneas (FK) UML
+      const renderedEdges = new Set<string>();
+      entities.forEach((child) => {
+        const childClass = toPascalCase(child.table_name);
+        (child.columns_json || []).forEach((col) => {
+          const colRecord = col as unknown as Record<string, unknown>;
+          const targetName = (col.referencesTable || col.references_table || (colRecord.referencesTable as string) || (colRecord.references_table as string));
+          if (targetName) {
+            const parent = entities.find(
+              (p) => p.table_name.toLowerCase() === targetName.toLowerCase()
+            );
+            if (parent) {
+              const parentClass = toPascalCase(parent.table_name);
+              const edgeKey = `${parentClass}->${childClass}:${col.name}`;
+              if (!renderedEdges.has(edgeKey)) {
+                renderedEdges.add(edgeKey);
+                mermaid += `  ${parentClass} "1" --> "*" ${childClass} : "${col.name}"\n`;
+              }
+            }
+          }
+        });
+      });
 
       const body = `# Diagrama de Clases del Dominio\n\n**Proyecto:** ${project.name}\n\n\`\`\`mermaid\n${mermaid}\`\`\`\n`;
       return { markdown: body, yamlFrontmatter: frontmatter, fullContent: `${frontmatter}\n\n${body}` };
@@ -348,7 +379,7 @@ ${decisions.map((d) => `- **${d.title}** (Estado: \`${d.status}\`)`).join('\n')}
     tags: ['uml', 'packages', 'modular-monolith', 'mermaid'],
     description: 'Estructura en capas y dependencias direccionales de los módulos del monolito modular.',
     aiHooks: ['architecture.modules', 'layering'],
-    generate: (project) => {
+    generate: (project, requirements, entities) => {
       const frontmatter = buildYamlFrontmatter({
         template_id: 'TPL-DIAG-PKG-006',
         canonical_path: 'architecture/diagrams/package-diagram.md',
@@ -360,47 +391,53 @@ ${decisions.map((d) => `- **${d.title}** (Estado: \`${d.status}\`)`).join('\n')}
         tags: ['packages', 'monolith', 'mermaid'],
       });
 
+      const style = project.architecture_style || 'Monolito Modular Layered MVC';
+      const mainEntity = entities[0]?.table_name || 'core';
+      const secondaryEntity = entities[1]?.table_name || 'domain';
+      const primaryReq = requirements[0]?.code ? `${requirements[0].code} (${requirements[0].title})` : 'Casos de Uso de Negocio';
+
       const body = `# Diagrama de Paquetes y Módulos de Arquitectura
 
-**Proyecto:** ${project.name}
+**Proyecto:** ${project.name}  
+**Organización:** ${project.organization || 'DevSculptor Enterprise'}  
+**Estilo Arquitectónico:** ${style}  
 
 \`\`\`mermaid
 flowchart TB
-  subgraph Frontend["SPA React + Vite Client"]
-    UI["Vistas & Componentes Apple Glass"]
-    Stores["Zustand Stores (Auth, Canvas, AI, Settings)"]
-    Services["Axios API Services"]
-    UI --> Stores
-    Stores --> Services
+  subgraph Presentation["Capa de Presentación / API"]
+    UI["SPA Client: ${project.name} Web Views"]
+    Controllers["HTTP Controllers & Routers (/api/v1)"]
+    Middlewares["Validación Zod & Autenticación JWT"]
+    UI -->|HTTPS / REST| Controllers
+    Controllers --> Middlewares
   end
 
-  subgraph Backend["Monolito Modular Node.js / Express"]
-    subgraph Middlewares["Cadena de Responsabilidad"]
-      AuthMid["authenticate (JWT)"]
-      ValMid["validateRequest (Zod)"]
-      ReqLog["requestLogger (Pino)"]
-    end
-
-    subgraph Modules["Módulos de Dominio"]
-      AuthMod["Auth (TOTP MFA, Bcrypt)"]
-      ProjMod["Projects & Governance"]
-      CanvasMod["Canvas ERD & DDL Engine"]
-      AiMod["AI Copilot & BYOK Proxy"]
-      OkfMod["OKF Vault & Packaging"]
-    end
-
-    subgraph Infrastructure["Persistencia & Cloud"]
-      PgPool["PostgreSQL Native pg.Pool"]
-      SupabaseStorage["Bóveda OKF Storage Bucket"]
-      AiVendors["Google GenAI / OpenRouter API"]
-    end
+  subgraph Application["Capa de Aplicación & Servicios"]
+    Svc1["${toPascalCase(mainEntity)}Service"]
+    Svc2["${toPascalCase(secondaryEntity)}Service"]
+    UseCases["Casos de Uso: ${primaryReq}"]
+    Middlewares --> Svc1
+    Middlewares --> Svc2
+    Svc1 --> UseCases
   end
 
-  Services -->|HTTP / REST| Middlewares
-  Middlewares --> Modules
-  Modules --> PgPool
-  OkfMod --> SupabaseStorage
-  AiMod --> AiVendors
+  subgraph Domain["Capa de Dominio Puro"]
+    Entities["Entidades de Negocio (${entities.length} Modeladas)"]
+    Invariants["Reglas de Invarianza & Tipos TypeScript"]
+    UseCases --> Entities
+    Entities --> Invariants
+  end
+
+  subgraph Infrastructure["Capa de Infraestructura & Persistencia"]
+    PgRepo["PostgreSQL Repositories (RLS + Transacciones)"]
+    Storage["Bóveda de Archivos & Object Storage"]
+    ExternalAPIs["Integraciones y Proveedores Externos"]
+  end
+
+  Svc1 --> PgRepo
+  Svc2 --> PgRepo
+  Svc1 --> Storage
+  Svc2 --> ExternalAPIs
 \`\`\`
 `;
       return { markdown: body, yamlFrontmatter: frontmatter, fullContent: `${frontmatter}\n\n${body}` };
@@ -416,10 +453,10 @@ flowchart TB
     category: 'diagrams',
     standard: 'UML 2.5 / Mermaid',
     canonicalPath: 'architecture/diagrams/sequence-diagram.md',
-    tags: ['uml', 'sequence-diagram', 'interactions', 'mfa', 'copilot'],
-    description: 'Interacciones temporales entre cliente, API, base de datos y proveedores de IA.',
-    aiHooks: ['auth.mfa_flow', 'ai.prompt_flow'],
-    generate: (project) => {
+    tags: ['uml', 'sequence-diagram', 'interactions'],
+    description: 'Interacciones temporales entre cliente, API, base de datos y servicios de dominio.',
+    aiHooks: ['sequence.flows'],
+    generate: (project, requirements, entities, decisions) => {
       const frontmatter = buildYamlFrontmatter({
         template_id: 'TPL-DIAG-SEQ-007',
         canonical_path: 'architecture/diagrams/sequence-diagram.md',
@@ -431,54 +468,60 @@ flowchart TB
         tags: ['sequence', 'interactions', 'mermaid'],
       });
 
+      const primaryReq = requirements.find((r) => r.type === 'RF' && r.priority === 'HIGH') || requirements[0] || {
+        code: 'RF-001',
+        title: 'Operación Transaccional Principal',
+      };
+      const mainEntity = entities[0]?.table_name || 'registro';
+      const entityPascal = toPascalCase(mainEntity);
+      const childEntity = entities[1]?.table_name;
+      const childPascal = childEntity ? toPascalCase(childEntity) : null;
+      const adrTitle = decisions[0]?.title || 'Aislamiento Transaccional y Seguridad RLS';
+
       const body = `# Diagramas de Secuencia — Flujos Críticos
 
-**Proyecto:** ${project.name}
+**Proyecto:** ${project.name}  
+**Requerimiento Focal:** ${primaryReq.code} — ${primaryReq.title}  
 
-### Flujo 1: Consulta al Copiloto de Arquitectura con Aislamiento BYOK
+### Flujo 1: Ejecución Transaccional E2E (${primaryReq.code})
 \`\`\`mermaid
 sequenceDiagram
   autonumber
-  actor User as Arquitecto
-  participant UI as ChatConsultantView
-  participant Client as apiClient (Interceptor)
-  participant API as AiController & Service
-  participant DB as PostgreSQL (Contexto Vivo)
-  participant AI as Proveedor IA (BYOK / Gemini)
+  actor User as Usuario / Cliente
+  participant UI as ${project.name} Web UI
+  participant API as API Router (/api/v1/${mainEntity})
+  participant Service as ${entityPascal}Service
+  participant DB as PostgreSQL (${mainEntity})
 
-  User->>UI: Envía consulta arquitectónica
-  UI->>Client: POST /projects/:id/ai/chat
-  Client->>Client: Inyecta X-User-Ai-Key & X-User-Ai-Model (Zero-Retention)
-  Client->>API: HTTP Request con payload y cabeceras
-  API->>DB: getProjectContext(requirements, entities, adrs)
-  DB-->>API: Retorna contexto consolidado
-  API->>AI: generateChat(messages + context)
-  AI-->>API: Retorna cleanText + devsculptor-actions
-  API-->>Client: Envelope uniforme { success: true, data: result }
-  Client-->>UI: Renderiza respuesta y botones de inyección
-  UI-->>User: Muestra recomendación arquitectónica
+  User->>UI: Solicita: ${primaryReq.title}
+  UI->>API: POST /api/v1/${mainEntity} { payload } [Bearer JWT]
+  API->>API: Valida esquema con Zod (Payload Sanitization)
+  API->>Service: dispatchCommand(${entityPascal}Command)
+  Service->>DB: BEGIN TRANSACTION (SERIALIZABLE)
+  Service->>DB: INSERT INTO ${mainEntity} (...) RETURNING id
+${childPascal ? `  Service->>DB: INSERT INTO ${childEntity} (parent_id, ...) \n` : ''}  DB-->>Service: Registro creado con ID persistido
+  Service->>DB: COMMIT TRANSACTION
+  Service-->>API: ${entityPascal}DTO Enriquecido
+  API-->>UI: HTTP 201 Created { success: true, data }
+  UI-->>User: Operación completada y confirmada en pantalla
 \`\`\`
 
-### Flujo 2: Autenticación con Segundo Factor (MFA TOTP RFC 6238)
+### Flujo 2: Gobernanza y Auditoría de Seguridad (${decisions[0]?.code || 'ADR-001'})
 \`\`\`mermaid
 sequenceDiagram
   autonumber
-  actor User as Usuario
-  participant Portal as AuthPortal
-  participant AuthSvc as AuthService (Backend)
-  participant DB as PostgreSQL
+  actor Arch as Arquitecto / Administrador
+  participant Portal as Admin Portal (${project.name})
+  participant AuthSvc as Security & Audit Service
+  participant DB as PostgreSQL (RLS & Audit Logs)
 
-  User->>Portal: Ingresa email y contraseña
-  Portal->>AuthSvc: POST /auth/login
-  AuthSvc->>DB: Verifica hash Bcrypt
-  DB-->>AuthSvc: Usuario con mfa_enabled = true
-  AuthSvc-->>Portal: 200 OK { mfa_required: true, temp_token }
-  Portal->>User: Solicita código de 6 dígitos Authenticator
-  User->>Portal: Ingresa código OTP
-  Portal->>AuthSvc: POST /auth/mfa/verify-login (temp_token + code)
-  AuthSvc->>AuthSvc: Valida ventana TOTP (RFC 6238)
-  AuthSvc-->>Portal: 200 OK { token: JWT_ACCESS, user }
-  Portal->>User: Acceso concedido al Estudio
+  Arch->>Portal: Ratifica decisión: ${adrTitle}
+  Portal->>AuthSvc: PATCH /governance/audit { action, timestamp }
+  AuthSvc->>DB: SET LOCAL app.current_user = $1
+  AuthSvc->>DB: INSERT INTO audit_logs (actor, decision, status)
+  DB-->>AuthSvc: Registro inmutable asentado
+  AuthSvc-->>Portal: 200 OK (Auditoría confirmada)
+  Portal-->>Arch: Estado formal actualizado en Bóveda
 \`\`\`
 `;
       return { markdown: body, yamlFrontmatter: frontmatter, fullContent: `${frontmatter}\n\n${body}` };
@@ -495,9 +538,9 @@ sequenceDiagram
     standard: 'UML 2.5 / Mermaid',
     canonicalPath: 'architecture/diagrams/state-diagram.md',
     tags: ['uml', 'state-machine', 'adr-lifecycle', 'freshness'],
-    description: 'Máquinas de estado que rigen las decisiones arquitectónicas y la frescura documental.',
-    aiHooks: ['adrs.status', 'okf.freshness'],
-    generate: (project) => {
+    description: 'Máquinas de estado que rigen las entidades del negocio y la gobernanza de decisiones.',
+    aiHooks: ['adrs.status', 'states.lifecycle'],
+    generate: (project, _requirements, entities) => {
       const frontmatter = buildYamlFrontmatter({
         template_id: 'TPL-DIAG-STA-008',
         canonical_path: 'architecture/diagrams/state-diagram.md',
@@ -509,29 +552,41 @@ sequenceDiagram
         tags: ['state-machine', 'adr', 'mermaid'],
       });
 
+      const targetEntity =
+        entities.find((e) =>
+          (e.columns_json || []).some((c) =>
+            ['status', 'estado', 'state', 'fase'].includes(c.name.toLowerCase())
+          )
+        ) || entities[0];
+      const entityLabel = targetEntity ? toPascalCase(targetEntity.table_name) : 'Transacción';
+
       const body = `# Diagramas de Estados y Máquinas de Transición
 
-**Proyecto:** ${project.name}
+**Proyecto:** ${project.name}  
+**Entidad Transaccional Focal:** \`${entityLabel}\`  
 
-### Estado 1: Ciclo de Vida de las Decisiones de Arquitectura (ADRs)
+### Estado 1: Ciclo de Vida del Dominio (${entityLabel})
 \`\`\`mermaid
 stateDiagram-v2
-  [*] --> DRAFT: Arquitecto o IA propone acta
-  DRAFT --> PROPOSED: Revisión por el equipo técnico
-  PROPOSED --> ACCEPTED: Ratificada y aprobada
-  PROPOSED --> REJECTED: Inviable o descartada
-  ACCEPTED --> SUPERSEDED: Sustituida por nuevo ADR
-  REJECTED --> [*]
-  SUPERSEDED --> [*]
+  [*] --> REGISTRADO : Creación inicial con validación Zod
+  REGISTRADO --> EN_PROCESO : Asignación de recursos y ejecución
+  EN_PROCESO --> COMPLETADO : Finalización exitosa con integridad ACID
+  EN_PROCESO --> CANCELADO : Anulación o excepción controlada
+  COMPLETADO --> ARCHIVADO : Conservación histórica inmutable
+  CANCELADO --> [*]
+  ARCHIVADO --> [*]
 \`\`\`
 
-### Estado 2: Monitor de Frescura Documental en la Bóveda OKF
+### Estado 2: Ciclo de Vida de las Decisiones de Arquitectura (ADRs)
 \`\`\`mermaid
 stateDiagram-v2
-  [*] --> FRESH: Compilado y sincronizado con PostgreSQL
-  FRESH --> STALE: Modificación en Canvas, Requisitos o ADRs
-  STALE --> DRIFT_DETECTED: Hash SHA-256 no coincide con el estado actual
-  DRIFT_DETECTED --> FRESH: Recompilación y verificación de Bóveda OKF
+  [*] --> DRAFT : Propuesta preliminar formulada
+  DRAFT --> PROPOSED : Revisión técnica por el equipo
+  PROPOSED --> ACCEPTED : Aprobación formal Human-in-the-Loop
+  PROPOSED --> REJECTED : Descarte con justificación técnica
+  ACCEPTED --> SUPERSEDED : Sustituida por nuevo ADR enmendado
+  REJECTED --> [*]
+  SUPERSEDED --> [*]
 \`\`\`
 `;
       return { markdown: body, yamlFrontmatter: frontmatter, fullContent: `${frontmatter}\n\n${body}` };
@@ -550,7 +605,7 @@ stateDiagram-v2
     tags: ['uml', 'components', 'subsystems', 'mermaid'],
     description: 'Componentes internos, interfaces provistas y requeridas en frontend y backend.',
     aiHooks: ['components.structure'],
-    generate: (project) => {
+    generate: (project, _requirements, entities) => {
       const frontmatter = buildYamlFrontmatter({
         template_id: 'TPL-DIAG-CMP-009',
         canonical_path: 'architecture/diagrams/component-diagram.md',
@@ -562,40 +617,46 @@ stateDiagram-v2
         tags: ['components', 'c4', 'mermaid'],
       });
 
+      const style = project.architecture_style || 'Monolito Modular Layered MVC';
+      const mainEntity = entities[0]?.table_name || 'core';
+      const secEntity = entities[1]?.table_name || 'domain';
+
       const body = `# Diagrama de Componentes de Software
 
-**Proyecto:** ${project.name}
+**Proyecto:** ${project.name}  
+**Estilo Arquitectónico:** ${style}  
 
 \`\`\`mermaid
 flowchart LR
-  subgraph FrontendComponent["Componente Web UI"]
-    Router["View Screen Controller"]
-    CanvasEditor["Canvas Visual ERD"]
-    ChatCopilot["Compact Chat Copilot"]
-    DocViewer["Consolidated Document Viewer"]
+  subgraph FrontendComponent["Componente Web UI (${project.name})"]
+    Router["Router & View Controllers"]
+    StateMgr["State Management (Stores)"]
+    ApiClient["API Client (Axios Interceptors)"]
+    Router --> StateMgr
+    StateMgr --> ApiClient
   end
 
-  subgraph BackendComponent["Componente Núcleo de Gobernanza"]
-    HttpApi["Express HTTP Endpoints"]
-    AuthModule["Módulo de Seguridad & MFA"]
-    AiModule["Motor de Inferencia & BYOK Proxy"]
-    DdlCompiler["Compilador Multi-Dialecto DDL"]
-    OkfEngine["Empaquetador de Bóveda OKF"]
+  subgraph BackendComponent["Núcleo del Backend (${style})"]
+    HttpApi["Express HTTP Handlers (/api/v1)"]
+    AuthModule["Módulo de Seguridad & Autorización"]
+    Svc1["${toPascalCase(mainEntity)}Service"]
+    Svc2["${toPascalCase(secEntity)}Service"]
+    DdlEngine["Repositorio de Datos & Transacciones"]
   end
 
   subgraph DataLayer["Persistencia"]
-    PostgresDb[(PostgreSQL 15+ Schema)]
-    StorageBucket[(Supabase Storage: okf-vault)]
+    PostgresDb[("PostgreSQL 15+ (${entities.length} tablas 3FN)")]
+    StorageBucket[("Object Storage")]
   end
 
-  FrontendComponent -->|JSON Envelope| HttpApi
+  ApiClient -->|JSON Envelope| HttpApi
   HttpApi --> AuthModule
-  HttpApi --> AiModule
-  HttpApi --> DdlCompiler
-  HttpApi --> OkfEngine
-  AuthModule --> PostgresDb
-  DdlCompiler --> PostgresDb
-  OkfEngine --> StorageBucket
+  HttpApi --> Svc1
+  HttpApi --> Svc2
+  Svc1 --> DdlEngine
+  Svc2 --> DdlEngine
+  DdlEngine --> PostgresDb
+  Svc1 --> StorageBucket
 \`\`\`
 `;
       return { markdown: body, yamlFrontmatter: frontmatter, fullContent: `${frontmatter}\n\n${body}` };
@@ -611,7 +672,7 @@ flowchart LR
     category: 'diagrams',
     standard: 'UML 2.5 / Cloud Architecture',
     canonicalPath: 'architecture/diagrams/deployment-diagram.md',
-    tags: ['uml', 'deployment', 'cloud', 'supabase', 'mermaid'],
+    tags: ['uml', 'deployment', 'cloud', 'mermaid'],
     description: 'Topología física de servidores, balanceadores, bases de datos y servicios satélite.',
     aiHooks: ['infrastructure.cloud'],
     generate: (project) => {
@@ -628,46 +689,40 @@ flowchart LR
 
       const body = `# Diagrama de Despliegue e Infraestructura Cloud
 
-**Proyecto:** ${project.name}
+**Proyecto:** ${project.name}  
+**Organización:** ${project.organization || 'DevSculptor Enterprise'}  
 
 \`\`\`mermaid
 flowchart TD
-  subgraph ClientDevice["Dispositivo de Usuario"]
-    Browser["Navegador Moderno (Chrome / Safari / Edge)"]
+  subgraph ClientDevice["Dispositivos Clientes"]
+    Browser["Navegadores Web / Clientes Modernos"]
   end
 
-  subgraph EdgeCloud["Red y Capa de Borde"]
-    ViteHost["Hosting SPA (Vercel / Cloudflare Pages / Local)"]
-    TlsTerm["Terminación TLS / SSL (HTTPS)"]
+  subgraph EdgeCloud["Red de Borde y CDN Global"]
+    ViteHost["Hosting SPA (${project.name} Frontend)"]
+    TlsTerm["Terminación TLS / SSL (HTTPS :443)"]
   end
 
-  subgraph AppServer["Servidor de Aplicación (Node.js)"]
-    NodeProcess["Node.js 20+ LTS (Express Runtime)"]
-    PinoLogger["Pino Structured Logger"]
-    RateLimiter["In-Memory Rate Limiter"]
+  subgraph AppServer["Servidor de Aplicación (${project.architecture_style || 'Node.js LTS'})"]
+    NodeProcess["API Runtime Container"]
+    SecurityShield["Rate Limiting & Helmet Security"]
+    AppLogger["Structured Logger & Tracing"]
   end
 
-  subgraph CloudDatabase["Plataforma de Datos (Supabase Managed Cloud)"]
-    PgPooler["PgBouncer Transaction Pooler (Puerto 6543)"]
-    PostgresInstance["PostgreSQL 15 Server (RLS + Triggers)"]
-    S3Storage["Supabase Storage Engine (Bucket: okf-vault)"]
-  end
-
-  subgraph ExternalAI["Servicios Satélite de IA"]
-    OpenRouter["OpenRouter Gateway (Free Tier & Models)"]
-    GoogleAi["Google GenAI API (Gemini 3.1 Flash Lite)"]
+  subgraph CloudDatabase["Plataforma de Datos Administrada"]
+    PgPooler["PostgreSQL Connection Pooler"]
+    PostgresInstance["PostgreSQL 15+ Cluster (RLS Activo)"]
+    S3Storage["Encrypted Object Storage"]
   end
 
   Browser -->|HTTPS :443| ViteHost
-  Browser -->|REST API :3000| TlsTerm
-  TlsTerm --> RateLimiter
-  RateLimiter --> NodeProcess
-  NodeProcess --> PinoLogger
+  Browser -->|REST API| TlsTerm
+  TlsTerm --> SecurityShield
+  SecurityShield --> NodeProcess
+  NodeProcess --> AppLogger
   NodeProcess -->|SSL Connection| PgPooler
   PgPooler --> PostgresInstance
-  NodeProcess -->|REST S3 Protocol| S3Storage
-  NodeProcess -->|BYOK Proxy Outbound| OpenRouter
-  NodeProcess -->|Default Outbound| GoogleAi
+  NodeProcess -->|S3 Protocol| S3Storage
 \`\`\`
 `;
       return { markdown: body, yamlFrontmatter: frontmatter, fullContent: `${frontmatter}\n\n${body}` };
@@ -699,17 +754,48 @@ flowchart TD
       });
 
       let erMermaid = 'erDiagram\n';
+
+      // 1. Relaciones de Claves Foráneas (Crow's Foot)
+      const renderedErEdges = new Set<string>();
+      entities.forEach((child) => {
+        (child.columns_json || []).forEach((col) => {
+          const colRecord = col as unknown as Record<string, unknown>;
+          const targetName = (col.referencesTable || col.references_table || (colRecord.referencesTable as string) || (colRecord.references_table as string));
+          if (targetName) {
+            const parent = entities.find(
+              (p) => p.table_name.toLowerCase() === targetName.toLowerCase()
+            );
+            if (parent) {
+              const edgeKey = `${parent.table_name}->${child.table_name}:${col.name}`;
+              if (!renderedErEdges.has(edgeKey)) {
+                renderedErEdges.add(edgeKey);
+                const cardinality = col.cardinality || '1:N';
+                let relSymbol = '||--o{';
+                if (cardinality === '1:1') relSymbol = '||--||';
+                if (cardinality === 'N:M') relSymbol = '}o--o{';
+                erMermaid += `  ${parent.table_name} ${relSymbol} ${child.table_name} : "${col.name}"\n`;
+              }
+            }
+          }
+        });
+      });
+
+      // 2. Definición de Entidades
       entities.forEach((e) => {
         erMermaid += `  ${e.table_name} {\n`;
         (e.columns_json || []).forEach((col) => {
           const colRecord = col as unknown as Record<string, unknown>;
           const cleanType = (col.type || 'varchar').replace(/\(.*\)/, '').replace(/\s+/g, '_');
           const isPk = Boolean(colRecord.isPk || colRecord.is_pk);
-          const isFk = Boolean(colRecord.isFk || colRecord.is_fk);
+          const isFk = Boolean(colRecord.isFk || colRecord.is_fk || col.referencesTable || col.references_table);
           erMermaid += `    ${cleanType} ${col.name} ${isPk ? 'PK' : isFk ? 'FK' : ''}\n`;
         });
         erMermaid += `  }\n`;
       });
+
+      if (entities.length === 0) {
+        erMermaid += `  EMPTY_SCHEMA {\n    string id PK\n  }\n`;
+      }
 
       let body = `# Modelo Entidad-Relación (DER) y Diccionario de Datos\n\n`;
       body += `**Proyecto:** ${project.name}\n\n`;
@@ -726,9 +812,10 @@ flowchart TD
           (e.columns_json || []).forEach((col) => {
             const colRecord = col as unknown as Record<string, unknown>;
             const isPk = Boolean(colRecord.isPk || colRecord.is_pk) ? '✓' : '-';
-            const isFk = Boolean(colRecord.isFk || colRecord.is_fk) ? '✓' : '-';
+            const targetTable = col.referencesTable || col.references_table || (colRecord.referencesTable as string) || (colRecord.references_table as string);
+            const isFk = Boolean(colRecord.isFk || colRecord.is_fk || targetTable) ? '✓' : '-';
             const isNullable = col.nullable ? 'SÍ' : 'NO';
-            const ref = colRecord.referencesTable ? `FK -> ${colRecord.referencesTable}` : (col.unique ? 'UNIQUE' : '-');
+            const ref = targetTable ? `FK -> ${targetTable}` : (col.unique ? 'UNIQUE' : '-');
             body += `| \`${col.name}\` | \`${col.type}\` | ${isPk} | ${isFk} | ${isNullable} | ${ref} |\n`;
           });
           body += `\n`;

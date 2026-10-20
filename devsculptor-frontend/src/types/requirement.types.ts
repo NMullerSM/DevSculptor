@@ -9,7 +9,7 @@ export interface Requirement {
   description?: string | null;
   type: RequirementType;
   priority: RequirementPriority;
-  entity_relation?: string | null;
+  entity_relation?: string[] | string | null;
   created_at: string;
   updated_at: string;
 }
@@ -20,7 +20,7 @@ export interface CreateRequirementPayload {
   description?: string;
   type: RequirementType;
   priority: RequirementPriority;
-  entity_relation?: string;
+  entity_relation?: string[] | string;
 }
 
 export interface UpdateRequirementPayload {
@@ -29,5 +29,5 @@ export interface UpdateRequirementPayload {
   description?: string;
   type?: RequirementType;
   priority?: RequirementPriority;
-  entity_relation?: string;
+  entity_relation?: string[] | string;
 }
