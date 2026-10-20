@@ -87,8 +87,17 @@ export class OpenAiProvider implements IAiProvider {
 
       const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
       const rawText = data.choices?.[0]?.message?.content || 'Sin respuesta.';
-      const { cleanText, suggestedRequirements, suggestedEntities, suggestedDecisions, suggestedDiagrams } =
-        parseDevSculptorActions(rawText);
+      const {
+        cleanText,
+        suggestedRequirements,
+        suggestedEntities,
+        suggestedDecisions,
+        suggestedDiagrams,
+        mutatedEntities,
+        mutatedRequirements,
+        mutatedDecisions,
+        mutatedDiagrams,
+      } = parseDevSculptorActions(rawText);
 
       return {
         content: cleanText,
@@ -100,11 +109,19 @@ export class OpenAiProvider implements IAiProvider {
           entities: suggestedEntities,
           decisions: suggestedDecisions,
           diagrams: suggestedDiagrams,
+          mutatedEntities,
+          mutatedRequirements,
+          mutatedDecisions,
+          mutatedDiagrams,
         },
         suggestedRequirements,
         suggestedEntities,
         suggestedDecisions,
         suggestedDiagrams,
+        mutatedEntities,
+        mutatedRequirements,
+        mutatedDecisions,
+        mutatedDiagrams,
       };
     } catch (err: unknown) {
       clearTimeout(timeoutId);

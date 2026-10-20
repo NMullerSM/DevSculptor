@@ -10,6 +10,12 @@ export class AiProviderFactory {
   private static instance: IAiProvider | null = null;
 
   public static getProvider(override?: UserAiOverride): IAiProvider {
+    // 0. Si se solicita explícitamente el proveedor Mock (pruebas, tests o benchmark local sin costo)
+    if (override?.provider === 'mock') {
+      logger.info('Instanciando MockAiProvider por override explícito');
+      return new MockAiProvider();
+    }
+
     // 1. Si el cliente suministra BYOK (su propia API key)
     if (override && override.apiKey && override.apiKey.trim().length > 0) {
       const provider = (override.provider || 'openrouter').toLowerCase();

@@ -15,8 +15,13 @@ import {
   AiSuggestedEntity,
   AiSuggestedDecision,
   AiSuggestedDiagram,
+  AiEntityMutation,
+  AiRequirementMutation,
+  AiDecisionMutation,
+  AiDiagramMutation,
   DevSculptorActions,
 } from '@/types/ai.types';
+import { MutationDiffCard } from './MutationDiffCard';
 
 interface ChatConsultantViewProps {
   onNavigateStep?: (step: 'view-reqs' | 'view-docs' | 'view-canvas' | 'view-diagrams') => void;
@@ -123,6 +128,12 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
     isItemInjected,
     clearHistory,
     switchProject,
+    applyEntityMutation,
+    applyRequirementMutation,
+    applyDecisionMutation,
+    applyDiagramMutation,
+    rejectMutation,
+    getMutationStatus,
   } = useAiChatStore();
 
   const [activeMode, setActiveMode] = useState<AiModePreset>('general');
@@ -336,6 +347,52 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
     }
   };
 
+  const handleAuthorizeEntityMutation = async (mutation: AiEntityMutation, mutationKey: string) => {
+    if (!activeProject?.id) return;
+    try {
+      await applyEntityMutation(activeProject.id, mutation, mutationKey);
+      showToast(`✓ Mutación autorizada sobre "${mutation.targetTableName}"`);
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : `Error al mutar ${mutation.targetTableName}`);
+    }
+  };
+
+  const handleAuthorizeRequirementMutation = async (mutation: AiRequirementMutation, mutationKey: string) => {
+    if (!activeProject?.id) return;
+    try {
+      await applyRequirementMutation(activeProject.id, mutation, mutationKey);
+      showToast(`✓ Requisito ${mutation.targetCode} actualizado tras autorización`);
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : `Error al mutar ${mutation.targetCode}`);
+    }
+  };
+
+  const handleAuthorizeDecisionMutation = async (mutation: AiDecisionMutation, mutationKey: string) => {
+    if (!activeProject?.id) return;
+    try {
+      await applyDecisionMutation(activeProject.id, mutation, mutationKey);
+      showToast(`✓ Decisión ${mutation.targetCode} actualizada tras autorización`);
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : `Error al mutar ${mutation.targetCode}`);
+    }
+  };
+
+  const handleAuthorizeDiagramMutation = async (mutation: AiDiagramMutation, mutationKey: string) => {
+    if (!activeProject?.id) return;
+    try {
+      await applyDiagramMutation(activeProject.id, mutation, mutationKey);
+      showToast('✓ Diagrama actualizado tras autorización');
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Error al mutar diagrama');
+    }
+  };
+
+  const handleRejectMutation = (mutationKey: string) => {
+    if (!activeProject?.id) return;
+    rejectMutation(activeProject.id, mutationKey);
+    showToast('✕ Mutación descartada por el arquitecto');
+  };
+
   return (
     <div className={`flex-1 flex flex-col h-full ${isCompact ? 'p-2 sm:p-2.5 gap-2' : 'p-2.5 sm:p-4 gap-2.5 sm:gap-3'} select-none min-h-0 overflow-hidden`}>
       {/* 1. Encabezado */}
@@ -430,13 +487,24 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
               entities: m.actions?.entities || [],
               decisions: m.actions?.decisions || [],
               diagrams: effectiveDiagrams,
+              mutatedEntities: m.actions?.mutatedEntities || [],
+              mutatedRequirements: m.actions?.mutatedRequirements || [],
+              mutatedDecisions: m.actions?.mutatedDecisions || [],
+              mutatedDiagrams: m.actions?.mutatedDiagrams || [],
             };
+
+            const hasMutations =
+              (effectiveActions.mutatedEntities && effectiveActions.mutatedEntities.length > 0) ||
+              (effectiveActions.mutatedRequirements && effectiveActions.mutatedRequirements.length > 0) ||
+              (effectiveActions.mutatedDecisions && effectiveActions.mutatedDecisions.length > 0) ||
+              (effectiveActions.mutatedDiagrams && effectiveActions.mutatedDiagrams.length > 0);
 
             const hasActions =
               (effectiveActions.requirements && effectiveActions.requirements.length > 0) ||
               (effectiveActions.entities && effectiveActions.entities.length > 0) ||
               (effectiveActions.decisions && effectiveActions.decisions.length > 0) ||
-              (effectiveActions.diagrams && effectiveActions.diagrams.length > 0);
+              (effectiveActions.diagrams && effectiveActions.diagrams.length > 0) ||
+              hasMutations;
 
             return (
               <div
@@ -504,6 +572,86 @@ export const ChatConsultantView: React.FC<ChatConsultantViewProps> = ({ onNaviga
                         Inyectar Todo
                       </VisionButton>
                     </div>
+
+                    {/* Mutaciones Agénticas (Requiere Autorización Human-in-the-Loop) */}
+                    {hasMutations && (
+                      <div className="space-y-2 border-b border-glass-subtle pb-3">
+                        <div className="flex items-center justify-between">
+                          <div className="text-[9.5px] font-mono text-amber-500 uppercase tracking-wider font-bold flex items-center gap-1.5">
+                            <span className="material-symbols-outlined text-[13px] animate-pulse">lock_person</span>
+                            Mutaciones Agénticas Sugeridas (Gobernanza Human-in-the-Loop)
+                          </div>
+                        </div>
+
+                        {effectiveActions.mutatedEntities?.map((mut, i) => {
+                          const mutationKey = `mut:entity:${m.id}:${mut.targetTableName}:${i}`;
+                          const status = getMutationStatus(mutationKey);
+
+                          return (
+                            <MutationDiffCard
+                              key={mutationKey}
+                              mutationKey={mutationKey}
+                              type="entity"
+                              entityMutation={mut}
+                              status={status}
+                              onAuthorize={() => handleAuthorizeEntityMutation(mut, mutationKey)}
+                              onReject={() => handleRejectMutation(mutationKey)}
+                            />
+                          );
+                        })}
+
+                        {effectiveActions.mutatedRequirements?.map((mut, i) => {
+                          const mutationKey = `mut:req:${m.id}:${mut.targetCode}:${i}`;
+                          const status = getMutationStatus(mutationKey);
+
+                          return (
+                            <MutationDiffCard
+                              key={mutationKey}
+                              mutationKey={mutationKey}
+                              type="requirement"
+                              requirementMutation={mut}
+                              status={status}
+                              onAuthorize={() => handleAuthorizeRequirementMutation(mut, mutationKey)}
+                              onReject={() => handleRejectMutation(mutationKey)}
+                            />
+                          );
+                        })}
+
+                        {effectiveActions.mutatedDecisions?.map((mut, i) => {
+                          const mutationKey = `mut:dec:${m.id}:${mut.targetCode}:${i}`;
+                          const status = getMutationStatus(mutationKey);
+
+                          return (
+                            <MutationDiffCard
+                              key={mutationKey}
+                              mutationKey={mutationKey}
+                              type="decision"
+                              decisionMutation={mut}
+                              status={status}
+                              onAuthorize={() => handleAuthorizeDecisionMutation(mut, mutationKey)}
+                              onReject={() => handleRejectMutation(mutationKey)}
+                            />
+                          );
+                        })}
+
+                        {effectiveActions.mutatedDiagrams?.map((mut, i) => {
+                          const mutationKey = `mut:diag:${m.id}:${mut.targetCode || i}`;
+                          const status = getMutationStatus(mutationKey);
+
+                          return (
+                            <MutationDiffCard
+                              key={mutationKey}
+                              mutationKey={mutationKey}
+                              type="diagram"
+                              diagramMutation={mut}
+                              status={status}
+                              onAuthorize={() => handleAuthorizeDiagramMutation(mut, mutationKey)}
+                              onReject={() => handleRejectMutation(mutationKey)}
+                            />
+                          );
+                        })}
+                      </div>
+                    )}
 
                     {/* Requisitos Sugeridos */}
                     {effectiveActions.requirements && effectiveActions.requirements.length > 0 && (

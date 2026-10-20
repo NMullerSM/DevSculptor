@@ -60,8 +60,17 @@ export class GeminiProvider implements IAiProvider {
       );
 
       const rawText = response.text || 'Sin respuesta del modelo.';
-      const { cleanText, suggestedRequirements, suggestedEntities, suggestedDecisions, suggestedDiagrams } =
-        parseDevSculptorActions(rawText);
+      const {
+        cleanText,
+        suggestedRequirements,
+        suggestedEntities,
+        suggestedDecisions,
+        suggestedDiagrams,
+        mutatedEntities,
+        mutatedRequirements,
+        mutatedDecisions,
+        mutatedDiagrams,
+      } = parseDevSculptorActions(rawText);
 
       return {
         content: cleanText,
@@ -73,11 +82,19 @@ export class GeminiProvider implements IAiProvider {
           entities: suggestedEntities,
           decisions: suggestedDecisions,
           diagrams: suggestedDiagrams,
+          mutatedEntities,
+          mutatedRequirements,
+          mutatedDecisions,
+          mutatedDiagrams,
         },
         suggestedRequirements,
         suggestedEntities,
         suggestedDecisions,
         suggestedDiagrams,
+        mutatedEntities,
+        mutatedRequirements,
+        mutatedDecisions,
+        mutatedDiagrams,
       };
     } catch (err: unknown) {
       logger.warn(

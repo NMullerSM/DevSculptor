@@ -49,11 +49,67 @@ export interface AiSuggestedDiagram {
   description?: string;
 }
 
+export type EntityActionType = 'CREATE' | 'UPDATE' | 'DELETE';
+
+export interface ColumnMutation {
+  type: 'ADD' | 'MODIFY' | 'DROP';
+  column: {
+    name: string;
+    type?: string;
+    isPk?: boolean;
+    isFk?: boolean;
+    referencesTable?: string;
+    referencesColumn?: string;
+    cardinality?: '1:1' | '1:N' | 'N:M';
+    nullable?: boolean;
+    unique?: boolean;
+  };
+  previousColumnName?: string;
+}
+
+export interface AiEntityMutation {
+  action: EntityActionType;
+  targetTableName: string;
+  renameTableTo?: string;
+  rationale: string;
+  columnMutations?: ColumnMutation[];
+  newSchemaPreview?: {
+    tableName: string;
+    columns: AiSuggestedColumn[];
+  };
+}
+
+export interface AiRequirementMutation {
+  action: 'CREATE' | 'UPDATE' | 'DELETE';
+  targetCode: string;
+  rationale: string;
+  updatedFields?: Partial<AiSuggestedRequirement>;
+}
+
+export interface AiDecisionMutation {
+  action: 'CREATE' | 'UPDATE' | 'DELETE';
+  targetCode: string;
+  rationale: string;
+  updatedFields?: Partial<AiSuggestedDecision>;
+}
+
+export interface AiDiagramMutation {
+  action: 'CREATE' | 'UPDATE' | 'DELETE';
+  targetCode?: string;
+  targetTitle?: string;
+  rationale: string;
+  updatedFields?: Partial<AiSuggestedDiagram>;
+}
+
 export interface DevSculptorActions {
   requirements?: AiSuggestedRequirement[];
   entities?: AiSuggestedEntity[];
   decisions?: AiSuggestedDecision[];
   diagrams?: AiSuggestedDiagram[];
+  mutatedEntities?: AiEntityMutation[];
+  mutatedRequirements?: AiRequirementMutation[];
+  mutatedDecisions?: AiDecisionMutation[];
+  mutatedDiagrams?: AiDiagramMutation[];
 }
 
 export interface AiChatResult {
@@ -66,6 +122,10 @@ export interface AiChatResult {
   suggestedEntities?: AiSuggestedEntity[];
   suggestedDecisions?: AiSuggestedDecision[];
   suggestedDiagrams?: AiSuggestedDiagram[];
+  mutatedEntities?: AiEntityMutation[];
+  mutatedRequirements?: AiRequirementMutation[];
+  mutatedDecisions?: AiDecisionMutation[];
+  mutatedDiagrams?: AiDiagramMutation[];
 }
 
 export interface AiChatMessage {

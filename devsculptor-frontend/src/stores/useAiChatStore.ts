@@ -6,6 +6,10 @@ import {
   AiSuggestedEntity,
   AiSuggestedDecision,
   AiSuggestedDiagram,
+  AiEntityMutation,
+  AiRequirementMutation,
+  AiDecisionMutation,
+  AiDiagramMutation,
   DevSculptorActions,
 } from '@/types/ai.types';
 import { aiService } from '@/services/ai.service';
@@ -18,6 +22,7 @@ import { okfService } from '@/services/okf.service';
 export interface ProjectChatSession {
   messages: AiChatMessage[];
   injectedKeys: Record<string, boolean>;
+  mutationStatuses?: Record<string, 'authorized' | 'rejected'>;
   injectedDiagrams?: AiSuggestedDiagram[];
 }
 
@@ -28,6 +33,7 @@ interface AiChatState {
   isLoading: boolean;
   error: string | null;
   injectedKeys: Record<string, boolean>;
+  mutationStatuses: Record<string, 'authorized' | 'rejected'>;
 
   switchProject: (projectId: string) => void;
   removeProjectSession: (projectId: string) => void;
@@ -40,6 +46,13 @@ interface AiChatState {
   injectDecision: (projectId: string, decision: AiSuggestedDecision) => Promise<void>;
   injectDiagram: (projectId: string, diagram: AiSuggestedDiagram) => Promise<void>;
   injectAllActions: (projectId: string, actions: DevSculptorActions) => Promise<number>;
+
+  applyEntityMutation: (projectId: string, mutation: AiEntityMutation, mutationKey: string) => Promise<void>;
+  applyRequirementMutation: (projectId: string, mutation: AiRequirementMutation, mutationKey: string) => Promise<void>;
+  applyDecisionMutation: (projectId: string, mutation: AiDecisionMutation, mutationKey: string) => Promise<void>;
+  applyDiagramMutation: (projectId: string, mutation: AiDiagramMutation, mutationKey: string) => Promise<void>;
+  rejectMutation: (projectId: string, mutationKey: string) => void;
+  getMutationStatus: (mutationKey: string) => 'authorized' | 'rejected' | null;
 
   clearHistory: () => void;
   isItemInjected: (key: string) => boolean;
@@ -82,10 +95,11 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
   isLoading: false,
   error: null,
   injectedKeys: {},
+  mutationStatuses: {},
 
   switchProject: (projectId: string) => {
     if (!projectId) return;
-    const { currentProjectId, sessions, messages, injectedKeys } = get();
+    const { currentProjectId, sessions, messages, injectedKeys, mutationStatuses } = get();
     if (currentProjectId === projectId) return;
 
     const updatedSessions = { ...sessions };
@@ -93,12 +107,14 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
       updatedSessions[currentProjectId] = {
         messages,
         injectedKeys,
+        mutationStatuses,
       };
     }
 
     const targetSession: ProjectChatSession = updatedSessions[projectId] || {
       messages: [INITIAL_GREETING],
       injectedKeys: {},
+      mutationStatuses: {},
     };
     updatedSessions[projectId] = targetSession;
     saveSessionsToStorage(updatedSessions);
@@ -108,6 +124,7 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
       sessions: updatedSessions,
       messages: targetSession.messages,
       injectedKeys: targetSession.injectedKeys,
+      mutationStatuses: targetSession.mutationStatuses || {},
       error: null,
       isLoading: false,
     });
@@ -122,9 +139,10 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
     if (currentProjectId === projectId) {
       set({
         currentProjectId: null,
-        sessions: updatedSessions,
         messages: [INITIAL_GREETING],
         injectedKeys: {},
+        mutationStatuses: {},
+        sessions: updatedSessions,
       });
     } else {
       set({ sessions: updatedSessions });
@@ -132,8 +150,6 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
   },
 
   sendMessage: async (projectId: string, content: string, actionContext?: string) => {
-    if (!content.trim()) return;
-
     if (get().currentProjectId !== projectId) {
       get().switchProject(projectId);
     }
@@ -145,38 +161,54 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
       timestamp: Date.now(),
     };
 
-    const updatedMessages = [...get().messages, userMessage];
+    const newMessages = [...get().messages, userMessage];
+
+    // Persistir el mensaje de usuario de inmediato
     const interimSessions = {
       ...get().sessions,
       [projectId]: {
-        messages: updatedMessages,
+        messages: newMessages,
         injectedKeys: get().injectedKeys,
+        mutationStatuses: get().mutationStatuses,
       },
     };
     saveSessionsToStorage(interimSessions);
 
     set({
-      messages: updatedMessages,
+      messages: newMessages,
       sessions: interimSessions,
       isLoading: true,
       error: null,
     });
 
     try {
-      // Filtrar a historial relevante para enviar a la API (ventana deslizante de 30 mensajes max)
-      const rawRelevant = updatedMessages
-        .filter((m) => m.id !== 'msg-initial-greeting')
-        .slice(-30);
+      // Filtrar historial para evitar enviar estructuras residuales gigantescas
+      const historyPayload = newMessages.map((m) => {
+        let safeContent = m.content;
+        const safeRole = m.role === 'assistant' ? 'assistant' : 'user';
 
-      const historyPayload = rawRelevant.map((m) => {
-        let safeContent = (m.content || '').trim();
-        if (!safeContent) {
-          safeContent = '(Mensaje sin contenido)';
+        if (m.actions) {
+          const actionSnippets: string[] = [];
+          if (m.actions.requirements && m.actions.requirements.length > 0) {
+            actionSnippets.push(`Requisitos sugeridos: ${m.actions.requirements.map((r) => r.code).join(', ')}`);
+          }
+          if (m.actions.entities && m.actions.entities.length > 0) {
+            actionSnippets.push(`Tablas sugeridas: ${m.actions.entities.map((e) => e.tableName).join(', ')}`);
+          }
+          if (m.actions.decisions && m.actions.decisions.length > 0) {
+            actionSnippets.push(`ADRs sugeridos: ${m.actions.decisions.map((d) => d.code).join(', ')}`);
+          }
+          if (m.actions.diagrams && m.actions.diagrams.length > 0) {
+            actionSnippets.push(`Diagramas: ${m.actions.diagrams.map((d) => d.title).join(', ')}`);
+          }
+          if (m.actions.mutatedEntities && m.actions.mutatedEntities.length > 0) {
+            actionSnippets.push(`Mutaciones: ${m.actions.mutatedEntities.map((e) => `${e.action} ${e.targetTableName}`).join(', ')}`);
+          }
+          if (actionSnippets.length > 0) {
+            safeContent += `\n[Contexto técnico previo: ${actionSnippets.join(' | ')}]`;
+          }
         }
-        if (safeContent.length > 16000) {
-          safeContent = safeContent.slice(0, 16000) + '... [contenido truncado por longitud]';
-        }
-        const safeRole = m.role === 'user' ? 'user' : 'assistant';
+
         return {
           role: safeRole as 'user' | 'assistant',
           content: safeContent,
@@ -199,6 +231,10 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
           entities: result.actions?.entities || result.suggestedEntities,
           decisions: result.actions?.decisions || result.suggestedDecisions,
           diagrams: result.actions?.diagrams || result.suggestedDiagrams,
+          mutatedEntities: result.actions?.mutatedEntities || result.mutatedEntities,
+          mutatedRequirements: result.actions?.mutatedRequirements || result.mutatedRequirements,
+          mutatedDecisions: result.actions?.mutatedDecisions || result.mutatedDecisions,
+          mutatedDiagrams: result.actions?.mutatedDiagrams || result.mutatedDiagrams,
         },
         timestamp: Date.now(),
       };
@@ -209,6 +245,7 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
         [projectId]: {
           messages: finalMessages,
           injectedKeys: get().injectedKeys,
+          mutationStatuses: get().mutationStatuses,
         },
       };
       saveSessionsToStorage(finalSessions);
@@ -243,6 +280,10 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
           entities: result.suggestedEntities,
           decisions: result.suggestedDecisions,
           diagrams: result.suggestedDiagrams,
+          mutatedEntities: result.mutatedEntities,
+          mutatedRequirements: result.mutatedRequirements,
+          mutatedDecisions: result.mutatedDecisions,
+          mutatedDiagrams: result.mutatedDiagrams,
         },
         timestamp: Date.now(),
       };
@@ -253,6 +294,7 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
         [projectId]: {
           messages: finalMessages,
           injectedKeys: get().injectedKeys,
+          mutationStatuses: get().mutationStatuses,
         },
       };
       saveSessionsToStorage(finalSessions);
@@ -287,6 +329,10 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
           entities: result.suggestedEntities,
           decisions: result.suggestedDecisions,
           diagrams: result.suggestedDiagrams,
+          mutatedEntities: result.mutatedEntities,
+          mutatedRequirements: result.mutatedRequirements,
+          mutatedDecisions: result.mutatedDecisions,
+          mutatedDiagrams: result.mutatedDiagrams,
         },
         timestamp: Date.now(),
       };
@@ -297,6 +343,7 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
         [projectId]: {
           messages: finalMessages,
           injectedKeys: get().injectedKeys,
+          mutationStatuses: get().mutationStatuses,
         },
       };
       saveSessionsToStorage(finalSessions);
@@ -341,6 +388,7 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
       [projectId]: {
         messages: get().messages,
         injectedKeys: updatedKeys,
+        mutationStatuses: get().mutationStatuses,
       },
     };
     saveSessionsToStorage(updatedSessions);
@@ -350,7 +398,6 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
       sessions: updatedSessions,
     });
 
-    // Refrescar métricas del proyecto en tiempo real
     useProjectStore.getState().fetchMetrics(projectId);
   },
 
@@ -383,7 +430,6 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
     }
 
     const count = existingEntities.length;
-    // Ubicación en cuadrícula limpia para no amontonar las tablas
     const posX = 40 + (count % 3) * 270;
     const posY = 40 + Math.floor(count / 3) * 250;
 
@@ -461,6 +507,7 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
       [projectId]: {
         messages: get().messages,
         injectedKeys: updatedKeys,
+        mutationStatuses: get().mutationStatuses,
       },
     };
     saveSessionsToStorage(updatedSessions);
@@ -496,6 +543,7 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
       [projectId]: {
         messages: get().messages,
         injectedKeys: updatedKeys,
+        mutationStatuses: get().mutationStatuses,
       },
     };
     saveSessionsToStorage(updatedSessions);
@@ -520,6 +568,7 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
     const currentSession = get().sessions[projectId] || {
       messages: get().messages,
       injectedKeys: get().injectedKeys,
+      mutationStatuses: get().mutationStatuses,
       injectedDiagrams: [],
     };
     const existingDiagrams = currentSession.injectedDiagrams || [];
@@ -564,6 +613,255 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
     }
   },
 
+  applyEntityMutation: async (projectId: string, mutation: AiEntityMutation, mutationKey: string) => {
+    if (get().currentProjectId !== projectId) {
+      get().switchProject(projectId);
+    }
+
+    const canvasStore = useCanvasStore.getState();
+    let existingEntities = canvasStore.entities;
+    if (!existingEntities || existingEntities.length === 0) {
+      try {
+        await canvasStore.fetchEntities(projectId);
+        existingEntities = useCanvasStore.getState().entities;
+      } catch {
+        existingEntities = [];
+      }
+    }
+
+    const targetLower = mutation.targetTableName.toLowerCase().trim();
+    const targetEntity = existingEntities.find((e) => e.table_name.toLowerCase().trim() === targetLower);
+
+    if (mutation.action === 'DELETE') {
+      if (targetEntity) {
+        await canvasStore.deleteEntity(projectId, targetEntity.id);
+      }
+    } else if (mutation.action === 'UPDATE' && targetEntity) {
+      let updatedColumns = [...(targetEntity.columns_json || [])];
+
+      if (mutation.columnMutations && mutation.columnMutations.length > 0) {
+        for (const cm of mutation.columnMutations) {
+          const colNameLower = cm.column.name.toLowerCase().trim();
+          if (cm.type === 'DROP') {
+            updatedColumns = updatedColumns.filter((c) => c.name.toLowerCase().trim() !== colNameLower);
+          } else if (cm.type === 'ADD') {
+            const alreadyHas = updatedColumns.some((c) => c.name.toLowerCase().trim() === colNameLower);
+            if (!alreadyHas) {
+              updatedColumns.push({
+                name: cm.column.name,
+                type: cm.column.type || 'VARCHAR(255)',
+                isPk: Boolean(cm.column.isPk),
+                is_pk: Boolean(cm.column.isPk),
+                isFk: Boolean(cm.column.isFk),
+                is_fk: Boolean(cm.column.isFk),
+                referencesTable: cm.column.referencesTable,
+                references_table: cm.column.referencesTable,
+                referencesColumn: cm.column.referencesColumn,
+                cardinality: cm.column.cardinality || '1:N',
+                nullable: cm.column.nullable !== undefined ? cm.column.nullable : true,
+                unique: Boolean(cm.column.unique),
+              });
+            }
+          } else if (cm.type === 'MODIFY') {
+            updatedColumns = updatedColumns.map((c) => {
+              const prevMatch = cm.previousColumnName
+                ? c.name.toLowerCase().trim() === cm.previousColumnName.toLowerCase().trim()
+                : c.name.toLowerCase().trim() === colNameLower;
+              if (prevMatch) {
+                return {
+                  ...c,
+                  name: cm.column.name || c.name,
+                  type: cm.column.type || c.type,
+                  nullable: cm.column.nullable !== undefined ? cm.column.nullable : c.nullable,
+                  unique: cm.column.unique !== undefined ? cm.column.unique : c.unique,
+                };
+              }
+              return c;
+            });
+          }
+        }
+      }
+
+      const newTableName = mutation.renameTableTo ? mutation.renameTableTo.trim() : targetEntity.table_name;
+      await canvasStore.updateEntity(projectId, targetEntity.id, {
+        table_name: newTableName,
+        columns_json: updatedColumns,
+      });
+    }
+
+    const updatedStatuses = { ...get().mutationStatuses, [mutationKey]: 'authorized' as const };
+    const updatedSessions = {
+      ...get().sessions,
+      [projectId]: {
+        messages: get().messages,
+        injectedKeys: get().injectedKeys,
+        mutationStatuses: updatedStatuses,
+      },
+    };
+    saveSessionsToStorage(updatedSessions);
+
+    set({
+      mutationStatuses: updatedStatuses,
+      sessions: updatedSessions,
+    });
+
+    useProjectStore.getState().fetchMetrics(projectId);
+  },
+
+  applyRequirementMutation: async (projectId: string, mutation: AiRequirementMutation, mutationKey: string) => {
+    if (get().currentProjectId !== projectId) {
+      get().switchProject(projectId);
+    }
+
+    const allReqs = await requirementsService.getAllByProject(projectId);
+    const target = allReqs.find((r) => r.code?.toLowerCase().trim() === mutation.targetCode.toLowerCase().trim());
+
+    if (target) {
+      if (mutation.action === 'DELETE') {
+        await requirementsService.delete(projectId, target.id);
+      } else if (mutation.action === 'UPDATE' && mutation.updatedFields) {
+        await requirementsService.update(projectId, target.id, {
+          title: mutation.updatedFields.title || target.title,
+          description: (mutation.updatedFields.description ?? target.description) || undefined,
+          type: (mutation.updatedFields.type as 'RF' | 'RNF') || target.type,
+          priority: mutation.updatedFields.priority || target.priority,
+          entity_relation: (mutation.updatedFields.entityRelation ?? (Array.isArray(target.entity_relation) ? target.entity_relation : undefined)),
+        });
+      }
+    }
+
+    const updatedStatuses = { ...get().mutationStatuses, [mutationKey]: 'authorized' as const };
+    const updatedSessions = {
+      ...get().sessions,
+      [projectId]: {
+        messages: get().messages,
+        injectedKeys: get().injectedKeys,
+        mutationStatuses: updatedStatuses,
+      },
+    };
+    saveSessionsToStorage(updatedSessions);
+
+    set({
+      mutationStatuses: updatedStatuses,
+      sessions: updatedSessions,
+    });
+
+    useProjectStore.getState().fetchMetrics(projectId);
+  },
+
+  applyDecisionMutation: async (projectId: string, mutation: AiDecisionMutation, mutationKey: string) => {
+    if (get().currentProjectId !== projectId) {
+      get().switchProject(projectId);
+    }
+
+    const allDecisions = await decisionsService.getAllByProject(projectId);
+    const target = allDecisions.find((d) => d.code?.toLowerCase().trim() === mutation.targetCode.toLowerCase().trim());
+
+    if (target) {
+      if (mutation.action === 'DELETE') {
+        await decisionsService.delete(projectId, target.id);
+      } else if (mutation.action === 'UPDATE' && mutation.updatedFields) {
+        await decisionsService.update(projectId, target.id, {
+          title: mutation.updatedFields.title || target.title,
+          context: (mutation.updatedFields.context ?? target.context) || undefined,
+          decision: (mutation.updatedFields.decision ?? target.decision) || undefined,
+          consequences: (mutation.updatedFields.consequences ?? target.consequences) || undefined,
+        });
+
+        if (mutation.updatedFields.status && mutation.updatedFields.status !== target.status) {
+          await decisionsService.changeStatus(projectId, target.id, mutation.updatedFields.status);
+        }
+      }
+    }
+
+    const updatedStatuses = { ...get().mutationStatuses, [mutationKey]: 'authorized' as const };
+    const updatedSessions = {
+      ...get().sessions,
+      [projectId]: {
+        messages: get().messages,
+        injectedKeys: get().injectedKeys,
+        mutationStatuses: updatedStatuses,
+      },
+    };
+    saveSessionsToStorage(updatedSessions);
+
+    set({
+      mutationStatuses: updatedStatuses,
+      sessions: updatedSessions,
+    });
+
+    useProjectStore.getState().fetchMetrics(projectId);
+  },
+
+  applyDiagramMutation: async (projectId: string, mutation: AiDiagramMutation, mutationKey: string) => {
+    if (get().currentProjectId !== projectId) {
+      get().switchProject(projectId);
+    }
+
+    if (mutation.updatedFields && mutation.updatedFields.mermaidCode) {
+      try {
+        const title = mutation.updatedFields.title || mutation.targetTitle || 'Diagrama Actualizado';
+        const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        const canonicalPath = `02-architecture-diagrams/${slug || 'diagram'}.md`;
+        const markdown = `# ${title}\n\n**Tipo:** ${mutation.updatedFields.type || 'mermaid'}\n**Formato:** Mermaid UML\n\n\`\`\`mermaid\n${mutation.updatedFields.mermaidCode}\n\`\`\`\n`;
+
+        await okfService.syncVault(projectId, [
+          {
+            documentId: mutation.targetCode || `DIAG-${Date.now()}`,
+            documentType: 'DIAGRAM',
+            canonicalPath,
+            title,
+            tags: ['diagram', 'architecture', 'mermaid', 'updated'],
+            contentPreview: title,
+            contentMarkdown: markdown,
+            stateHash: `hash-${Date.now()}`,
+            freshnessStatus: 'FRESH',
+          },
+        ]);
+      } catch {
+        // Fallback
+      }
+    }
+
+    const updatedStatuses = { ...get().mutationStatuses, [mutationKey]: 'authorized' as const };
+    const updatedSessions = {
+      ...get().sessions,
+      [projectId]: {
+        messages: get().messages,
+        injectedKeys: get().injectedKeys,
+        mutationStatuses: updatedStatuses,
+      },
+    };
+    saveSessionsToStorage(updatedSessions);
+
+    set({
+      mutationStatuses: updatedStatuses,
+      sessions: updatedSessions,
+    });
+  },
+
+  rejectMutation: (projectId: string, mutationKey: string) => {
+    const updatedStatuses = { ...get().mutationStatuses, [mutationKey]: 'rejected' as const };
+    const updatedSessions = {
+      ...get().sessions,
+      [projectId]: {
+        messages: get().messages,
+        injectedKeys: get().injectedKeys,
+        mutationStatuses: updatedStatuses,
+      },
+    };
+    saveSessionsToStorage(updatedSessions);
+
+    set({
+      mutationStatuses: updatedStatuses,
+      sessions: updatedSessions,
+    });
+  },
+
+  getMutationStatus: (mutationKey: string) => {
+    return get().mutationStatuses[mutationKey] || null;
+  },
+
   injectAllActions: async (projectId: string, actions: DevSculptorActions) => {
     if (get().currentProjectId !== projectId) {
       get().switchProject(projectId);
@@ -581,7 +879,6 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
     }
 
     if (actions.entities && actions.entities.length > 0) {
-      // Ordenamiento topológico: tablas referenciadas van primero
       const entityMap = new Map<string, AiSuggestedEntity>();
       for (const ent of actions.entities) {
         entityMap.set(ent.tableName.toLowerCase(), ent);
@@ -646,6 +943,7 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
     const cleanSession: ProjectChatSession = {
       messages: [INITIAL_GREETING],
       injectedKeys: {},
+      mutationStatuses: {},
       injectedDiagrams: [],
     };
 
@@ -660,6 +958,7 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
     set({
       messages: cleanSession.messages,
       injectedKeys: cleanSession.injectedKeys,
+      mutationStatuses: {},
       sessions: updatedSessions,
       error: null,
     });

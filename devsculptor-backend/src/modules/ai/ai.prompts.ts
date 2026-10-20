@@ -4,6 +4,11 @@ import {
   AiSuggestedEntity,
   AiSuggestedDecision,
   AiSuggestedDiagram,
+  AiEntityMutation,
+  ColumnMutation,
+  AiRequirementMutation,
+  AiDecisionMutation,
+  AiDiagramMutation,
 } from './providers/ai-provider.interface';
 
 export const SYSTEM_INSTRUCTION_ARCHITECT = `Eres el "Arquitecto de Software Líder y Consultor de Gobernanza Técnica Pre-Código" de DevSculptor.
@@ -52,6 +57,38 @@ Determina la intención del usuario a partir del último mensaje y del contexto 
 - **COMPORTAMIENTO REQUERIDO**:
   1. Explica brevemente la síntesis de diseño acordada en 1 o 2 párrafos técnicos.
   2. Al final, incluye el bloque estructurado con la etiqueta exacta \`\`\`json:devsculptor-actions conteniendo ÚNICAMENTE los campos correspondientes a la petición.
+
+### MODO 3: EDICIÓN AGÉNTICA, REFACTORIZACIÓN Y MUTACIÓN (HUMAN-IN-THE-LOOP)
+- Se activa cuando el usuario solicita MODIFICAR, ACTUALIZAR, RENOMBRAR, ELIMINAR, REFACTORIZAR o CORREGIR entidades existentes en el Canvas, requisitos IEEE-830, decisiones ADR o diagramas.
+- Ejemplos de prompts: "Modifica la tabla vehicles agregando vin y eliminando color", "Actualiza el requisito RF-02", "Renombra la tabla accounts a client_accounts", "Elimina la columna obsoleta de orders", "Refactoriza el diagrama de secuencia".
+- **COMPORTAMIENTO REQUERIDO**:
+  1. Explica el racional de ingeniería del cambio y el impacto arquitectónico en 1 o 2 párrafos.
+  2. En el bloque \`\`\`json:devsculptor-actions, genera los arreglos de mutación correspondientes:
+     - \`mutatedEntities\`: Para tablas existentes del Canvas.
+       \`action\`: 'UPDATE' | 'DELETE'
+       \`targetTableName\`: Nombre exacto de la tabla existente
+       \`rationale\`: Justificación técnica del cambio
+       \`columnMutations\`: Array de operaciones sobre columnas:
+         - \`type\`: 'ADD' | 'MODIFY' | 'DROP'
+         - \`column\`: Objeto con { name, type, isPk, isFk, referencesTable, referencesColumn, cardinality, nullable, unique }
+         - \`previousColumnName\`: (opcional, si es renombre de columna)
+       \`newSchemaPreview\`: (opcional) Esquema resultante completo con { tableName, columns }
+     - \`mutatedRequirements\`: Para modificar o dar de baja requisitos existentes.
+       \`action\`: 'UPDATE' | 'DELETE'
+       \`targetCode\`: Código del requisito (ej. 'RF-02')
+       \`rationale\`: Motivo de la actualización
+       \`updatedFields\`: Objeto parcial con los campos actualizados (title, type, priority, description, entityRelation)
+     - \`mutatedDecisions\`: Para actualizar actas ADR existentes.
+       \`action\`: 'UPDATE' | 'DELETE'
+       \`targetCode\`: Código del ADR (ej. 'ADR-01')
+       \`rationale\`: Motivo de la actualización
+       \`updatedFields\`: Objeto parcial (title, context, decision, consequences)
+     - \`mutatedDiagrams\`: Para actualizar o reemplazar diagramas.
+       \`action\`: 'UPDATE' | 'DELETE'
+       \`targetCode\`: Código del diagrama (ej. 'DIAG-01') o targetTitle
+       \`rationale\`: Motivo
+       \`updatedFields\`: Objeto parcial (title, type, mermaidCode, description)
+  3. CERO MUTACIONES SILENCIOSAS: Toda mutación requiere autorización humana explícita del Arquitecto en la interfaz mediante botones de aprobación.
 
 ---
 REGLAS DE RIGOR TÉCNICO PARA EL MODO FORMALIZACIÓN:
@@ -340,15 +377,19 @@ export function parseDevSculptorActions(rawText: string): {
   suggestedEntities?: AiSuggestedEntity[];
   suggestedDecisions?: AiSuggestedDecision[];
   suggestedDiagrams?: AiSuggestedDiagram[];
+  mutatedEntities?: AiEntityMutation[];
+  mutatedRequirements?: AiRequirementMutation[];
+  mutatedDecisions?: AiDecisionMutation[];
+  mutatedDiagrams?: AiDiagramMutation[];
 } {
   // 1. Buscar bloque con etiqueta devsculptor-actions (3 o 4 backticks, con o sin "json:")
   const taggedRegex = /`{3,4}(?:json:)?devsculptor-actions\s*([\s\S]*?)\s*`{3,4}/i;
   let match = rawText.match(taggedRegex);
   let regexUsed: RegExp | null = taggedRegex;
 
-  // 2. Si no se encontró bloque explícito devsculptor-actions, buscar si generó un bloque json con artefactos técnicos
+  // 2. Si no se encontró bloque explícito devsculptor-actions, buscar si generó un bloque json con artefactos técnicos o mutaciones
   if (!match) {
-    const genericJsonRegex = /`{3,4}(?:json)?\s*(\{\s*"(?:suggestedRequirements|requirements|suggestedEntities|entities|suggestedDecisions|decisions|suggestedDiagrams|diagrams)"[\s\S]*?\})\s*`{3,4}/i;
+    const genericJsonRegex = /`{3,4}(?:json)?\s*(\{\s*"(?:suggestedRequirements|requirements|suggestedEntities|entities|suggestedDecisions|decisions|suggestedDiagrams|diagrams|mutatedEntities|mutatedRequirements|mutatedDecisions|mutatedDiagrams)"[\s\S]*?\})\s*`{3,4}/i;
     const genericMatch = rawText.match(genericJsonRegex);
     if (genericMatch) {
       match = genericMatch;
@@ -363,6 +404,10 @@ export function parseDevSculptorActions(rawText: string): {
   let rawEntities: unknown;
   let rawDecisions: unknown;
   let rawDiagrams: unknown;
+  let rawMutatedEntities: unknown;
+  let rawMutatedReqs: unknown;
+  let rawMutatedDecisions: unknown;
+  let rawMutatedDiagrams: unknown;
 
   if (match) {
     try {
@@ -374,6 +419,10 @@ export function parseDevSculptorActions(rawText: string): {
       rawEntities = parsed.suggestedEntities || parsed.entities;
       rawDecisions = parsed.suggestedDecisions || parsed.decisions;
       rawDiagrams = parsed.suggestedDiagrams || parsed.diagrams;
+      rawMutatedEntities = parsed.mutatedEntities || parsed.entityMutations;
+      rawMutatedReqs = parsed.mutatedRequirements || parsed.requirementMutations;
+      rawMutatedDecisions = parsed.mutatedDecisions || parsed.decisionMutations;
+      rawMutatedDiagrams = parsed.mutatedDiagrams || parsed.diagramMutations;
     } catch {
       // JSON malformado en bloque match
     }
@@ -443,12 +492,68 @@ export function parseDevSculptorActions(rawText: string): {
     }
   }
 
+  // 4. Sanitizar y normalizar mutaciones
+  let sanitizedMutatedEntities: AiEntityMutation[] | undefined = undefined;
+  if (Array.isArray(rawMutatedEntities) && rawMutatedEntities.length > 0) {
+    sanitizedMutatedEntities = rawMutatedEntities.map((m: Record<string, unknown>) => ({
+      action: (['CREATE', 'UPDATE', 'DELETE'].includes(String(m.action).toUpperCase())
+        ? String(m.action).toUpperCase()
+        : 'UPDATE') as 'CREATE' | 'UPDATE' | 'DELETE',
+      targetTableName: String(m.targetTableName || m.target_table_name || m.tableName || '').trim(),
+      renameTableTo: m.renameTableTo ? String(m.renameTableTo).trim() : undefined,
+      rationale: String(m.rationale || 'Refactorización y mantenimiento arquitectónico'),
+      columnMutations: Array.isArray(m.columnMutations) ? (m.columnMutations as ColumnMutation[]) : undefined,
+      newSchemaPreview: m.newSchemaPreview as AiEntityMutation['newSchemaPreview'],
+    }));
+  }
+
+  let sanitizedMutatedReqs: AiRequirementMutation[] | undefined = undefined;
+  if (Array.isArray(rawMutatedReqs) && rawMutatedReqs.length > 0) {
+    sanitizedMutatedReqs = rawMutatedReqs.map((m: Record<string, unknown>) => ({
+      action: (['CREATE', 'UPDATE', 'DELETE'].includes(String(m.action).toUpperCase())
+        ? String(m.action).toUpperCase()
+        : 'UPDATE') as 'CREATE' | 'UPDATE' | 'DELETE',
+      targetCode: String(m.targetCode || m.code || '').trim(),
+      rationale: String(m.rationale || 'Actualización de especificación IEEE-830'),
+      updatedFields: m.updatedFields as Partial<AiSuggestedRequirement> | undefined,
+    }));
+  }
+
+  let sanitizedMutatedDecisions: AiDecisionMutation[] | undefined = undefined;
+  if (Array.isArray(rawMutatedDecisions) && rawMutatedDecisions.length > 0) {
+    sanitizedMutatedDecisions = rawMutatedDecisions.map((m: Record<string, unknown>) => ({
+      action: (['CREATE', 'UPDATE', 'DELETE'].includes(String(m.action).toUpperCase())
+        ? String(m.action).toUpperCase()
+        : 'UPDATE') as 'CREATE' | 'UPDATE' | 'DELETE',
+      targetCode: String(m.targetCode || m.code || '').trim(),
+      rationale: String(m.rationale || 'Ajuste de gobernanza técnica'),
+      updatedFields: m.updatedFields as Partial<AiSuggestedDecision> | undefined,
+    }));
+  }
+
+  let sanitizedMutatedDiagrams: AiDiagramMutation[] | undefined = undefined;
+  if (Array.isArray(rawMutatedDiagrams) && rawMutatedDiagrams.length > 0) {
+    sanitizedMutatedDiagrams = rawMutatedDiagrams.map((m: Record<string, unknown>) => ({
+      action: (['CREATE', 'UPDATE', 'DELETE'].includes(String(m.action).toUpperCase())
+        ? String(m.action).toUpperCase()
+        : 'UPDATE') as 'CREATE' | 'UPDATE' | 'DELETE',
+      targetCode: m.targetCode ? String(m.targetCode).trim() : undefined,
+      targetTitle: m.targetTitle ? String(m.targetTitle).trim() : undefined,
+      rationale: String(m.rationale || 'Actualización de modelo visual Mermaid'),
+      updatedFields: m.updatedFields as Partial<AiSuggestedDiagram> | undefined,
+    }));
+  }
+
   return {
     cleanText,
     suggestedRequirements: Array.isArray(rawReqs) && rawReqs.length > 0 ? (rawReqs as AiSuggestedRequirement[]) : undefined,
     suggestedEntities: Array.isArray(rawEntities) && rawEntities.length > 0 ? (rawEntities as AiSuggestedEntity[]) : undefined,
     suggestedDecisions: Array.isArray(rawDecisions) && rawDecisions.length > 0 ? (rawDecisions as AiSuggestedDecision[]) : undefined,
     suggestedDiagrams: sanitizedDiagrams,
+    mutatedEntities: sanitizedMutatedEntities,
+    mutatedRequirements: sanitizedMutatedReqs,
+    mutatedDecisions: sanitizedMutatedDecisions,
+    mutatedDiagrams: sanitizedMutatedDiagrams,
   };
 }
 

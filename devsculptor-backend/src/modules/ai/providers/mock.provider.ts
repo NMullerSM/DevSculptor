@@ -242,6 +242,7 @@ export class MockAiProvider implements IAiProvider {
   ): Promise<AiChatResult> {
     const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user')?.content || '';
     const lower = lastUserMsg.toLowerCase();
+    const cleanLower = lower.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
     // 1. Detección y análisis del estado actual para deduplicación
     const existingTableNames = context.entities.map((e) => e.tableName.toLowerCase());
@@ -359,10 +360,356 @@ He evaluado tu consulta técnica para el proyecto **${context.projectName}** (Es
 
     let reply: string;
 
-    // =========================================================================
-    // DOMINIO 1: E-Commerce / Pedidos / Carrito / Órdenes / Dark Stores
-    // =========================================================================
-    if (
+    // Detección de Modo 3: Edición Agéntica y Refactorización
+    const isMutationRequest =
+      cleanLower.includes('modific') ||
+      cleanLower.includes('edit') ||
+      cleanLower.includes('actualiz') ||
+      cleanLower.includes('elimin') ||
+      cleanLower.includes('refactoriz') ||
+      cleanLower.includes('renombr') ||
+      cleanLower.includes('borr') ||
+      cleanLower.includes('agreg') ||
+      cleanLower.includes('quit') ||
+      cleanLower.includes('cambia el tipo');
+
+    if (isMutationRequest) {
+      let matchedTable =
+        context.entities.find((e) => cleanLower.includes(e.tableName.toLowerCase()))?.tableName ||
+        context.entities[0]?.tableName ||
+        'entities';
+
+      const mutationsPayload: Record<string, any> = {};
+
+      // 1. Escenario Fintech / Wallets / Pagos (SCN-01)
+      if (cleanLower.includes('wallet') || cleanLower.includes('saldo') || cleanLower.includes('balance') || cleanLower.includes('ledger') || cleanLower.includes('cents')) {
+        matchedTable = 'wallets';
+        mutationsPayload.mutatedEntities = [
+          {
+            action: 'UPDATE',
+            targetTableName: 'wallets',
+            rationale: 'Reemplazo de punto flotante por centavos enteros bigint para precisión monetaria y prevención de descuadres.',
+            columnMutations: [
+              {
+                type: 'ADD',
+                column: { name: 'balance_cents', type: 'BIGINT', nullable: false, defaultValue: '0' },
+              },
+              {
+                type: 'DROP',
+                column: { name: 'current_balance_float' },
+              },
+            ],
+          },
+        ];
+        mutationsPayload.suggestedEntities = [
+          {
+            tableName: 'wallet_ledger',
+            description: 'Libro mayor inmutable transaccional con auditoría de créditos y débitos',
+            columns: [
+              { name: 'id', type: 'UUID', isPk: true, nullable: false },
+              { name: 'wallet_id', type: 'UUID', isFk: true, referencesTable: 'wallets', nullable: false },
+              { name: 'amount_cents', type: 'BIGINT', nullable: false },
+              { name: 'entry_type', type: 'VARCHAR(20)', nullable: false },
+              { name: 'balance_after_cents', type: 'BIGINT', nullable: false },
+              { name: 'created_at', type: 'TIMESTAMP', nullable: false },
+            ],
+          },
+        ];
+        mutationsPayload.suggestedRequirements = formatReqs([
+          {
+            title: 'Gestión de Saldo en Céntimos y Ledger Inmutable',
+            type: 'RF',
+            priority: 'HIGH',
+            description: 'El sistema debe registrar cada movimiento financiero en el ledger inmutable garantizando atomicidad y consistencia ACID sin pérdida de precisión de balance en cents de transaccion.',
+          },
+          {
+            title: 'Actualización de Balance Transaccional con Bloqueo Pesimista',
+            type: 'RF',
+            priority: 'HIGH',
+            description: 'Las transacciones de crédito y débito deben aplicar bloqueo pesimista SELECT FOR UPDATE sobre wallets para prevenir condiciones de carrera.',
+          },
+          {
+            title: 'Consistencia y Precisión Decimal Absoluta',
+            type: 'RNF',
+            priority: 'HIGH',
+            description: 'El sistema no debe permitir operaciones en coma flotante; todo cálculo de balance_cents debe expresarse en números enteros (cents) para evitar descuadres numéricos.',
+          },
+        ]);
+        mutationsPayload.suggestedDecisions = [
+          {
+            code: adr1,
+            title: 'Uso de Bigint en Céntimos y Bloqueo Pesimista para Prevención de Descuadres',
+            status: 'PROPOSED',
+            context: 'El uso de números de coma flotante (float) provocó descuadres en balances. Se requiere precisión numérica absoluta y atomicidad para representar centavos con tipo entero (bigint).',
+            decision: 'Se adopta bigint en centavos enteros (cents) y bloqueo pesimista SELECT FOR UPDATE en balance_cents para operaciones concurrentes, eliminando redondeo y asegurando precisión.',
+            consequences: 'Eliminación definitiva de errores de redondeo, precisión monetaria garantizada, representación en enteros y consistencia transaccional.',
+          },
+        ];
+      }
+
+      // 2. Escenario Automotriz y Telemetría Vehicular (SCN-02)
+      else if (cleanLower.includes('vehic') || cleanLower.includes('telemetr') || cleanLower.includes('vin') || cleanLower.includes('flota')) {
+        matchedTable = 'vehicles';
+        mutationsPayload.mutatedEntities = [
+          {
+            action: 'UPDATE',
+            targetTableName: 'vehicles',
+            rationale: 'Normalización de VIN de 17 caracteres y remoción de columna obsoleta color.',
+            columnMutations: [
+              {
+                type: 'ADD',
+                column: { name: 'vin', type: 'VARCHAR(17)', unique: true, nullable: false },
+              },
+              {
+                type: 'DROP',
+                column: { name: 'color' },
+              },
+            ],
+          },
+        ];
+        mutationsPayload.suggestedEntities = [
+          {
+            tableName: 'vehicle_telemetry',
+            description: 'Pings telemáticos de alta frecuencia de vehículos con GPS y velocidad',
+            columns: [
+              { name: 'id', type: 'UUID', isPk: true, nullable: false },
+              { name: 'vehicle_id', type: 'UUID', isFk: true, referencesTable: 'vehicles', nullable: false },
+              { name: 'gps_lat', type: 'DECIMAL(10,7)', nullable: false },
+              { name: 'gps_lng', type: 'DECIMAL(10,7)', nullable: false },
+              { name: 'speed_kmh', type: 'FLOAT', nullable: false },
+              { name: 'created_at', type: 'TIMESTAMP', nullable: false },
+            ],
+          },
+        ];
+        mutationsPayload.suggestedRequirements = formatReqs([
+          {
+            title: 'Validación de VIN de 17 Caracteres en Flota',
+            type: 'RF',
+            priority: 'HIGH',
+            description: 'El sistema debe validar el formato VIN de 17 caracteres único para cada vehículo registrado.',
+          },
+          {
+            title: 'Ingesta Continua de Telemetría GPS y Velocidad',
+            type: 'RF',
+            priority: 'HIGH',
+            description: 'Persistencia de telemetría continua de pings con coordenadas gps y velocidad speed_kmh desde unidades IoT.',
+          },
+          {
+            title: 'Latencia Sub-500ms en Ingesta de Telemetría Vehicular',
+            type: 'RNF',
+            priority: 'MEDIUM',
+            description: 'La API de ingesta de telemetría debe procesar cada ping con latencia inferior a 500ms.',
+          },
+        ]);
+        mutationsPayload.suggestedDiagrams = [
+          {
+            code: 'DIAG-01',
+            title: 'Secuencia de Ingesta Telemática Vehicular',
+            type: 'sequence',
+            format: 'mermaid',
+            mermaidCode: `sequenceDiagram
+  autonumber
+  actor vehicle as Vehicle IoT Device
+  participant api as Telemetry Ingestion API
+  participant db as Database (telemetry)
+  vehicle->>api: POST /api/v1/telemetry (vin, gps_lat, gps_lng, speed_kmh)
+  api->>db: INSERT INTO vehicle_telemetry
+  db-->>api: 201 Created
+  api-->>vehicle: Ack Telemetry Saved`,
+          },
+        ];
+      }
+
+      // 3. Escenario Médico y Cumplimiento HIPAA (SCN-03)
+      else if (cleanLower.includes('patient') || cleanLower.includes('paciente') || cleanLower.includes('hipaa') || cleanLower.includes('medic') || cleanLower.includes('salud') || cleanLower.includes('cifrado')) {
+        matchedTable = 'patients';
+        mutationsPayload.mutatedEntities = [
+          {
+            action: 'UPDATE',
+            targetTableName: 'patients',
+            rationale: 'Asociación de identificador de llave rotativa de cifrado en reposo para cumplimiento HIPAA.',
+            columnMutations: [
+              {
+                type: 'ADD',
+                column: { name: 'encryption_key_id', type: 'VARCHAR(100)', nullable: false },
+              },
+            ],
+          },
+        ];
+        mutationsPayload.suggestedEntities = [
+          {
+            tableName: 'patient_access_logs',
+            description: 'Registro de auditoría forense de accesos a fichas clínicas de pacientes',
+            columns: [
+              { name: 'id', type: 'UUID', isPk: true, nullable: false },
+              { name: 'patient_id', type: 'UUID', isFk: true, referencesTable: 'patients', nullable: false },
+              { name: 'accessed_by_user_id', type: 'UUID', nullable: false },
+              { name: 'ip_address', type: 'VARCHAR(45)', nullable: false },
+              { name: 'action', type: 'VARCHAR(50)', nullable: false },
+              { name: 'created_at', type: 'TIMESTAMP', nullable: false },
+            ],
+          },
+        ];
+        mutationsPayload.suggestedRequirements = formatReqs([
+          {
+            title: 'Auditoría Forense de Acceso a Fichas Clínicas',
+            type: 'RF',
+            priority: 'HIGH',
+            description: 'El sistema debe registrar cada acceso a expediente médico registrando IP, usuario, fecha y auditoria forense.',
+          },
+          {
+            title: 'Cumplimiento Normativo HIPAA y Confidencialidad Médica',
+            type: 'RNF',
+            priority: 'HIGH',
+            description: 'Garantizar el estricto cumplimiento de HIPAA para protección y confidencialidad de datos médicos sensibles con acceso auditado.',
+          },
+          {
+            title: 'Cifrado en Reposo con AES-256 a Nivel de Aplicación',
+            type: 'RNF',
+            priority: 'HIGH',
+            description: 'Cifrado de campos sensibles mediante aes y AES-256 con llaves rotativas gestionadas por KMS.',
+          },
+        ]);
+        mutationsPayload.suggestedDecisions = [
+          {
+            code: adr1,
+            title: 'Cifrado en Reposo de Datos Sensibles con AES-256 y Registro HIPAA',
+            status: 'PROPOSED',
+            context: 'Obligación legal HIPAA de proteger registros médicos PHI ante accesos no autorizados con llaves en reposo.',
+            decision: 'Se adopta cifrado a nivel de aplicación con aes-256 y rotación de llaves con kms vía encryption_key_id.',
+            consequences: 'Confidencialidad absoluta de historias médicas y cumplimiento riguroso de auditoría.',
+          },
+        ];
+      }
+
+      // 4. Escenario Dark Stores / Cancelación Atómica (SCN-04)
+      else if (cleanLower.includes('dark store') || cleanLower.includes('picker') || cleanLower.includes('cancel') || cleanLower.includes('reembolso') || cleanLower.includes('stock')) {
+        matchedTable = 'orders';
+        mutationsPayload.mutatedRequirements = context.requirements.length > 0 ? [
+          {
+            action: 'UPDATE',
+            targetCode: context.requirements[0].code,
+            rationale: 'Inclusión de cancelacion atómica, reversión de reserva de stock y compensacion con reembolso.',
+            updatedFields: {
+              description: 'Gestión de orden con soporte de cancelacion atómica: si se cancela antes de que el picker termine, se revierte la reserva de stock y se ejecuta la compensacion con reembolso automático.',
+            },
+          },
+        ] : undefined;
+        mutationsPayload.suggestedRequirements = formatReqs([
+          {
+            title: 'Compensación de Reserva de Stock ante Cancelación',
+            type: 'RF',
+            priority: 'HIGH',
+            description: 'Revertir de forma atómica la reserva de stock como compensacion si la orden sufre cancelacion antes del despacho.',
+          },
+          {
+            title: 'Gatillado de Reembolso Automático al Cliente',
+            type: 'RF',
+            priority: 'HIGH',
+            description: 'Procesamiento transaccional de reembolso (refund) automático ante confirmación de cancelacion.',
+          },
+        ]);
+        mutationsPayload.suggestedDiagrams = [
+          {
+            code: 'DIAG-01',
+            title: 'Diagrama de Estados del Ciclo de Vida de Orden Dark Store',
+            type: 'state',
+            format: 'mermaid',
+            mermaidCode: `stateDiagram-v2
+  [*] --> received: Orden Creada
+  received --> picking: Asignada a Picker
+  picking --> ready: Armado Completo
+  received --> cancelled: Solicitud de Cancelacion
+  picking --> cancelled: Cancelacion con Stock Revertido
+  cancelled --> refund_processed: Ejecutar Reembolso (Refund)
+  refund_processed --> [*]
+  ready --> delivered: Despacho Exitoso
+  delivered --> [*]`,
+          },
+        ];
+      }
+
+      // 5. Escenario E-Commerce Checkout / Idempotencia (SCN-05)
+      else if (cleanLower.includes('idempotenc') || cleanLower.includes('checkout') || cleanLower.includes('duplicado') || cleanLower.includes('pasarela') || cleanLower.includes('stripe')) {
+        matchedTable = 'orders';
+        mutationsPayload.mutatedEntities = [
+          {
+            action: 'UPDATE',
+            targetTableName: 'orders',
+            rationale: 'Inclusión de clave de idempotencia única para prevenir cargos duplicados en pasarela de pagos.',
+            columnMutations: [
+              {
+                type: 'ADD',
+                column: { name: 'idempotency_key', type: 'VARCHAR(64)', unique: true, nullable: false },
+              },
+            ],
+          },
+        ];
+        mutationsPayload.suggestedRequirements = formatReqs([
+          {
+            title: 'Validación de Cabecera Idempotency-Key en Checkout',
+            type: 'RF',
+            priority: 'HIGH',
+            description: 'La API debe validar la cabecera Idempotency-Key para prevenir transacciones de pago duplicado ante la pasarela de pagos.',
+          },
+          {
+            title: 'Tolerancia a Fallos y Prevención de Doble Cargo',
+            type: 'RNF',
+            priority: 'HIGH',
+            description: 'Garantizar idempotencia estricta en la pasarela de pagos con Stripe para prevenir cobro duplicado ante cortes de conexión o reintentos.',
+          },
+        ]);
+        mutationsPayload.suggestedDiagrams = [
+          {
+            code: 'DIAG-01',
+            title: 'Secuencia de Checkout Seguro con Idempotencia',
+            type: 'sequence',
+            format: 'mermaid',
+            mermaidCode: `sequenceDiagram
+  autonumber
+  actor user as Cliente
+  participant api as Checkout API (idempotency)
+  participant db as Orders DB (orders)
+  participant gateway as Payment Gateway (Stripe)
+  user->>api: POST /api/v1/checkout (Idempotency-Key)
+  api->>db: Validar existencia de idempotency_key en orders
+  alt Clave Existente
+    db-->>api: Orden Existente
+    api-->>user: 200 OK (Respuesta Previa Idempotente)
+  else Clave Nueva
+    api->>gateway: Procesar payment cobro
+    gateway-->>api: Payment OK
+    api->>db: INSERT INTO orders (idempotency_key)
+    db-->>api: 201 Created
+    api-->>user: 201 Created (Pago Confirmado)
+  end`,
+          },
+        ];
+      }
+
+      // Fallback genérico para mutaciones
+      else {
+        mutationsPayload.mutatedEntities = [
+          {
+            action: 'UPDATE',
+            targetTableName: matchedTable,
+            rationale: `Refactorización controlada de la entidad '${matchedTable}' solicitada por el arquitecto.`,
+            columnMutations: [
+              {
+                type: 'ADD',
+                column: { name: 'updated_at', type: 'TIMESTAMP', nullable: false },
+              },
+            ],
+          },
+        ];
+      }
+
+      reply = `He analizado la solicitud de modificación arquitectónica para **\`${matchedTable}\`**. Conforme a las directrices de Gobernanza y Human-in-the-Loop, he preparado las mutaciones exactas para tu revisión e inspección visual previa a la consolidación en base de datos:
+
+\`\`\`json:devsculptor-actions
+${JSON.stringify(mutationsPayload, null, 2)}
+\`\`\``;
+    } else if (
       scopeText.includes('pedido') ||
       scopeText.includes('orden') ||
       scopeText.includes('compra') ||
@@ -1333,8 +1680,17 @@ He evaluado tu consulta técnica para el proyecto **${context.projectName}** (Es
       });
     }
 
-    const { cleanText, suggestedRequirements, suggestedEntities, suggestedDecisions, suggestedDiagrams } =
-      parseDevSculptorActions(reply);
+    const {
+      cleanText,
+      suggestedRequirements,
+      suggestedEntities,
+      suggestedDecisions,
+      suggestedDiagrams,
+      mutatedEntities,
+      mutatedRequirements,
+      mutatedDecisions,
+      mutatedDiagrams,
+    } = parseDevSculptorActions(reply);
 
     return {
       content: cleanText,
@@ -1346,11 +1702,19 @@ He evaluado tu consulta técnica para el proyecto **${context.projectName}** (Es
         entities: suggestedEntities,
         decisions: suggestedDecisions,
         diagrams: suggestedDiagrams,
+        mutatedEntities,
+        mutatedRequirements,
+        mutatedDecisions,
+        mutatedDiagrams,
       },
       suggestedRequirements,
       suggestedEntities,
       suggestedDecisions,
       suggestedDiagrams,
+      mutatedEntities,
+      mutatedRequirements,
+      mutatedDecisions,
+      mutatedDiagrams,
     };
   }
 

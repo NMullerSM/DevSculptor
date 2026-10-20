@@ -14,7 +14,8 @@
     "migrate": "tsx src/database/migrate.ts",
     "migrate:prod": "node dist/database/migrate.js",
     "seed": "tsx src/database/seeds/run-seed.ts",
-    "bootstrap:superadmin": "tsx src/database/bootstrap-superadmin.ts"
+    "bootstrap:superadmin": "tsx src/database/bootstrap-superadmin.ts",
+    "benchmark:ai": "tsx scripts/run-ai-benchmark.ts"
   },
   "keywords": [
     "devsculptor",

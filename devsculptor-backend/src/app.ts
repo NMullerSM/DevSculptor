@@ -21,6 +21,7 @@ import metricsRoutes from './modules/metrics/metrics.routes';
 import aiRoutes from './modules/ai/ai.routes';
 import okfRoutes from './modules/okf/okf.routes';
 import adminRoutes from './modules/admin/admin.routes';
+import benchmarkRoutes from './modules/benchmark/benchmark.routes';
 
 export function createApp(): Express {
   const app = express();
@@ -113,6 +114,9 @@ export function createApp(): Express {
 
   // 10. Rutas de Administrador Maestro (Protegidas por RBAC SUPERADMIN)
   app.use('/api/v1/admin', adminRoutes);
+
+  // 10.5. Rutas Internas de Benchmark y Evaluación de IA (No públicas / Protegidas)
+  app.use('/api/v1/internal/ai/benchmark', benchmarkRoutes);
 
   // 11. Manejador de rutas no encontradas (404)
   app.use(notFoundHandler);

@@ -5,6 +5,11 @@ import {
   AiSuggestedEntity,
   AiSuggestedDecision,
   AiSuggestedDiagram,
+  AiEntityMutation,
+  ColumnMutation,
+  AiRequirementMutation,
+  AiDecisionMutation,
+  AiDiagramMutation,
 } from './providers/ai-provider.interface';
 import { logger } from '../../config/logger';
 
@@ -48,16 +53,28 @@ export function applyActionContextHardGate(
     return {};
   }
   if (ctx === 'requirements') {
-    return { requirements: actions.requirements };
+    return {
+      requirements: actions.requirements,
+      mutatedRequirements: actions.mutatedRequirements,
+    };
   }
   if (ctx === 'canvas' || ctx === 'entities') {
-    return { entities: actions.entities };
+    return {
+      entities: actions.entities,
+      mutatedEntities: actions.mutatedEntities,
+    };
   }
   if (ctx === 'diagrams') {
-    return { diagrams: actions.diagrams };
+    return {
+      diagrams: actions.diagrams,
+      mutatedDiagrams: actions.mutatedDiagrams,
+    };
   }
   if (ctx === 'adr' || ctx === 'decisions') {
-    return { decisions: actions.decisions };
+    return {
+      decisions: actions.decisions,
+      mutatedDecisions: actions.mutatedDecisions,
+    };
   }
 
   return actions;
@@ -237,8 +254,55 @@ export function sanitizeAndSortEntities(
 }
 
 /**
+ * Valida y sanea mutaciones agénticas de entidades contra el esquema actual.
+ */
+export function sanitizeMutatedEntities(
+  mutations: AiEntityMutation[] | undefined,
+  context: AiProjectContext
+): AiEntityMutation[] | undefined {
+  if (!mutations || mutations.length === 0) return undefined;
+
+  const existingTableMap = new Map(context.entities.map((e) => [e.tableName.toLowerCase(), e]));
+
+  const validMutations: AiEntityMutation[] = [];
+  for (const m of mutations) {
+    const targetLower = m.targetTableName.toLowerCase().trim();
+    const existingTable = existingTableMap.get(targetLower);
+
+    // Si la tabla no existe en el contexto y la acción es UPDATE o DELETE, advertir pero permitir si el nombre es coherente
+    if (!existingTable && m.action !== 'CREATE') {
+      logger.warn(
+        { targetTableName: m.targetTableName, action: m.action },
+        'Aviso de mutación: la tabla objetivo no se encontró en el contexto local'
+      );
+    }
+
+    // Normalizar columnMutations
+    let sanitizedCols = m.columnMutations;
+    if (sanitizedCols && sanitizedCols.length > 0) {
+      sanitizedCols = sanitizedCols.map((cm: ColumnMutation) => ({
+        type: cm.type,
+        column: {
+          ...cm.column,
+          name: cm.column.name.trim().toLowerCase(),
+          type: cm.column.type ? cm.column.type.trim().toUpperCase() : 'VARCHAR(255)',
+        },
+        previousColumnName: cm.previousColumnName ? cm.previousColumnName.trim().toLowerCase() : undefined,
+      }));
+    }
+
+    validMutations.push({
+      ...m,
+      columnMutations: sanitizedCols,
+    });
+  }
+
+  return validMutations.length > 0 ? validMutations : undefined;
+}
+
+/**
  * Sanitizador Maestro de Respuestas IA:
- * Aplica compuertas duras, deduplicación, ordenamiento topológico y sincronización canónica.
+ * Aplica compuertas duras, deduplicación, ordenamiento topológico, validación de mutaciones y sincronización canónica.
  */
 export function sanitizeAiResponse(
   rawResult: AiChatResult,
@@ -250,6 +314,10 @@ export function sanitizeAiResponse(
     entities: rawResult.actions?.entities || rawResult.suggestedEntities,
     decisions: rawResult.actions?.decisions || rawResult.suggestedDecisions,
     diagrams: rawResult.actions?.diagrams || rawResult.suggestedDiagrams,
+    mutatedEntities: rawResult.actions?.mutatedEntities || rawResult.mutatedEntities,
+    mutatedRequirements: rawResult.actions?.mutatedRequirements || rawResult.mutatedRequirements,
+    mutatedDecisions: rawResult.actions?.mutatedDecisions || rawResult.mutatedDecisions,
+    mutatedDiagrams: rawResult.actions?.mutatedDiagrams || rawResult.mutatedDiagrams,
   };
 
   // 1. Aplicar Hard Gate por actionContext
@@ -264,7 +332,10 @@ export function sanitizeAiResponse(
   // 4. Sanitizar decisiones
   const sanitizedDecisions = deduplicateAndRenumberDecisions(gatedActions.decisions, context);
 
-  // 5. Diagramas
+  // 5. Sanitizar mutaciones de entidades
+  const sanitizedMutatedEntities = sanitizeMutatedEntities(gatedActions.mutatedEntities, context);
+
+  // 6. Diagramas
   const sanitizedDiagrams: AiSuggestedDiagram[] | undefined =
     gatedActions.diagrams && gatedActions.diagrams.length > 0 ? gatedActions.diagrams : undefined;
 
@@ -273,6 +344,10 @@ export function sanitizeAiResponse(
     entities: sanitizedEntities,
     decisions: sanitizedDecisions,
     diagrams: sanitizedDiagrams,
+    mutatedEntities: sanitizedMutatedEntities,
+    mutatedRequirements: gatedActions.mutatedRequirements,
+    mutatedDecisions: gatedActions.mutatedDecisions,
+    mutatedDiagrams: gatedActions.mutatedDiagrams,
   };
 
   return {
@@ -282,5 +357,9 @@ export function sanitizeAiResponse(
     suggestedEntities: sanitizedEntities,
     suggestedDecisions: sanitizedDecisions,
     suggestedDiagrams: sanitizedDiagrams,
+    mutatedEntities: sanitizedMutatedEntities,
+    mutatedRequirements: gatedActions.mutatedRequirements,
+    mutatedDecisions: gatedActions.mutatedDecisions,
+    mutatedDiagrams: gatedActions.mutatedDiagrams,
   };
 }
